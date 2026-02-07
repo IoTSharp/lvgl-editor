@@ -1,0 +1,200 @@
+/* Hierarchy Panel Styles */
+
+.hierarchy-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+.hierarchy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #333;
+  background: #252526;
+}
+
+.hierarchy-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hierarchy-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.hierarchy-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  border-radius: 3px;
+}
+
+.hierarchy-btn:hover {
+  background: #3c3c3c;
+  color: #e0e0e0;
+}
+
+.hierarchy-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.empty-message {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Tree Node */
+.tree-node-wrapper {
+  user-select: none;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin: 1px 4px;
+  transition: background 0.1s;
+}
+
+.tree-node:hover {
+  background: #2a2d2e;
+}
+
+.tree-node.selected {
+  background: #094771;
+}
+
+.tree-node.selected:hover {
+  background: #0a5a8a;
+}
+
+.tree-node.dragging {
+  opacity: 0.5;
+}
+
+/* Expand button */
+.expand-btn {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.expand-btn.has-children {
+  cursor: pointer;
+}
+
+.expand-btn.has-children:hover {
+  color: #e0e0e0;
+}
+
+/* Type icon */
+.type-icon {
+  margin-right: 6px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Node name */
+.node-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Rename input */
+.rename-input {
+  flex: 1;
+  background: #3c3c3c;
+  border: 1px solid #007acc;
+  color: #e0e0e0;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: 2px;
+  outline: none;
+}
+
+/* Status icons */
+.status-icons {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tree-node:hover .status-icons,
+.tree-node.selected .status-icons {
+  opacity: 1;
+}
+
+.status-icon {
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.status-icon:hover {
+  opacity: 1;
+  background: #3c3c3c;
+}
+
+.status-icon.visibility.off {
+  opacity: 0.3;
+}
+
+.status-icon.lock.on {
+  opacity: 1;
+  color: #f0a000;
+}
+
+/* Children container */
+.tree-children {
+  /* Children are indented via padding-left on tree-node */
+}
+
+/* Drag over indicator */
+.tree-node.drag-over {
+  border: 1px dashed #007acc;
+}
+
+/* Scrollbar styling */
+.hierarchy-tree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hierarchy-tree::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.hierarchy-tree::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 4px;
+}
+
+.hierarchy-tree::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

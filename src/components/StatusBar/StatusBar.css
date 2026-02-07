@@ -1,0 +1,105 @@
+.status-bar {
+  height: 32px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 12px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+}
+
+.status-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-text .component-icon {
+  font-size: 14px;
+}
+
+.status-text .component-size {
+  color: #999;
+  margin-left: 4px;
+}
+
+.status-divider {
+  width: 1px;
+  height: 16px;
+  background: #e0e0e0;
+  margin: 0 4px;
+}
+
+.status-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.status-button:hover {
+  background: #f0f0f0;
+}
+
+.status-button.active {
+  background: #e3f2fd;
+  color: #2196F3;
+}
+
+.status-button .icon {
+  font-size: 14px;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoom-controls button {
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.zoom-controls button:hover {
+  background: #e0e0e0;
+}
+
+.zoom-controls .zoom-level {
+  width: auto;
+  min-width: 50px;
+  padding: 0 8px;
+  font-size: 12px;
+}

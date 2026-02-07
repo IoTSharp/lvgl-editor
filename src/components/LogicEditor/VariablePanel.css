@@ -1,0 +1,261 @@
+/* Variable Panel Styles */
+
+.variable-panel {
+  width: 240px;
+  background: #1e1e1e;
+  border-left: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.variable-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  background: #1e1e1e;
+}
+
+.variable-panel .panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.add-var-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: #2196f3;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.add-var-btn:hover {
+  background: #1976d2;
+}
+
+/* Add Variable Form */
+.add-var-form {
+  padding: 12px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #252525;
+}
+
+.add-var-form input,
+.add-var-form select {
+  padding: 8px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2d2d2d;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+}
+
+.add-var-form input:focus,
+.add-var-form select:focus {
+  border-color: #2196f3;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-confirm,
+.btn-cancel {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-confirm {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background: #43a047;
+}
+
+.btn-cancel {
+  background: #444;
+  color: #ccc;
+}
+
+.btn-cancel:hover {
+  background: #555;
+}
+
+/* Variable List */
+.variable-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.no-variables,
+.no-graph {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+.no-variables p,
+.no-graph p {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+}
+
+.no-variables button {
+  padding: 8px 16px;
+  border: 1px dashed #444;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.no-variables button:hover {
+  border-color: #2196f3;
+  color: #2196f3;
+}
+
+/* Variable Item */
+.variable-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a2a2a;
+  transition: background 0.15s;
+}
+
+.variable-item:hover {
+  background: #252525;
+}
+
+.var-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.var-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.var-name {
+  font-size: 12px;
+  color: #ddd;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.var-type {
+  font-size: 10px;
+  color: #666;
+}
+
+.var-value {
+  flex-shrink: 0;
+}
+
+.value-display {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #2d2d2d;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #4caf50;
+  cursor: pointer;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.value-display:hover {
+  background: #333;
+}
+
+.var-value input,
+.var-value select {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid #2196f3;
+  border-radius: 4px;
+  background: #2d2d2d;
+  color: #fff;
+  font-size: 11px;
+  outline: none;
+}
+
+.var-actions {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.variable-item:hover .var-actions {
+  opacity: 1;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+}
+
+/* Scrollbar */
+.variable-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.variable-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.variable-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.variable-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

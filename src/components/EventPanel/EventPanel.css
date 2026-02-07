@@ -1,0 +1,179 @@
+.event-panel {
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  min-height: 150px;
+}
+
+.event-panel .panel-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.event-panel .panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.add-event-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #2196F3;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.add-event-btn:hover {
+  background: #1976D2;
+}
+
+.event-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.no-events {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #999;
+  text-align: center;
+}
+
+.no-events p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+}
+
+.add-first-event {
+  padding: 8px 16px;
+  border: 1px dashed #ccc;
+  background: transparent;
+  color: #666;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.add-first-event:hover {
+  border-color: #2196F3;
+  color: #2196F3;
+  background: #e3f2fd;
+}
+
+.event-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.event-item:last-child {
+  margin-bottom: 0;
+}
+
+.event-item:hover {
+  border-color: #2196F3;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
+}
+
+.event-info {
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.event-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.event-icon {
+  font-size: 12px;
+}
+
+.event-handler {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.event-edit-btn,
+.event-delete-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.event-edit-btn:hover {
+  background: #e3f2fd;
+}
+
+.event-delete-btn:hover {
+  background: #ffebee;
+}
+
+.no-selection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  padding: 20px;
+  text-align: center;
+}
+
+.no-selection p {
+  margin: 4px 0;
+}
+
+.no-selection .hint {
+  font-size: 12px;
+  color: #bbb;
+}

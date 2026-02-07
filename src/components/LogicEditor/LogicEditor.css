@@ -1,0 +1,234 @@
+.logic-editor {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: #1a1a2e;
+  min-height: 0;
+}
+
+/* Canvas */
+.logic-editor-canvas,
+.logic-canvas {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+/* No Graph Message */
+.no-graph-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #888;
+}
+
+.no-graph-message h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #ccc;
+  font-weight: 600;
+}
+
+.no-graph-message p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.no-graph-message button {
+  margin-top: 8px;
+  padding: 10px 20px;
+  border: 1px dashed #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.no-graph-message button:hover {
+  border-color: #2196f3;
+  color: #2196f3;
+}
+
+/* Top Panel - Graph Selector */
+.top-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.graph-selector {
+  position: relative;
+}
+
+.graph-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2d2d2d;
+  color: #ddd;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.graph-dropdown-btn:hover {
+  background: #383838;
+  border-color: #555;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: #888;
+  margin-left: 4px;
+}
+
+.graph-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  background: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.graph-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #ccc;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.graph-item:hover {
+  background: #383838;
+}
+
+.graph-item.active {
+  background: rgba(33, 150, 243, 0.2);
+  color: #6bb3ff;
+}
+
+.graph-item.create {
+  border-top: 1px solid #444;
+  color: #888;
+}
+
+.graph-item.create:hover {
+  color: #2196f3;
+}
+
+.delete-graph-btn {
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2d2d2d;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.delete-graph-btn:hover {
+  background: #442222;
+  border-color: #663333;
+}
+
+/* Debug Panel */
+.debug-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.debug-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2d2d2d;
+  color: #ddd;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.debug-btn:hover {
+  background: #383838;
+}
+
+.debug-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.debug-btn.start {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.debug-btn.start:hover {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.debug-btn.stop {
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.debug-btn.stop:hover {
+  background: rgba(244, 67, 54, 0.15);
+}
+
+.debug-btn.step {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.debug-btn.step:hover {
+  background: rgba(255, 152, 0, 0.15);
+}
+
+.debug-status {
+  font-size: 12px;
+  color: #aaa;
+  padding: 0 8px;
+}
+
+/* React Flow dark theme overrides */
+.logic-canvas .react-flow__controls {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  border: 1px solid #444;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.logic-canvas .react-flow__controls-button {
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
+  fill: #ccc;
+  color: #ccc;
+}
+
+.logic-canvas .react-flow__controls-button:hover {
+  background: #383838;
+}
+
+.logic-canvas .react-flow__attribution {
+  display: none;
+}
