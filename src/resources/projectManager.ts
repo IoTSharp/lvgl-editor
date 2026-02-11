@@ -1,7 +1,8 @@
 // Project Manager - Save/Load project files
 
 import type { ProjectFile, ImageResource, FontResource } from './types';
-import type { LvglComponent, CanvasState } from '../types';
+import type { LogicGraph } from '../components/LogicEditor/types';
+import type { CanvasState, Page } from '../types';
 
 const PROJECT_VERSION = '1.0.0';
 
@@ -10,10 +11,11 @@ const PROJECT_VERSION = '1.0.0';
  */
 export function createProjectFile(
   name: string,
-  components: LvglComponent[],
+  pages: Page[],
   canvas: CanvasState,
   images: ImageResource[],
-  fonts: FontResource[]
+  fonts: FontResource[],
+  logicGraphs: LogicGraph[] = []
 ): ProjectFile {
   return {
     version: PROJECT_VERSION,
@@ -24,18 +26,17 @@ export function createProjectFile(
       width: canvas.width,
       height: canvas.height,
     },
-    pages: [
-      {
-        id: 'main',
-        name: 'Main Page',
-        components,
-      },
-    ],
+    pages: pages.map(page => ({
+      id: page.id,
+      name: page.name,
+      components: page.components,
+    })),
     resources: {
       images,
       fonts,
     },
     variables: [],
+    logicGraphs,
     codeGenOptions: {
       outputFormat: 'single-file',
       includeComments: true,
@@ -87,6 +88,7 @@ function migrateProject(project: ProjectFile): ProjectFile {
     ...project,
     resources: project.resources || { images: [], fonts: [] },
     variables: project.variables || [],
+    logicGraphs: project.logicGraphs || [],
     codeGenOptions: project.codeGenOptions || {
       outputFormat: 'single-file',
       includeComments: true,

@@ -46,7 +46,7 @@ export interface LogicPort {
   id: string;
   name: string;
   type: PortDataType;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean;
 }
 
 // Logic Node Definition
@@ -56,6 +56,7 @@ export interface LogicNode {
   subType: LogicNodeSubType;
   label: string;
   position: { x: number; y: number };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: Record<string, any>;
   inputs: LogicPort[];
   outputs: LogicPort[];
@@ -82,6 +83,7 @@ export interface LogicVariable {
   id: string;
   name: string;
   type: VariableType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   defaultValue: any;
   description?: string;
 }
@@ -106,6 +108,7 @@ export interface LogicNodeDefinition {
   description: string;
   icon: string;
   color: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   defaultParams: Record<string, any>;
   inputs: Omit<LogicPort, 'id'>[];
   outputs: Omit<LogicPort, 'id'>[];
@@ -128,6 +131,7 @@ export interface DebugState {
   isDebugging: boolean;
   currentNodeId: string | null;
   executionPath: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   nodeValues: Record<string, Record<string, any>>;
   breakpoints: string[];
   isPaused: boolean;

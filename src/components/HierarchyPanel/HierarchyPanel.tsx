@@ -1,6 +1,6 @@
 // Hierarchy Panel - Tree view of component structure
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import type { LvglComponent } from '../../types';
 import './HierarchyPanel.css';
@@ -226,7 +226,7 @@ const HierarchyPanel: React.FC = () => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   
   const currentPage = pages.find(p => p.id === currentPageId);
-  const components = currentPage?.components || [];
+  const components = useMemo(() => currentPage?.components || [], [currentPage?.components]);
   
   const handleSelect = useCallback((id: string, addToSelection: boolean) => {
     selectComponent(id, addToSelection);
@@ -257,7 +257,7 @@ const HierarchyPanel: React.FC = () => {
     setDraggedId(id);
   }, []);
   
-  const handleDragOver = useCallback((_id: string) => {
+  const handleDragOver = useCallback((_e: string) => {
     // Visual feedback could be added here
   }, []);
   

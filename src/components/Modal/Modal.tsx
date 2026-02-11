@@ -22,12 +22,14 @@ function notify(modal: ModalState | null) {
 function showModal(type: 'alert', message: string): Promise<void>;
 function showModal(type: 'confirm', message: string): Promise<boolean>;
 function showModal(type: 'prompt', message: string, defaultValue?: string): Promise<string | null>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function showModal(type: ModalType, message: string, defaultValue?: string): Promise<any> {
   return new Promise((resolve) => {
     notify({ type, message, defaultValue, resolve });
   });
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const modal = {
   alert: (message: string) => showModal('alert', message),
   confirm: (message: string) => showModal('confirm', message),
@@ -47,6 +49,7 @@ const Modal: React.FC = () => {
   // Reset input value when a new prompt modal opens
   useEffect(() => {
     if (state?.type === 'prompt') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(state.defaultValue ?? '');
       // Focus input on next tick
       setTimeout(() => inputRef.current?.select(), 0);

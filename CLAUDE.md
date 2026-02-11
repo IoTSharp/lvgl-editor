@@ -96,11 +96,12 @@ Handled globally by `src/hooks/useKeyboardShortcuts.ts`. Communicates with `App.
 - CSS is co-located with components (e.g., `Canvas.tsx` + `CanvasComponent.css`)
 - The Vite config uses manual chunks to split Monaco, React Flow, dnd-kit, React, and Zustand into separate bundles
 - IDs are generated with `uuid` v4 throughout
-- `HierarchyPanel` and `CodePanel` components exist but are not currently wired into `App.tsx`
+- `HierarchyPanel` and `CodePanel` components exist; `HierarchyPanel` is wired into the design tab's left panel alongside `ComponentPanel`. `CodePanel` is an alternative to `CodePreview` with more options but is not currently used in `App.tsx`.
 
 ## Known Limitations
 
-- Logic-to-C code generation is incomplete (logic graph templates are stubs)
-- No test suite exists
-- Image resources show as placeholders in the preview panel
 - Animation editor is not implemented
+- Theme system (global theme switching) is not implemented
+- Font conversion requires external lv_font_conv tool; editor only generates templates and CLI commands
+- No test suite exists
+- No LVGL v9 API compatibility (current codegen targets v8)

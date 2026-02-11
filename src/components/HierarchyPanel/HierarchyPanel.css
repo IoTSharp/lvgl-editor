@@ -1,11 +1,11 @@
-/* Hierarchy Panel Styles */
+/* Hierarchy Panel Styles - Light theme to match ComponentPanel */
 
 .hierarchy-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: #f8f9fa;
+  color: #333;
   font-size: 13px;
 }
 
@@ -14,14 +14,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #333;
-  background: #252526;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
 }
 
 .hierarchy-header h3 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
 }
 
 .hierarchy-actions {
@@ -40,8 +41,8 @@
 }
 
 .hierarchy-btn:hover {
-  background: #3c3c3c;
-  color: #e0e0e0;
+  background: #e8e8e8;
+  color: #333;
 }
 
 .hierarchy-tree {
@@ -53,7 +54,7 @@
 .empty-message {
   padding: 20px;
   text-align: center;
-  color: #666;
+  color: #999;
   font-style: italic;
 }
 
@@ -73,15 +74,15 @@
 }
 
 .tree-node:hover {
-  background: #2a2d2e;
+  background: #e8e8e8;
 }
 
 .tree-node.selected {
-  background: #094771;
+  background: #d4e8fc;
 }
 
 .tree-node.selected:hover {
-  background: #0a5a8a;
+  background: #c0dcf7;
 }
 
 .tree-node.dragging {
@@ -105,11 +106,11 @@
 }
 
 .expand-btn.has-children:hover {
-  color: #e0e0e0;
+  color: #333;
 }
 
 /* Type icon */
-.type-icon {
+.hierarchy-panel .type-icon {
   margin-right: 6px;
   font-size: 14px;
   flex-shrink: 0;
@@ -121,14 +122,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #333;
 }
 
 /* Rename input */
 .rename-input {
   flex: 1;
-  background: #3c3c3c;
-  border: 1px solid #007acc;
-  color: #e0e0e0;
+  background: #fff;
+  border: 1px solid #2196F3;
+  color: #333;
   padding: 2px 4px;
   font-size: 12px;
   border-radius: 2px;
@@ -159,7 +161,7 @@
 
 .status-icon:hover {
   opacity: 1;
-  background: #3c3c3c;
+  background: #e0e0e0;
 }
 
 .status-icon.visibility.off {
@@ -168,7 +170,7 @@
 
 .status-icon.lock.on {
   opacity: 1;
-  color: #f0a000;
+  color: #e67e00;
 }
 
 /* Children container */
@@ -178,7 +180,7 @@
 
 /* Drag over indicator */
 .tree-node.drag-over {
-  border: 1px dashed #007acc;
+  border: 1px dashed #2196F3;
 }
 
 /* Scrollbar styling */
@@ -187,14 +189,14 @@
 }
 
 .hierarchy-tree::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: #f0f0f0;
 }
 
 .hierarchy-tree::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: #ccc;
   border-radius: 4px;
 }
 
 .hierarchy-tree::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #bbb;
 }

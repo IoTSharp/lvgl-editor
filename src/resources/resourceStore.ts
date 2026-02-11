@@ -161,8 +161,10 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       id: generateId(),
       name: baseName,
       family: metadata.family !== 'Unknown' ? metadata.family : baseName,
+      style: metadata.style,
       sizes: [16],
       charset: 'ascii',
+      bpp: 4,
       data: base64Data,
       cFontName,
       size: file.size,
@@ -277,7 +279,7 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
     );
   },
   
-  getResourceUsage: (_resourceId) => {
+  getResourceUsage: (_resourceId: string) => {
     // This would integrate with the editor store to find components using this resource
     // For now, return empty array - will be connected later
     return [];

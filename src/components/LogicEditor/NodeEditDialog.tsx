@@ -47,6 +47,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
   const { pages, getAllComponents } = useEditorStore();
   
   const node = getNode(nodeId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [params, setParams] = useState<Record<string, any>>(node?.params || {});
   const [label, setLabel] = useState(node?.label || '');
 
@@ -55,6 +56,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
 
   useEffect(() => {
     if (node) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local state with node props
       setParams(node.params);
       setLabel(node.label);
     }
@@ -65,6 +67,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
     onClose();
   }, [nodeId, params, label, updateNode, onClose]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleParamChange = useCallback((key: string, value: any) => {
     setParams(prev => ({ ...prev, [key]: value }));
   }, []);

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-11
+
+### Added
+- **层级面板接入设计视图** — HierarchyPanel 挂载到左侧面板，与组件面板上下分栏，支持树形结构浏览、拖拽排序、重命名、锁定/可见性切换
+- **样式状态编辑** — PropertyEditor 新增默认/按下/聚焦/禁用四种状态切换，支持独立样式覆盖和清除，蓝色圆点标记已覆盖状态
+- **预览面板组件渲染补全** — 新增 line、spinner、chart（折线/柱状）、table、calendar、tabview、tileview、window、obj(container) 共 9 种组件的专用 Canvas 渲染
+- **画布 visible/locked 视觉反馈** — 隐藏组件半透明+虚线边框，锁定组件禁止拖拽/调整大小且隐藏手柄
+- **动画编辑器** — Animation 类型定义、AnimationPanel 面板 UI（添加/编辑/删除动画）、AnimationEditDialog 编辑对话框、代码生成 lv_anim_t 初始化 + easing 映射
+- **主题系统** — Theme 类型、themeStore（light/dark 预设）、ThemeSelector 工具栏组件、代码生成 lv_theme_default_init()
+- **图片资源联动** — PropertyEditor 图片选择器带缩略图、画布显示实际图片、代码生成引用 C 数组名、ZIP 导出包含图片 C 数组文件
+- **字体转换完善** — TTF/OTF name table 真实解析、浏览器内字体预览、BPP 选择器、lv_font_conv 命令生成、头文件/源文件模板生成、代码生成集成自定义字体 LV_FONT_DECLARE
+- **预览面板动画播放** — requestAnimationFrame 动画模拟（fade/slide/zoom + easing）、播放/暂停/重置控制
+- **预览面板多页面切换** — 底部页面标签栏、点击切换预览页面、组件 navigate 事件点击导航
+
+### Fixed
+- **逻辑代码生成重写** — if/else 和 switch 递归生成完整分支体；init 函数注册事件回调和定时器；set_value 按组件类型选择正确 API；定时器生成实际 lv_timer_create 回调
+- **代码生成补全 focused/disabled 状态** — ui.c 现在输出 LV_STATE_FOCUSED 和 LV_STATE_DISABLED 样式代码
+- **CodePreview/CodePanel 传入 logicGraphs** — 代码预览和导出现在正确包含逻辑图生成的代码
+
 ## [1.0.0] - 2026-02-07 🎉 Production Ready
 
 ### 🎨 Phase 1 - 基础框架

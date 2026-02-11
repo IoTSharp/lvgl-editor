@@ -12,6 +12,7 @@ import ComponentPanel from './components/ComponentPanel';
 import Canvas from './components/Canvas';
 import PropertyEditor from './components/PropertyEditor';
 import EventPanel from './components/EventPanel';
+import AnimationPanel from './components/AnimationPanel';
 import PageManager from './components/PageManager';
 import StatusBar from './components/StatusBar';
 import AlignToolbar from './components/AlignToolbar';
@@ -21,7 +22,10 @@ import Modal, { modal } from './components/Modal';
 import CodePreview from './components/CodePreview';
 import { LogicEditor } from './components/LogicEditor';
 import PreviewPanel from './components/Preview';
+import { HierarchyPanel } from './components/HierarchyPanel';
+import { ThemeSelector } from './components/ThemeSelector';
 import { ResourcePanel, useResourceStore } from './resources';
+import { useLogicEditorStore } from './components/LogicEditor';
 import {
   createProjectFile,
   downloadProject,
@@ -30,6 +34,7 @@ import {
   loadAutoSavedProject,
 } from './resources/projectManager';
 import { useEditorStore } from './store/editorStore';
+import type { Page } from './types';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { getComponentDefinition } from './utils/componentDefinitions';
 import './App.css';
@@ -40,7 +45,7 @@ const App: React.FC = () => {
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
-  const { addComponent, canvas, pages, currentPageId, clearComponents, setComponents } = useEditorStore();
+  const { addComponent, canvas, pages, clearComponents, setPages } = useEditorStore();
   const { images, fonts, importResources, clearAllResources } = useResourceStore();
   const { messages, removeToast, success, error, info } = useToast();
   
@@ -49,10 +54,6 @@ const App: React.FC = () => {
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('design');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Get current page components
-  const currentPage = pages.find(p => p.id === currentPageId);
-  const components = currentPage?.components || [];
 
   // Configure drag sensors
   const mouseSensor = useSensor(MouseSensor, {
@@ -68,18 +69,20 @@ const App: React.FC = () => {
   // Auto-save effect
   useEffect(() => {
     const saveInterval = setInterval(() => {
+      const logicGraphs = useLogicEditorStore.getState().graphs;
       const project = createProjectFile(
         'autosave',
-        components,
+        pages,
         canvas,
         images,
-        fonts
+        fonts,
+        logicGraphs
       );
       autoSaveProject(project);
     }, 30000); // Auto-save every 30 seconds
 
     return () => clearInterval(saveInterval);
-  }, [components, canvas, images, fonts]);
+  }, [pages, canvas, images, fonts]);
 
   // Load auto-saved project on mount
   useEffect(() => {
@@ -88,15 +91,46 @@ const App: React.FC = () => {
       // Ask user if they want to restore
       modal.confirm('发现自动保存的项目，是否恢复？').then(shouldRestore => {
         if (shouldRestore) {
-          setComponents(autoSaved.pages[0].components);
+          setPages(autoSaved.pages as Page[]);
           if (autoSaved.resources) {
             importResources(autoSaved.resources);
+          }
+          if (autoSaved.logicGraphs) {
+            useLogicEditorStore.getState().setGraphs(autoSaved.logicGraphs);
           }
           info('已恢复自动保存的项目');
         }
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Project management handlers
+  const handleNewProjectClick = useCallback(async () => {
+    if (await modal.confirm('创建新项目将清除当前所有内容，确定继续吗？')) {
+      clearComponents();
+      clearAllResources();
+      useLogicEditorStore.getState().setGraphs([]);
+      success('已创建新项目');
+    }
+  }, [clearComponents, clearAllResources, success]);
+
+  const handleSaveProjectClick = useCallback(async () => {
+    const projectName = await modal.prompt('请输入项目名称:', 'my-project');
+    if (!projectName) return;
+
+    const logicGraphs = useLogicEditorStore.getState().graphs;
+    const project = createProjectFile(
+      projectName,
+      pages,
+      canvas,
+      images,
+      fonts,
+      logicGraphs
+    );
+    downloadProject(project);
+    success(`项目 "${projectName}" 已保存`);
+  }, [pages, canvas, images, fonts, success]);
 
   // Listen for keyboard shortcut events
   useEffect(() => {
@@ -116,31 +150,7 @@ const App: React.FC = () => {
       window.removeEventListener('open-project', handleOpenProject);
       window.removeEventListener('new-project', handleNewProject);
     };
-  }, [components, canvas, images, fonts]);
-
-  // Project management handlers
-  const handleNewProjectClick = async () => {
-    if (await modal.confirm('创建新项目将清除当前所有内容，确定继续吗？')) {
-      clearComponents();
-      clearAllResources();
-      success('已创建新项目');
-    }
-  };
-
-  const handleSaveProjectClick = async () => {
-    const projectName = await modal.prompt('请输入项目名称:', 'my-project');
-    if (!projectName) return;
-
-    const project = createProjectFile(
-      projectName,
-      components,
-      canvas,
-      images,
-      fonts
-    );
-    downloadProject(project);
-    success(`项目 "${projectName}" 已保存`);
-  };
+  }, [handleSaveProjectClick, handleNewProjectClick]);
 
   const handleLoadProject = () => {
     fileInputRef.current?.click();
@@ -149,26 +159,31 @@ const App: React.FC = () => {
   const handleFileLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     try {
       const project = await loadProjectFromFile(file);
-      
-      // Load components
+
+      // Load all pages
       if (project.pages && project.pages.length > 0) {
-        setComponents(project.pages[0].components);
+        setPages(project.pages as Page[]);
       }
-      
+
       // Load resources
       if (project.resources) {
         importResources(project.resources);
       }
-      
+
+      // Load logic graphs
+      if (project.logicGraphs) {
+        useLogicEditorStore.getState().setGraphs(project.logicGraphs);
+      }
+
       success(`项目 "${project.name}" 加载成功！`);
     } catch (err) {
       console.error('Failed to load project:', err);
       error('加载项目失败：' + (err as Error).message);
     }
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -244,7 +259,10 @@ const App: React.FC = () => {
             onDragEnd={handleDragEnd}
           >
             <div className="app-body">
-              <ComponentPanel />
+              <div className="left-panel">
+                <ComponentPanel />
+                <HierarchyPanel />
+              </div>
               <div className="canvas-area">
                 <AlignToolbar />
                 <Canvas />
@@ -253,6 +271,7 @@ const App: React.FC = () => {
               <div className="right-panel">
                 <PropertyEditor />
                 <EventPanel />
+                <AnimationPanel />
               </div>
               {showResourcePanel && (
                 <div className="resource-panel-container">
@@ -342,6 +361,9 @@ const App: React.FC = () => {
             onClick={() => setShowResourcePanel(!showResourcePanel)}
             active={showResourcePanel}
           />
+          <div className="toolbar-divider" />
+          <ThemeSelector />
+          <div className="toolbar-divider" />
           <ToolbarButton 
             icon="❓" 
             label="帮助" 

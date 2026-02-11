@@ -64,6 +64,7 @@ interface EditorState {
   reparentComponent: (id: string, newParentId: string | null) => void;
   clearComponents: () => void;
   setComponents: (components: LvglComponent[]) => void;
+  setPages: (pages: Page[]) => void;
   
   // Actions - Z-order
   bringToFront: (id: string) => void;
@@ -279,6 +280,7 @@ function cloneComponents(components: LvglComponent[]): LvglComponent[] {
       disabled: comp.styles.disabled ? { ...comp.styles.disabled } : undefined,
     },
     events: comp.events.map(e => ({ ...e, action: e.action ? { ...e.action } : undefined })),
+    animations: (comp.animations || []).map(a => ({ ...a })),
     children: cloneComponents(comp.children),
   }));
 }
@@ -428,6 +430,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         default: { ...definition.defaultStyles.default },
       },
       events: [],
+      animations: [],
       parentId,
       locked: false,
       visible: true,
@@ -469,7 +472,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   deleteComponents: (ids) => {
     if (ids.length === 0) return;
     const { currentPageId } = get();
-    get().saveToHistory();
     set(state => ({
       pages: state.pages.map(page => {
         if (page.id === currentPageId) {
@@ -574,6 +576,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }),
       selection: { selectedIds: [], hoveredId: null },
     }));
+  },
+
+  setPages: (pages) => {
+    get().saveToHistory();
+    set({
+      pages: clonePages(pages),
+      currentPageId: pages.length > 0 ? pages[0].id : get().currentPageId,
+      selection: { selectedIds: [], hoveredId: null },
+    });
   },
   
   clearComponents: () => {
@@ -779,45 +790,73 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   
   // History Actions
+  // Model: history is an array of snapshots. historyIndex points to the "current" snapshot.
+  // saveToHistory() is called BEFORE a mutation: it saves the current state, truncates future,
+  // and then the mutation changes pages (which becomes the "unsaved current" state).
+  // undo: save current state as a redo point, restore history[historyIndex], decrement index.
+  // redo: increment index, restore history[historyIndex].
+
   undo: () => {
-    const { history, historyIndex } = get();
+    const { history, historyIndex, pages } = get();
     if (historyIndex < 0) return;
-    
+
     const entry = history[historyIndex];
+
+    // Save current state as a redo point (one past historyIndex)
+    const newHistory = [...history];
+    // If there's no entry after historyIndex, push current state for redo
+    if (historyIndex === history.length - 1) {
+      newHistory.push({
+        pages: clonePages(pages),
+        timestamp: Date.now(),
+      });
+    } else {
+      // Replace the entry right after historyIndex with current state
+      newHistory[historyIndex + 1] = {
+        pages: clonePages(pages),
+        timestamp: Date.now(),
+      };
+    }
+
     set({
       pages: clonePages(entry.pages || []),
+      history: newHistory,
       historyIndex: historyIndex - 1,
     });
   },
-  
+
   redo: () => {
     const { history, historyIndex } = get();
-    if (historyIndex >= history.length - 1) return;
-    
-    const entry = history[historyIndex + 1];
+    if (historyIndex + 1 >= history.length) return;
+
+    // The entry at historyIndex + 1 is the state to restore
+    // (either a previously saved state or the state saved during undo)
+    const nextIndex = historyIndex + 1;
+    const entry = history[nextIndex];
+
     set({
       pages: clonePages(entry.pages || []),
-      historyIndex: historyIndex + 1,
+      historyIndex: nextIndex,
     });
   },
-  
+
   saveToHistory: () => {
     const { pages, history, historyIndex } = get();
-    
-    // Remove any future history if we're not at the end
+
+    // Remove any future history (redo states) beyond current position
     const newHistory = history.slice(0, historyIndex + 1);
-    
-    // Add current state
+
+    // Add current state as a snapshot we can undo to
     newHistory.push({
       pages: clonePages(pages),
       timestamp: Date.now(),
     });
-    
+
     // Limit history size
     if (newHistory.length > MAX_HISTORY) {
       newHistory.shift();
     }
-    
+
     set({
       history: newHistory,
       historyIndex: newHistory.length - 1,

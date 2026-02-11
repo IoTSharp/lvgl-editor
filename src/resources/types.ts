@@ -1,5 +1,8 @@
 // Resource Management Types
 
+import type { LogicGraph } from '../components/LogicEditor/types';
+import type { LvglComponent } from '../types';
+
 export type ImageFormat = 'RGB565' | 'RGB888' | 'ARGB8888';
 
 export interface ImageResource {
@@ -19,9 +22,11 @@ export interface FontResource {
   id: string;
   name: string;
   family: string;
+  style: string;
   sizes: number[];
   charset: CharsetType;
   customChars?: string; // For custom charset
+  bpp: 1 | 2 | 4 | 8;
   data: string; // Base64 encoded TTF/OTF
   cFontName: string;
   size: number; // File size in bytes
@@ -95,13 +100,14 @@ export interface ProjectFile {
     fonts: FontResource[];
   };
   variables: ProjectVariable[];
+  logicGraphs?: LogicGraph[];
   codeGenOptions: CodeGenOptions;
 }
 
 export interface ProjectPage {
   id: string;
   name: string;
-  components: any[]; // LvglComponent[]
+  components: LvglComponent[];
 }
 
 export interface ProjectVariable {

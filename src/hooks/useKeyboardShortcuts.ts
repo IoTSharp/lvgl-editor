@@ -279,3 +279,112 @@ export function hasClipboard(): boolean {
 export function getClipboard() {
   return clipboard;
 }
+
+/**
+ * Standalone clipboard operations for use outside the hook (e.g., context menu)
+ */
+export function copySelectedComponents(): void {
+  const store = useEditorStore.getState();
+  const currentPage = store.pages.find(p => p.id === store.currentPageId);
+  if (!currentPage) return;
+
+  const findSelected = (comps: LvglComponent[]): LvglComponent[] => {
+    const result: LvglComponent[] = [];
+    for (const comp of comps) {
+      if (store.selection.selectedIds.includes(comp.id)) {
+        result.push(comp);
+      }
+      result.push(...findSelected(comp.children));
+    }
+    return result;
+  };
+
+  const components = findSelected(currentPage.components);
+  if (components.length === 0) return;
+
+  clipboard = {
+    components: components.map(c => cloneComponentWithNewIds(c)),
+    type: 'copy',
+  };
+}
+
+export function cutSelectedComponents(): void {
+  const store = useEditorStore.getState();
+  const currentPage = store.pages.find(p => p.id === store.currentPageId);
+  if (!currentPage) return;
+
+  const findSelected = (comps: LvglComponent[]): LvglComponent[] => {
+    const result: LvglComponent[] = [];
+    for (const comp of comps) {
+      if (store.selection.selectedIds.includes(comp.id)) {
+        result.push(comp);
+      }
+      result.push(...findSelected(comp.children));
+    }
+    return result;
+  };
+
+  const components = findSelected(currentPage.components);
+  if (components.length === 0) return;
+
+  clipboard = {
+    components: components.map(c => cloneComponentWithNewIds(c)),
+    type: 'cut',
+  };
+
+  store.saveToHistory();
+  store.deleteComponents(store.selection.selectedIds);
+}
+
+export function pasteClipboardComponents(): void {
+  if (!clipboard || clipboard.components.length === 0) return;
+
+  const store = useEditorStore.getState();
+  const currentPage = store.pages.find(p => p.id === store.currentPageId);
+  if (!currentPage) return;
+
+  store.saveToHistory();
+
+  const newComponents = clipboard.components.map(comp => {
+    const cloned = cloneComponentWithNewIds(comp);
+    cloned.x += 20;
+    cloned.y += 20;
+    return cloned;
+  });
+
+  const newPages = store.pages.map(page => {
+    if (page.id === store.currentPageId) {
+      return {
+        ...page,
+        components: [...page.components, ...newComponents],
+      };
+    }
+    return page;
+  });
+
+  useEditorStore.setState({ pages: newPages });
+  store.selectComponents(newComponents.map(c => c.id));
+}
+
+export function duplicateSelectedComponents(): void {
+  copySelectedComponents();
+  pasteClipboardComponents();
+}
+
+export function selectAllComponents(): void {
+  const store = useEditorStore.getState();
+  const currentPage = store.pages.find(p => p.id === store.currentPageId);
+  if (!currentPage) return;
+
+  const flatten = (comps: LvglComponent[]): string[] => {
+    const result: string[] = [];
+    for (const comp of comps) {
+      result.push(comp.id);
+      result.push(...flatten(comp.children));
+    }
+    return result;
+  };
+
+  const allIds = flatten(currentPage.components);
+  store.selectComponents(allIds);
+}

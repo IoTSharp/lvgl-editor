@@ -52,6 +52,26 @@
 .code-preview-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.code-version-select {
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 12px;
+  color: #555;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+}
+
+.code-version-select:hover {
+  border-color: #ccc;
+}
+
+.code-version-select:focus {
+  border-color: #2196f3;
 }
 
 .code-action-btn {

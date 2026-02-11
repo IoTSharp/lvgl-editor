@@ -166,6 +166,30 @@ body {
   overflow: hidden;
 }
 
+/* Left panel with component panel and hierarchy */
+.left-panel {
+  width: 240px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+.left-panel > *:first-child {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.left-panel > *:last-child {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  border-top: 1px solid #e0e0e0;
+}
+
 /* Right panel with property editor and event panel */
 .right-panel {
   width: 280px;

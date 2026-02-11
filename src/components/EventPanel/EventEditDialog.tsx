@@ -71,6 +71,7 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
   // Reset action fields when action type changes
   useEffect(() => {
     if (!event) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset fields when action type changes
       setTargetPage('');
       setTargetComponent('');
       setProperty('');

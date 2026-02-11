@@ -1,6 +1,7 @@
 // ui.h template generator
 
 import type { Page, LvglComponent } from '../../types';
+import type { FontResource } from '../../resources/types';
 import type { CodeGenOptions } from '../types';
 import {
   getScreenVarName,
@@ -38,12 +39,27 @@ function getAllComponents(pages: Page[]): { component: LvglComponent; pageName: 
 /**
  * Generate ui.h header file
  */
-export function generateUiHeader(pages: Page[], options: CodeGenOptions): string {
+export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: FontResource[] = []): string {
   const lines: string[] = [];
   
   // Includes
   lines.push(generateInclude('lvgl.h'));
   lines.push('');
+
+  // Font declarations
+  if (fonts.length > 0) {
+    if (options.generateComments) {
+      lines.push(generateSectionHeader('Font Declarations', options));
+      lines.push('');
+    }
+
+    for (const font of fonts) {
+      for (const size of font.sizes) {
+        lines.push(`LV_FONT_DECLARE(${font.cFontName}_${size});`);
+      }
+    }
+    lines.push('');
+  }
   
   // Screen declarations
   if (options.generateComments) {
@@ -57,16 +73,36 @@ export function generateUiHeader(pages: Page[], options: CodeGenOptions): string
   }
   lines.push('');
   
-  // Component declarations
+  // Component declarations — detect cross-page name collisions
   const allComponents = getAllComponents(pages);
+  const componentsByName = new Map<string, { component: LvglComponent; pageName: string }[]>();
+  for (const entry of allComponents) {
+    const existing = componentsByName.get(entry.component.name) || [];
+    existing.push(entry);
+    componentsByName.set(entry.component.name, existing);
+  }
+  const needsPagePrefix = new Set<string>();
+  for (const [, entries] of componentsByName) {
+    if (entries.length > 1) {
+      const uniquePages = new Set(entries.map(e => e.pageName));
+      if (uniquePages.size > 1) {
+        for (const entry of entries) {
+          needsPagePrefix.add(entry.component.id);
+        }
+      }
+    }
+  }
+
   if (allComponents.length > 0) {
     if (options.generateComments) {
       lines.push(generateSectionHeader('Component Declarations', options));
       lines.push('');
     }
-    
-    for (const { component } of allComponents) {
-      const varName = getComponentVarName(component.name, options);
+
+    for (const { component, pageName } of allComponents) {
+      const varName = needsPagePrefix.has(component.id)
+        ? getComponentVarName(`${pageName}_${component.name}`, options)
+        : getComponentVarName(component.name, options);
       lines.push(formatExtern('lv_obj_t', varName));
     }
     lines.push('');

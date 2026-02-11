@@ -53,6 +53,7 @@ interface LogicEditorStore {
   ) => boolean;
 
   // Variable Management
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addVariable: (name: string, type: 'int' | 'float' | 'string' | 'bool', defaultValue: any) => string;
   deleteVariable: (variableId: string) => void;
   updateVariable: (variableId: string, updates: Partial<LogicVariable>) => void;
@@ -74,11 +75,13 @@ interface LogicEditorStore {
   stopDebug: () => void;
   stepDebug: () => void;
   toggleBreakpoint: (nodeId: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setDebugNodeValue: (nodeId: string, portId: string, value: any) => void;
 
   // Import/Export
   exportGraph: (graphId: string) => string;
   importGraph: (json: string) => string | null;
+  setGraphs: (graphs: LogicGraph[]) => void;
 }
 
 const initialDebugState: DebugState = {
@@ -601,5 +604,13 @@ export const useLogicEditorStore = create<LogicEditorStore>((set, get) => ({
       console.error('Failed to import graph:', e);
       return null;
     }
+  },
+
+  setGraphs: (graphs) => {
+    set({
+      graphs,
+      currentGraphId: graphs.length > 0 ? graphs[0].id : null,
+      selectedNodeIds: [],
+    });
   },
 }));

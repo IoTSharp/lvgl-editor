@@ -124,3 +124,15 @@ export function colorToLvgl(color: string): string {
 export function opacityToLvgl(opacity: number): number {
   return Math.round(opacity * 255);
 }
+
+/**
+ * Escape a string for use in a C string literal
+ */
+export function escapeCString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}

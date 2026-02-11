@@ -31,6 +31,8 @@ export function getCharsetRanges(
       Array.from(customChars).map(c => c.codePointAt(0) || 0)
     )).sort((a, b) => a - b);
     
+    if (codePoints.length === 0) return [[32, 126]];
+
     // Group consecutive code points into ranges
     const ranges: [number, number][] = [];
     let start = codePoints[0];
@@ -115,7 +117,8 @@ LV_FONT_DECLARE(${name});
 }
 
 /**
- * Generate font conversion command for lv_font_conv
+ * Generate font conversion command for lv_font_conv.
+ * Each size produces a separate output file.
  */
 export function generateFontConvCommand(
   fontFile: string,
@@ -126,64 +129,284 @@ export function generateFontConvCommand(
   const rangeArgs = ranges
     .map(([start, end]) => `--range=0x${start.toString(16)}-0x${end.toString(16)}`)
     .join(' ');
-  
-  const sizeArgs = options.sizes.map(s => `--size=${s}`).join(' ');
-  
-  return `lv_font_conv \\
+
+  // lv_font_conv only accepts one --size per invocation
+  if (options.sizes.length <= 1) {
+    const sz = options.sizes[0] || 16;
+    return `lv_font_conv \\
   --font "${fontFile}" \\
-  ${sizeArgs} \\
+  --size=${sz} \\
   --bpp=${options.bpp} \\
   ${rangeArgs} \\
   --format=lvgl \\
-  --output="${outputName}.c" \\
+  --output="${outputName}_${sz}.c" \\
   ${options.compress ? '--compress' : '--no-compress'}`;
+  }
+
+  // Multiple sizes: generate one command per size
+  return options.sizes.map(sz =>
+    `lv_font_conv \\
+  --font "${fontFile}" \\
+  --size=${sz} \\
+  --bpp=${options.bpp} \\
+  ${rangeArgs} \\
+  --format=lvgl \\
+  --output="${outputName}_${sz}.c" \\
+  ${options.compress ? '--compress' : '--no-compress'}`
+  ).join('\n\n');
 }
 
 /**
- * Parse font file and extract metadata
+ * Decode base64 font data to Uint8Array
+ */
+function decodeBase64ToBytes(base64Data: string): Uint8Array {
+  const raw = base64Data.replace(/^data:[^;]+;base64,/, '');
+  const binaryString = atob(raw);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Read uint16 big-endian from byte array
+ */
+function readUint16BE(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset] << 8) | bytes[offset + 1];
+}
+
+/**
+ * Read uint32 big-endian from byte array
+ */
+function readUint32BE(bytes: Uint8Array, offset: number): number {
+  return ((bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0;
+}
+
+/**
+ * Parse font file and extract metadata by reading the TTF/OTF name table.
+ * Extracts nameID 1 (Font Family) and nameID 2 (Font Subfamily / Style).
  */
 export async function parseFontMetadata(base64Data: string): Promise<{
   family: string;
   style: string;
   unitsPerEm: number;
 }> {
-  // Basic TTF/OTF header parsing
-  // This is a simplified version - full parsing would require opentype.js or similar
-  
   try {
-    // Decode base64 to array buffer
-    const binaryString = atob(base64Data.replace(/^data:[^;]+;base64,/, ''));
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // Check for TTF/OTF magic numbers
+    const bytes = decodeBase64ToBytes(base64Data);
+
+    // Validate magic number
     const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
     const isValidFont = magic === '\x00\x01\x00\x00' || // TTF
-                        magic === 'OTTO' ||              // OTF
-                        magic === 'true' ||              // TrueType
+                        magic === 'OTTO' ||              // OTF (CFF)
+                        magic === 'true' ||              // TrueType (Apple)
                         magic === 'typ1';                // Type 1
-    
     if (!isValidFont) {
       throw new Error('Invalid font file format');
     }
-    
-    // Return placeholder metadata
-    // Full implementation would parse name table
-    return {
-      family: 'Unknown',
-      style: 'Regular',
-      unitsPerEm: 1000,
-    };
+
+    const numTables = readUint16BE(bytes, 4);
+
+    // Locate 'name' and 'head' tables from the table directory
+    let nameTableOffset = 0;
+    let headTableOffset = 0;
+
+    for (let i = 0; i < numTables; i++) {
+      const entryOffset = 12 + i * 16;
+      const tag = String.fromCharCode(
+        bytes[entryOffset], bytes[entryOffset + 1],
+        bytes[entryOffset + 2], bytes[entryOffset + 3]
+      );
+      const tableOffset = readUint32BE(bytes, entryOffset + 8);
+
+      if (tag === 'name') nameTableOffset = tableOffset;
+      if (tag === 'head') headTableOffset = tableOffset;
+    }
+
+    // Parse unitsPerEm from head table
+    let unitsPerEm = 1000;
+    if (headTableOffset > 0 && headTableOffset + 18 + 2 <= bytes.length) {
+      unitsPerEm = readUint16BE(bytes, headTableOffset + 18);
+    }
+
+    // Parse name table
+    let family = 'Unknown';
+    let style = 'Regular';
+
+    if (nameTableOffset > 0) {
+      const count = readUint16BE(bytes, nameTableOffset + 2);
+      const stringOffset = readUint16BE(bytes, nameTableOffset + 4);
+      const storageStart = nameTableOffset + stringOffset;
+
+      // We'll collect candidates; prefer platformID 3 (Windows) with encodingID 1 (Unicode BMP)
+      // Fall back to platformID 1 (Macintosh) with encodingID 0 (Roman)
+      let familyWin = '';
+      let styleWin = '';
+      let familyMac = '';
+      let styleMac = '';
+
+      for (let i = 0; i < count; i++) {
+        const recordOffset = nameTableOffset + 6 + i * 12;
+        if (recordOffset + 12 > bytes.length) break;
+
+        const platformID = readUint16BE(bytes, recordOffset);
+        const encodingID = readUint16BE(bytes, recordOffset + 2);
+        const nameID = readUint16BE(bytes, recordOffset + 6);
+        const length = readUint16BE(bytes, recordOffset + 8);
+        const offset = readUint16BE(bytes, recordOffset + 10);
+
+        const strStart = storageStart + offset;
+        if (strStart + length > bytes.length) continue;
+
+        // Only care about nameID 1 (family) and nameID 2 (style)
+        if (nameID !== 1 && nameID !== 2) continue;
+
+        let decoded = '';
+
+        if (platformID === 3 && encodingID === 1) {
+          // Windows Unicode BMP — UTF-16BE
+          const chars: string[] = [];
+          for (let j = 0; j < length; j += 2) {
+            chars.push(String.fromCharCode(readUint16BE(bytes, strStart + j)));
+          }
+          decoded = chars.join('');
+        } else if (platformID === 1 && encodingID === 0) {
+          // Macintosh Roman — single-byte
+          const chars: string[] = [];
+          for (let j = 0; j < length; j++) {
+            chars.push(String.fromCharCode(bytes[strStart + j]));
+          }
+          decoded = chars.join('');
+        } else {
+          continue;
+        }
+
+        if (!decoded.trim()) continue;
+
+        if (platformID === 3) {
+          if (nameID === 1) familyWin = decoded;
+          if (nameID === 2) styleWin = decoded;
+        } else {
+          if (nameID === 1) familyMac = decoded;
+          if (nameID === 2) styleMac = decoded;
+        }
+      }
+
+      family = familyWin || familyMac || 'Unknown';
+      style = styleWin || styleMac || 'Regular';
+    }
+
+    return { family, style, unitsPerEm };
   } catch (error) {
     console.error('Failed to parse font:', error);
-    return {
-      family: 'Unknown',
-      style: 'Regular',
-      unitsPerEm: 1000,
-    };
+    return { family: 'Unknown', style: 'Regular', unitsPerEm: 1000 };
   }
+}
+
+/**
+ * Generate a .c source file template for a converted LVGL font.
+ * The template contains placeholder data structures with comments
+ * explaining that lv_font_conv should fill in the actual bitmap data.
+ */
+export function generateFontSourceTemplate(
+  cFontName: string,
+  family: string,
+  style: string,
+  size: number,
+  options: FontConversionOptions
+): string {
+  const ranges = getCharsetRanges(options.charset, options.customChars);
+  const glyphCount = countGlyphs(ranges);
+  const rangeStr = ranges
+    .map(([s, e]) => `0x${s.toString(16).toUpperCase()}-0x${e.toString(16).toUpperCase()}`)
+    .join(', ');
+
+  const varName = `${cFontName}_${size}`;
+
+  return `/**
+ * @file ${varName}.c
+ * @brief LVGL font source — ${family} ${style} ${size}px
+ *
+ * BPP:          ${options.bpp}
+ * Glyph count:  ${glyphCount}
+ * Ranges:       ${rangeStr}
+ *
+ * !! THIS IS A TEMPLATE !!
+ * The actual glyph bitmaps and metrics must be generated by lv_font_conv.
+ * Run the following command to produce the real file:
+ *
+ *   lv_font_conv --font "<your_font>.ttf" --size=${size} --bpp=${options.bpp} \\
+ *     ${ranges.map(([s, e]) => `--range=0x${s.toString(16)}-0x${e.toString(16)}`).join(' ')} \\
+ *     --format=lvgl --output="${varName}.c"
+ *
+ * Generated by LVGL UI Editor
+ */
+
+#include "lvgl.h"
+
+/*------------------------------------------------------------
+ * Glyph bitmap data (placeholder)
+ * lv_font_conv will fill this with actual bitmap bytes.
+ *------------------------------------------------------------*/
+static const uint8_t glyph_bitmap[] = {
+    /* TODO: lv_font_conv output */
+    0x00
+};
+
+/*------------------------------------------------------------
+ * Glyph descriptors (placeholder)
+ * Each entry maps a glyph to its bitmap offset, size, and bearing.
+ *------------------------------------------------------------*/
+static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
+    /* {.bitmap_index, .adv_w, .box_w, .box_h, .ofs_x, .ofs_y} */
+    {0, 0, 0, 0, 0, 0}  /* placeholder */
+};
+
+/*------------------------------------------------------------
+ * Character mapping (placeholder)
+ * Maps Unicode code points to glyph descriptor indices.
+ *------------------------------------------------------------*/
+static const lv_font_fmt_txt_cmap_t cmaps[] = {
+    {
+        .range_start = 32,
+        .range_length = ${glyphCount},
+        .glyph_id_start = 0,
+        .unicode_list = NULL,
+        .glyph_id_ofs_list = NULL,
+        .list_length = 0,
+        .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
+    }
+};
+
+/*------------------------------------------------------------
+ * Font descriptor
+ *------------------------------------------------------------*/
+static const lv_font_fmt_txt_dsc_t font_dsc = {
+    .glyph_bitmap = glyph_bitmap,
+    .glyph_dsc = glyph_dsc,
+    .cmaps = cmaps,
+    .kern_dsc = NULL,
+    .kern_scale = 0,
+    .cmap_num = 1,
+    .bpp = ${options.bpp},
+    .kern_classes = 0,
+    .bitmap_format = 0
+};
+
+/*------------------------------------------------------------
+ * Public font structure
+ *------------------------------------------------------------*/
+const lv_font_t ${varName} = {
+    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,
+    .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,
+    .line_height = ${size},
+    .base_line = 0,
+    .subpx = LV_FONT_SUBPX_NONE,
+    .underline_position = -1,
+    .underline_thickness = 1,
+    .dsc = (void *)&font_dsc
+};
+`;
 }
 
 /**

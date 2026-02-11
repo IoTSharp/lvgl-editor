@@ -1,26 +1,38 @@
 import React, { useState, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditorStore } from '../../store/editorStore';
+import { useThemeStore } from '../../store/themeStore';
+import { useLogicEditorStore } from '../LogicEditor';
+import { useResourceStore } from '../../resources/resourceStore';
 import { generateCode, getGeneratedFileNames } from '../../codegen/generator';
-import type { GeneratedCode } from '../../codegen/types';
+import type { CodeGenOptions, GeneratedCode } from '../../codegen/types';
 import { toast } from '../Toast';
 import './CodePreview.css';
 
 const CodePreview: React.FC = () => {
   const { pages } = useEditorStore();
+  const { graphs: logicGraphs } = useLogicEditorStore();
+  const { currentTheme } = useThemeStore();
+  const imageResources = useResourceStore((s) => s.images);
+  const fontResources = useResourceStore((s) => s.fonts);
   const [selectedFile, setSelectedFile] = useState<keyof GeneratedCode>('ui.c');
   const [isLoading, setIsLoading] = useState(true);
+  const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('8');
 
   const fileNames = getGeneratedFileNames();
 
+  const codeGenOptions: Partial<CodeGenOptions> = useMemo(() => ({
+    lvglVersion,
+  }), [lvglVersion]);
+
   const generatedCode = useMemo(() => {
     try {
-      return generateCode(pages);
-    } catch (error) {
-      console.error('Code generation error:', error);
+      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources);
+    } catch {
+      console.error('Code generation error');
       return null;
     }
-  }, [pages]);
+  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources]);
 
   const currentCode = generatedCode?.[selectedFile] || '// 代码生成失败';
 
@@ -28,7 +40,7 @@ const CodePreview: React.FC = () => {
     try {
       await navigator.clipboard.writeText(currentCode);
       toast.success('代码已复制到剪贴板');
-    } catch (error) {
+    } catch {
       toast.error('复制失败');
     }
   };
@@ -65,7 +77,7 @@ const CodePreview: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       toast.success('所有文件已下载');
-    } catch (error) {
+    } catch {
       toast.error('下载失败');
     }
   };
@@ -85,6 +97,15 @@ const CodePreview: React.FC = () => {
           ))}
         </div>
         <div className="code-preview-actions">
+          <select
+            className="code-version-select"
+            value={lvglVersion}
+            onChange={(e) => setLvglVersion(e.target.value as CodeGenOptions['lvglVersion'])}
+            title="LVGL 版本"
+          >
+            <option value="8">LVGL v8</option>
+            <option value="9">LVGL v9</option>
+          </select>
           <button className="code-action-btn" onClick={handleCopy} title="复制代码">
             📋 复制
           </button>

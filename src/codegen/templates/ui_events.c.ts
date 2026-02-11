@@ -7,6 +7,7 @@ import {
   getScreenLoadFuncName,
   getComponentVarName,
   colorToLvgl,
+  escapeCString,
 } from '../utils/nameUtils';
 import {
   generateInclude,
@@ -21,7 +22,7 @@ import {
  */
 function getAllEvents(pages: Page[]): { component: LvglComponent; event: EventBinding; pageName: string }[] {
   const result: { component: LvglComponent; event: EventBinding; pageName: string }[] = [];
-  
+
   const collectFromComponents = (components: LvglComponent[], pageName: string) => {
     for (const comp of components) {
       for (const event of comp.events) {
@@ -30,12 +31,32 @@ function getAllEvents(pages: Page[]): { component: LvglComponent; event: EventBi
       collectFromComponents(comp.children, pageName);
     }
   };
-  
+
   for (const page of pages) {
     collectFromComponents(page.components, page.name);
   }
-  
+
   return result;
+}
+
+/**
+ * Find a component by name across all pages
+ */
+function findComponentByName(pages: Page[], name: string): LvglComponent | null {
+  const search = (components: LvglComponent[]): LvglComponent | null => {
+    for (const comp of components) {
+      if (comp.name === name) return comp;
+      const found = search(comp.children);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  for (const page of pages) {
+    const found = search(page.components);
+    if (found) return found;
+  }
+  return null;
 }
 
 /**
@@ -74,10 +95,10 @@ function generateBuiltinActionCode(
         // Handle different property types
         switch (action.property) {
           case 'bg_color':
-            lines.push(`${indent}lv_obj_set_style_bg_color(${targetVar}, ${colorToLvgl(action.value || '#000000')}, 0);`);
+            lines.push(`${indent}lv_obj_set_style_bg_color(${targetVar}, ${colorToLvgl(String(action.value || '#000000'))}, 0);`);
             break;
           case 'border_color':
-            lines.push(`${indent}lv_obj_set_style_border_color(${targetVar}, ${colorToLvgl(action.value || '#000000')}, 0);`);
+            lines.push(`${indent}lv_obj_set_style_border_color(${targetVar}, ${colorToLvgl(String(action.value || '#000000'))}, 0);`);
             break;
           case 'border_width':
             lines.push(`${indent}lv_obj_set_style_border_width(${targetVar}, ${action.value || 0}, 0);`);
@@ -149,20 +170,51 @@ function generateBuiltinActionCode(
     case 'setText':
       if (action.targetComponent) {
         const targetVar = getComponentVarName(action.targetComponent, options);
+        const targetComp = findComponentByName(pages, action.targetComponent);
+        const targetType = targetComp?.type || 'label';
         if (options.generateComments) {
           lines.push(`${indent}${generateComment(`Set text: ${action.value}`, options)}`);
         }
-        lines.push(`${indent}lv_label_set_text(${targetVar}, "${action.value || ''}");`);
+        const escapedText = escapeCString(String(action.value || ''));
+        switch (targetType) {
+          case 'textarea':
+            lines.push(`${indent}lv_textarea_set_text(${targetVar}, "${escapedText}");`);
+            break;
+          case 'btn':
+            lines.push(`${indent}lv_label_set_text(lv_obj_get_child(${targetVar}, 0), "${escapedText}");`);
+            break;
+          case 'checkbox':
+            lines.push(`${indent}lv_checkbox_set_text(${targetVar}, "${escapedText}");`);
+            break;
+          case 'dropdown':
+            lines.push(`${indent}lv_dropdown_set_text(${targetVar}, "${escapedText}");`);
+            break;
+          default:
+            lines.push(`${indent}lv_label_set_text(${targetVar}, "${escapedText}");`);
+            break;
+        }
       }
       break;
-      
+
     case 'setValue':
       if (action.targetComponent) {
         const targetVar = getComponentVarName(action.targetComponent, options);
+        const targetComp = findComponentByName(pages, action.targetComponent);
+        const targetType = targetComp?.type || 'slider';
         if (options.generateComments) {
           lines.push(`${indent}${generateComment(`Set value: ${action.value}`, options)}`);
         }
-        lines.push(`${indent}lv_slider_set_value(${targetVar}, ${action.value || 0}, LV_ANIM_ON);`);
+        switch (targetType) {
+          case 'bar':
+            lines.push(`${indent}lv_bar_set_value(${targetVar}, ${action.value || 0}, LV_ANIM_ON);`);
+            break;
+          case 'arc':
+            lines.push(`${indent}lv_arc_set_value(${targetVar}, ${action.value || 0});`);
+            break;
+          default:
+            lines.push(`${indent}lv_slider_set_value(${targetVar}, ${action.value || 0}, LV_ANIM_ON);`);
+            break;
+        }
       }
       break;
   }

@@ -1,11 +1,18 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useEditorStore } from '../../store/editorStore';
 import type { LvglComponent, ResizeHandle } from '../../types';
 import CanvasComponent from './CanvasComponent';
 import AlignmentGuides from './AlignmentGuides';
 import ContextMenu, { type ContextMenuItem } from '../ContextMenu';
-import { hasClipboard } from '../../hooks/useKeyboardShortcuts';
+import {
+  hasClipboard,
+  copySelectedComponents,
+  cutSelectedComponents,
+  pasteClipboardComponents,
+  duplicateSelectedComponents,
+  selectAllComponents,
+} from '../../hooks/useKeyboardShortcuts';
 import './Canvas.css';
 
 interface BoxSelection {
@@ -14,6 +21,18 @@ interface BoxSelection {
   startY: number;
   currentX: number;
   currentY: number;
+}
+
+// Flatten components for box selection
+function flattenComponents(comps: LvglComponent[], offsetX = 0, offsetY = 0): Array<{ comp: LvglComponent; absX: number; absY: number }> {
+  const result: Array<{ comp: LvglComponent; absX: number; absY: number }> = [];
+  for (const comp of comps) {
+    const absX = comp.x + offsetX;
+    const absY = comp.y + offsetY;
+    result.push({ comp, absX, absY });
+    result.push(...flattenComponents(comp.children, absX, absY));
+  }
+  return result;
 }
 
 const Canvas: React.FC = () => {
@@ -62,29 +81,25 @@ const Canvas: React.FC = () => {
 
   // Get current page and its components
   const currentPage = pages.find(p => p.id === currentPageId);
-  const components = currentPage?.components || [];
+  const components = useMemo(() => currentPage?.components || [], [currentPage?.components]);
   const pageBackgroundColor = currentPage?.backgroundColor || '#ffffff';
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'canvas-drop-area',
   });
 
-  // Flatten components for box selection
-  const flattenComponents = useCallback((comps: LvglComponent[], offsetX = 0, offsetY = 0): Array<{ comp: LvglComponent; absX: number; absY: number }> => {
-    const result: Array<{ comp: LvglComponent; absX: number; absY: number }> = [];
-    for (const comp of comps) {
-      const absX = comp.x + offsetX;
-      const absY = comp.y + offsetY;
-      result.push({ comp, absX, absY });
-      result.push(...flattenComponents(comp.children, absX, absY));
-    }
-    return result;
-  }, []);
-
   // Handle keyboard events for space key (panning)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat) {
+        // Don't block space in input/textarea/contenteditable elements
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement ||
+          (e.target instanceof HTMLElement && e.target.isContentEditable)
+        ) {
+          return;
+        }
         setSpacePressed(true);
         e.preventDefault();
       }
@@ -158,65 +173,6 @@ const Canvas: React.FC = () => {
     [spacePressed, canvas.panX, canvas.panY, canvas.zoom, clearSelection]
   );
 
-  // Handle mouse move for panning, dragging, or box selection
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (isPanning) {
-        setPan(e.clientX - panStart.x, e.clientY - panStart.y);
-        return;
-      }
-
-      // Box selection
-      if (boxSelection.isSelecting) {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (rect) {
-          const x = (e.clientX - rect.left) / canvas.zoom;
-          const y = (e.clientY - rect.top) / canvas.zoom;
-          setBoxSelection(prev => ({
-            ...prev,
-            currentX: x,
-            currentY: y,
-          }));
-        }
-        return;
-      }
-
-      if (drag.isDragging) {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (rect) {
-          const x = (e.clientX - rect.left) / canvas.zoom;
-          const y = (e.clientY - rect.top) / canvas.zoom;
-          updateDrag(x, y);
-
-          // Handle component move
-          if (drag.dragType === 'move' && drag.draggedComponentId) {
-            const deltaX = x - drag.startX;
-            const deltaY = y - drag.startY;
-            const comp = useEditorStore.getState().getComponentById(drag.draggedComponentId);
-            if (comp) {
-              moveComponent(
-                drag.draggedComponentId,
-                comp.x + deltaX,
-                comp.y + deltaY
-              );
-              startDrag('move', {
-                ...drag,
-                startX: x,
-                startY: y,
-              });
-            }
-          }
-
-          // Handle resize
-          if (drag.dragType === 'resize' && drag.draggedComponentId && drag.resizeHandle) {
-            handleResize(drag.draggedComponentId, drag.resizeHandle, x, y);
-          }
-        }
-      }
-    },
-    [isPanning, panStart, boxSelection.isSelecting, drag, canvas.zoom, setPan, updateDrag, moveComponent, startDrag]
-  );
-
   // Handle resize logic
   const handleResize = useCallback(
     (componentId: string, handle: ResizeHandle, mouseX: number, mouseY: number) => {
@@ -288,6 +244,65 @@ const Canvas: React.FC = () => {
     [drag, resizeComponent, startDrag]
   );
 
+  // Handle mouse move for panning, dragging, or box selection
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (isPanning) {
+        setPan(e.clientX - panStart.x, e.clientY - panStart.y);
+        return;
+      }
+
+      // Box selection
+      if (boxSelection.isSelecting) {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const x = (e.clientX - rect.left) / canvas.zoom;
+          const y = (e.clientY - rect.top) / canvas.zoom;
+          setBoxSelection(prev => ({
+            ...prev,
+            currentX: x,
+            currentY: y,
+          }));
+        }
+        return;
+      }
+
+      if (drag.isDragging) {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const x = (e.clientX - rect.left) / canvas.zoom;
+          const y = (e.clientY - rect.top) / canvas.zoom;
+          updateDrag(x, y);
+
+          // Handle component move
+          if (drag.dragType === 'move' && drag.draggedComponentId) {
+            const deltaX = x - drag.startX;
+            const deltaY = y - drag.startY;
+            const comp = useEditorStore.getState().getComponentById(drag.draggedComponentId);
+            if (comp) {
+              moveComponent(
+                drag.draggedComponentId,
+                comp.x + deltaX,
+                comp.y + deltaY
+              );
+              startDrag('move', {
+                ...drag,
+                startX: x,
+                startY: y,
+              });
+            }
+          }
+
+          // Handle resize
+          if (drag.dragType === 'resize' && drag.draggedComponentId && drag.resizeHandle) {
+            handleResize(drag.draggedComponentId, drag.resizeHandle, x, y);
+          }
+        }
+      }
+    },
+    [isPanning, panStart, boxSelection.isSelecting, drag, canvas.zoom, setPan, updateDrag, moveComponent, startDrag, handleResize]
+  );
+
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
     if (isPanning) {
@@ -331,7 +346,7 @@ const Canvas: React.FC = () => {
       }
       endDrag();
     }
-  }, [isPanning, boxSelection, drag, endDrag, saveToHistory, flattenComponents, components, selectComponents]);
+  }, [isPanning, boxSelection, drag, endDrag, saveToHistory, components, selectComponents]);
 
   // Handle component selection
   const handleComponentClick = useCallback(
@@ -347,6 +362,10 @@ const Canvas: React.FC = () => {
     (e: React.MouseEvent, componentId: string) => {
       if (e.button !== 0) return;
       e.stopPropagation();
+
+      // Don't allow dragging locked components
+      const comp = useEditorStore.getState().getComponentById(componentId);
+      if (comp?.locked) return;
 
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
@@ -375,6 +394,10 @@ const Canvas: React.FC = () => {
     (e: React.MouseEvent, componentId: string, handle: ResizeHandle) => {
       e.stopPropagation();
       e.preventDefault();
+
+      // Don't allow resizing locked components
+      const comp = useEditorStore.getState().getComponentById(componentId);
+      if (comp?.locked) return;
 
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
@@ -424,7 +447,7 @@ const Canvas: React.FC = () => {
         shortcut: 'Ctrl+C',
         disabled: !hasSelection,
         onClick: () => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true }));
+          copySelectedComponents();
         },
       },
       {
@@ -434,7 +457,7 @@ const Canvas: React.FC = () => {
         shortcut: 'Ctrl+X',
         disabled: !hasSelection,
         onClick: () => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', ctrlKey: true }));
+          cutSelectedComponents();
         },
       },
       {
@@ -444,7 +467,7 @@ const Canvas: React.FC = () => {
         shortcut: 'Ctrl+V',
         disabled: !hasClipboard(),
         onClick: () => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true }));
+          pasteClipboardComponents();
         },
       },
       {
@@ -454,7 +477,7 @@ const Canvas: React.FC = () => {
         shortcut: 'Ctrl+D',
         disabled: !hasSelection,
         onClick: () => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', ctrlKey: true }));
+          duplicateSelectedComponents();
         },
       },
       { id: 'divider1', label: '', divider: true },
@@ -521,13 +544,13 @@ const Canvas: React.FC = () => {
         icon: '☑️',
         shortcut: 'Ctrl+A',
         onClick: () => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true }));
+          selectAllComponents();
         },
       },
     ];
     
     return items;
-  }, [selection.selectedIds, saveToHistory, deleteComponents]);
+  }, [selection.selectedIds, saveToHistory, deleteComponents, bringToFront, bringForward, sendBackward, sendToBack]);
 
   // Render grid
   const renderGrid = () => {

@@ -225,7 +225,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'container',
     defaultWidth: 250,
     defaultHeight: 200,
-    defaultProps: { tabs: ['Tab 1', 'Tab 2'], activeTab: 0 },
+    defaultProps: { 
+      tabs: ['Tab 1', 'Tab 2'], 
+      activeTab: 0, 
+      tabPosition: 'top',
+      tabChildMap: {}
+    },
     defaultStyles: { ...defaultStyles },
     isContainer: true,
   },
@@ -236,7 +241,13 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'container',
     defaultWidth: 200,
     defaultHeight: 200,
-    defaultProps: { rows: 2, cols: 2 },
+    defaultProps: { 
+      rows: 2, 
+      cols: 2, 
+      currentRow: 0, 
+      currentCol: 0,
+      tileChildMap: {}
+    },
     defaultStyles: { ...defaultStyles },
     isContainer: true,
   },
@@ -247,7 +258,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'container',
     defaultWidth: 250,
     defaultHeight: 200,
-    defaultProps: { title: 'Window' },
+    defaultProps: { 
+      title: 'Window',
+      headerHeight: 40,
+      showCloseBtn: true,
+      headerButtons: []
+    },
     defaultStyles: {
       default: {
         bgColor: '#ffffff',
@@ -333,7 +349,20 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'display',
     defaultWidth: 200,
     defaultHeight: 150,
-    defaultProps: { type: 'line', data: [10, 20, 30, 25, 40] },
+    defaultProps: { 
+      type: 'line', 
+      series: [
+        { name: '系列1', data: [10, 20, 30, 25, 40], color: '#2196F3', lineWidth: 2, pointSize: 4 }
+      ],
+      yAxisMin: 0,
+      yAxisMax: 100,
+      xLabels: [],
+      showLegend: false,
+      showGrid: true,
+      // 保留旧字段向后兼容
+      data: [10, 20, 30, 25, 40],
+      lineColor: '#2196F3'
+    },
     defaultStyles: {
       default: {
         bgColor: '#ffffff',
@@ -354,7 +383,14 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'display',
     defaultWidth: 200,
     defaultHeight: 150,
-    defaultProps: { rows: 3, cols: 3 },
+    defaultProps: { 
+      rows: 3, 
+      cols: 3, 
+      cellData: [['', '', ''], ['', '', ''], ['', '', '']], 
+      columnWidths: [60, 60, 60],
+      headerRow: true,
+      cellAligns: [['left','left','left'],['left','left','left'],['left','left','left']]
+    },
     defaultStyles: { ...defaultStyles },
     isContainer: false,
   },
@@ -365,7 +401,16 @@ export const componentDefinitions: ComponentDefinition[] = [
     category: 'display',
     defaultWidth: 220,
     defaultHeight: 220,
-    defaultProps: { year: 2024, month: 1 },
+    defaultProps: { 
+      year: 2024, 
+      month: 1, 
+      showDayNames: true,
+      showToday: true,
+      highlightedDates: [],
+      dateRangeMode: false,
+      rangeStart: '',
+      rangeEnd: ''
+    },
     defaultStyles: { ...defaultStyles },
     isContainer: false,
   },

@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditorStore } from '../../store/editorStore';
+import { useLogicEditorStore } from '../LogicEditor';
+import { useResourceStore } from '../../resources/resourceStore';
 import { generateCode, getGeneratedFileNames, downloadAsZip } from '../../codegen';
 import type { CodeGenOptions, GeneratedCode } from '../../codegen/types';
 import { DEFAULT_CODEGEN_OPTIONS } from '../../codegen/types';
@@ -13,6 +15,9 @@ type FileName = keyof GeneratedCode;
 
 const CodePanel: React.FC = () => {
   const { pages } = useEditorStore();
+  const { graphs: logicGraphs } = useLogicEditorStore();
+  const imageResources = useResourceStore((s) => s.images);
+  const fontResources = useResourceStore((s) => s.fonts);
   
   // Selected file
   const [selectedFile, setSelectedFile] = useState<FileName>('ui.h');
@@ -28,8 +33,8 @@ const CodePanel: React.FC = () => {
   
   // Generate code
   const generatedCode = useMemo(() => {
-    return generateCode(pages, options);
-  }, [pages, options]);
+    return generateCode(pages, options, logicGraphs, undefined, imageResources, fontResources);
+  }, [pages, options, logicGraphs, imageResources, fontResources]);
   
   // Current file content
   const currentContent = generatedCode[selectedFile];
@@ -49,14 +54,14 @@ const CodePanel: React.FC = () => {
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     try {
-      await downloadAsZip(pages, options, [], 'lvgl_ui.zip');
+      await downloadAsZip(pages, options, logicGraphs, 'lvgl_ui.zip', undefined, imageResources);
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('导出失败，请重试');
     } finally {
       setIsExporting(false);
     }
-  }, [pages, options]);
+  }, [pages, options, logicGraphs, imageResources]);
   
   // Handle copy
   const handleCopy = useCallback(() => {

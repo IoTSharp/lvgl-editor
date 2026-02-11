@@ -165,7 +165,7 @@
   background: #f8f8f8;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
 }
 
@@ -173,6 +173,81 @@
   margin: 0 0 12px 0;
   font-size: 14px;
   color: #333;
+}
+
+/* Font Metadata Grid */
+.font-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-label {
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-value {
+  font-size: 12px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* BPP Grid */
+.bpp-grid {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.bpp-hint {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Preview size tag */
+.preview-size-tag {
+  display: inline-block;
+  font-size: 10px !important;
+  color: #999;
+  min-width: 36px;
+  font-family: system-ui, sans-serif !important;
+}
+
+/* Template copy row */
+.template-copy-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.template-copy-row button {
+  padding: 6px 14px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.template-copy-row button:hover {
+  background: #e0e0e0;
 }
 
 .detail-section {

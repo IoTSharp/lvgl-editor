@@ -6,6 +6,7 @@ import type { LogicVariable, VariableType } from './types';
 import { modal } from '../Modal';
 import './VariablePanel.css';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const VARIABLE_TYPES: { type: VariableType; label: string; icon: string; defaultValue: any }[] = [
   { type: 'int', label: '整数', icon: '🔢', defaultValue: 0 },
   { type: 'float', label: '浮点数', icon: '📊', defaultValue: 0.0 },
@@ -41,6 +42,7 @@ const VariablePanel: React.FC = () => {
   }, [deleteVariable]);
 
   const handleUpdateValue = useCallback((id: string, value: string, type: VariableType) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let parsedValue: any = value;
     
     switch (type) {

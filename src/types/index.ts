@@ -1,3 +1,56 @@
+// Theme Types
+
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  background: string;
+  surface: string;
+  text: string;
+  border: string;
+}
+
+export interface Theme {
+  id: string;
+  name: string;
+  colors: ThemeColors;
+}
+
+export type ThemePreset = 'light' | 'dark' | 'custom';
+
+// Animation Types
+export type AnimationType =
+  | 'fade_in'
+  | 'fade_out'
+  | 'slide_left'
+  | 'slide_right'
+  | 'slide_up'
+  | 'slide_down'
+  | 'zoom_in'
+  | 'zoom_out'
+  | 'custom';
+
+export type AnimationEasing =
+  | 'linear'
+  | 'ease_in'
+  | 'ease_out'
+  | 'ease_in_out'
+  | 'overshoot'
+  | 'bounce';
+
+export interface Animation {
+  id: string;
+  name: string;
+  targetComponentId: string;
+  type: AnimationType;
+  easing: AnimationEasing;
+  duration: number;
+  delay: number;
+  repeat: number;
+  property: string;
+  startValue: number;
+  endValue: number;
+}
+
 // LVGL Component Types
 
 export interface StyleProps {
@@ -8,6 +61,52 @@ export interface StyleProps {
   textColor?: string;
   opacity?: number;
   padding?: number;
+  // Shadow
+  shadowColor?: string;
+  shadowWidth?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  shadowSpread?: number;
+  shadowOpacity?: number;
+  // Transform
+  transformAngle?: number;
+  transformZoomX?: number;
+  transformZoomY?: number;
+  transformPivotX?: number;
+  transformPivotY?: number;
+  // Scrollbar
+  scrollbarMode?: 'off' | 'on' | 'active' | 'auto';
+  scrollbarWidth?: number;
+  scrollbarColor?: string;
+  // Text / Font
+  textFont?: string;
+  textFontSize?: number;
+  textLetterSpace?: number;
+  textLineSpace?: number;
+  // Four-direction padding
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  // Four-corner border radius
+  borderRadiusTopLeft?: number;
+  borderRadiusTopRight?: number;
+  borderRadiusBottomLeft?: number;
+  borderRadiusBottomRight?: number;
+  // Border side
+  borderSide?: 'full' | 'top' | 'bottom' | 'left' | 'right' | 'top_bottom' | 'left_right' | 'none';
+  // Background gradient
+  bgGradColor?: string;
+  bgGradDir?: 'none' | 'hor' | 'ver';
+  bgGradStop?: number; // 0-255
+  // Outline
+  outlineColor?: string;
+  outlineWidth?: number;
+  outlinePad?: number;
+  // Text decoration
+  textDecor?: 'none' | 'underline' | 'strikethrough';
+  // Blend mode
+  blendMode?: 'normal' | 'additive' | 'subtractive' | 'multiply';
 }
 
 // LVGL Event Types
@@ -39,7 +138,7 @@ export interface BuiltinAction {
   targetPage?: string;      // For navigate
   targetComponent?: string; // For setProperty, show, hide, enable, disable, setText, setValue
   property?: string;        // For setProperty
-  value?: any;              // For setProperty, setText, setValue
+  value?: string | number | boolean;  // For setProperty, setText, setValue
 }
 
 // Event Binding (Phase 3 - Enhanced)
@@ -61,6 +160,23 @@ export interface Page {
   backgroundColor?: string;
 }
 
+export type LvglAlign = 'default' | 'center' | 'top_left' | 'top_mid' | 'top_right' | 'bottom_left' | 'bottom_mid' | 'bottom_right' | 'left_mid' | 'right_mid';
+
+export interface LvglFlags {
+  clickable?: boolean;
+  checkable?: boolean;
+  scrollable?: boolean;
+  scrollElastic?: boolean;
+  scrollMomentum?: boolean;
+  scrollOnFocus?: boolean;
+  snappable?: boolean;
+  pressLock?: boolean;
+  eventBubble?: boolean;
+  gesturesBubble?: boolean;
+  hidden?: boolean;
+  disabled?: boolean;
+}
+
 export interface LvglComponent {
   id: string;
   type: string; // 'btn', 'label', etc.
@@ -70,6 +186,7 @@ export interface LvglComponent {
   width: number;
   height: number;
   children: LvglComponent[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: Record<string, any>; // 组件特有属性
   styles: {
     default: StyleProps;
@@ -78,10 +195,20 @@ export interface LvglComponent {
     disabled?: StyleProps;
   };
   events: EventBinding[];
+  animations: Animation[];
   parentId: string | null;
   // Phase 2: Lock and visibility
   locked: boolean;
   visible: boolean;
+  // Size mode
+  widthMode?: 'px' | 'percent' | 'content';
+  heightMode?: 'px' | 'percent' | 'content';
+  // Alignment
+  align?: LvglAlign;
+  alignOffsetX?: number;
+  alignOffsetY?: number;
+  // Flags
+  flags?: LvglFlags;
 }
 
 // Component Category Definition
@@ -100,6 +227,7 @@ export interface ComponentDefinition {
   category: string;
   defaultWidth: number;
   defaultHeight: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   defaultProps: Record<string, any>;
   defaultStyles: LvglComponent['styles'];
   isContainer: boolean;

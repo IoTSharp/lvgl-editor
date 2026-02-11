@@ -62,6 +62,7 @@ let toastId = 0;
 const listeners: Set<(messages: ToastMessage[]) => void> = new Set();
 let currentMessages: ToastMessage[] = [];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const [messages, setMessages] = useState<ToastMessage[]>(currentMessages);
 
@@ -99,6 +100,7 @@ export function useToast() {
 }
 
 // Global toast function for use outside React components
+// eslint-disable-next-line react-refresh/only-export-components
 export const toast = {
   success: (msg: string, duration?: number) => {
     const id = `toast-${++toastId}`;
