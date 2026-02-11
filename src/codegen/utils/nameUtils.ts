@@ -113,9 +113,17 @@ export function getScreenLoadFuncName(pageName: string, options: CodeGenOptions)
  * Convert hex color string to LVGL color format
  */
 export function colorToLvgl(color: string): string {
+  // Handle transparent / invalid colors
+  if (!color || color.toLowerCase() === 'transparent') {
+    return `lv_color_hex(0x000000)`;
+  }
   // Remove # if present
   const hex = color.replace('#', '');
-  return `lv_color_hex(0x${hex.toUpperCase()})`;
+  // Validate hex
+  if (!/^[0-9a-fA-F]{3,8}$/.test(hex)) {
+    return `lv_color_hex(0x000000)`;
+  }
+  return `lv_color_hex(0x${hex.slice(0, 6).toUpperCase()})`;
 }
 
 /**

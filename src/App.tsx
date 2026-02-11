@@ -23,6 +23,7 @@ import CodePreview from './components/CodePreview';
 import { LogicEditor } from './components/LogicEditor';
 import PreviewPanel from './components/Preview';
 import WasmPreview from './components/WasmPreview';
+import CompilePreview from './components/CompilePreview';
 import { HierarchyPanel } from './components/HierarchyPanel';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ResourcePanel, useResourceStore } from './resources';
@@ -54,7 +55,7 @@ const App: React.FC = () => {
   const [showResourcePanel, setShowResourcePanel] = useState(false);
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('design');
-  const [previewMode, setPreviewMode] = useState<'simple' | 'wasm'>('simple');
+  const [previewMode, setPreviewMode] = useState<'simple' | 'wasm' | 'compile'>('simple');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Configure drag sensors
@@ -317,9 +318,15 @@ const App: React.FC = () => {
               >
                 🖥️ LVGL 预览
               </button>
+              <button
+                className={`preview-sub-tab ${previewMode === 'compile' ? 'active' : ''}`}
+                onClick={() => setPreviewMode('compile')}
+              >
+                🔨 编译运行
+              </button>
             </div>
             <div className="preview-sub-content">
-              {previewMode === 'simple' ? <PreviewPanel /> : <WasmPreview />}
+              {previewMode === 'simple' ? <PreviewPanel /> : previewMode === 'wasm' ? <WasmPreview /> : <CompilePreview />}
             </div>
           </div>
         );
