@@ -145,12 +145,13 @@ body {
 .app-body.full-panel {
   background: #fff;
   display: flex;
+  flex-direction: column;
   flex: 1;
   overflow: hidden;
   min-height: 0;
 }
 
-.app-body.full-panel > * {
+.app-body.full-panel > *:only-child {
   flex: 1;
   width: 100%;
   height: 100%;
@@ -270,4 +271,45 @@ body {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Preview sub-tabs */
+.preview-sub-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary, #252526);
+  flex-shrink: 0;
+}
+
+.preview-sub-tab {
+  padding: 8px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  font-size: 13px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.preview-sub-tab:hover {
+  color: var(--text-primary, #ccc);
+}
+
+.preview-sub-tab.active {
+  color: var(--text-primary, #fff);
+  border-bottom-color: #4fc3f7;
+}
+
+.preview-sub-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-sub-content > * {
+  flex: 1;
+  min-height: 0;
 }

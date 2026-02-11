@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; overflow: hidden; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+<script>
+  var Module = {
+    canvas: document.getElementById('canvas'),
+    onRuntimeInitialized: function() {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'lvgl-ready' }, '*');
+      }
+    }
+  };
+  window.addEventListener('message', function(e) {
+    if (e.data.type === 'load-ui') {
+      var json = e.data.json;
+      var len = Module.lengthBytesUTF8(json) + 1;
+      var ptr = Module._malloc(len);
+      Module.stringToUTF8(json, ptr, len);
+      Module._load_ui_json(ptr);
+      Module._free(ptr);
+    }
+  });
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>
