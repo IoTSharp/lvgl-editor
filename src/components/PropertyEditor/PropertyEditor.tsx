@@ -70,6 +70,111 @@ function GridTemplatePreview({ value }: { value: string }) {
   );
 }
 
+// Style section visibility per component type (Task 2)
+const STYLE_SECTION_VISIBILITY: Record<string, Set<string>> = {
+  shadow: new Set(['btn', 'obj', 'tabview', 'tileview', 'win', 'textarea', 'dropdown', 'table', 'chart', 'calendar', 'bar', 'arc']),
+  transform: new Set(['btn', 'label', 'img', 'obj', 'tabview', 'tileview', 'win', 'textarea', 'dropdown', 'checkbox', 'switch', 'slider', 'bar', 'arc', 'spinner', 'chart', 'table', 'calendar']),
+  gradient: new Set(['btn', 'obj', 'tabview', 'tileview', 'win', 'textarea', 'dropdown', 'bar', 'slider']),
+  outline: new Set(['btn', 'obj', 'tabview', 'tileview', 'win', 'textarea', 'dropdown', 'checkbox', 'switch', 'slider', 'bar', 'arc', 'table', 'chart', 'calendar']),
+  scrollbar: new Set(['obj', 'tabview', 'tileview', 'win', 'textarea']),
+  textStyle: new Set(['btn', 'label', 'textarea', 'dropdown', 'checkbox', 'table', 'calendar']),
+  blendMode: new Set(['btn', 'label', 'img', 'obj', 'chart']),
+};
+
+// Flags that only apply to container-like components
+const SCROLL_FLAGS = new Set(['scrollable', 'scrollElastic', 'scrollMomentum', 'scrollOnFocus']);
+const CONTAINER_TYPES = new Set(['obj', 'tabview', 'tileview', 'win']);
+
+// Helper to check if a style section should be visible for a component type
+function isSectionVisible(section: string, componentType: string): boolean {
+  const allowed = STYLE_SECTION_VISIBILITY[section];
+  return !allowed || allowed.has(componentType);
+}
+
+// Dropdown options list editor (Task 3)
+const DropdownOptionsEditor: React.FC<{
+  options: string[];
+  onChange: (options: string[]) => void;
+}> = ({ options, onChange }) => {
+  const handleTextChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    onChange(newOptions);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const newOptions = [...options];
+    [newOptions[index - 1], newOptions[index]] = [newOptions[index], newOptions[index - 1]];
+    onChange(newOptions);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= options.length - 1) return;
+    const newOptions = [...options];
+    [newOptions[index], newOptions[index + 1]] = [newOptions[index + 1], newOptions[index]];
+    onChange(newOptions);
+  };
+
+  const handleDelete = (index: number) => {
+    if (options.length <= 1) return;
+    onChange(options.filter((_, i) => i !== index));
+  };
+
+  const handleAdd = () => {
+    onChange([...options, `选项 ${options.length + 1}`]);
+  };
+
+  return (
+    <div className="dropdown-options-editor">
+      {options.map((opt, i) => (
+        <div key={i} className="dropdown-option-row">
+          <span className="dropdown-option-index">{i + 1}</span>
+          <input
+            type="text"
+            className="dropdown-option-input"
+            value={opt}
+            onChange={(e) => handleTextChange(i, e.target.value)}
+          />
+          <button
+            className="dropdown-option-btn"
+            onClick={() => handleMoveUp(i)}
+            disabled={i === 0}
+            title="上移"
+          >↑</button>
+          <button
+            className="dropdown-option-btn"
+            onClick={() => handleMoveDown(i)}
+            disabled={i === options.length - 1}
+            title="下移"
+          >↓</button>
+          <button
+            className="dropdown-option-btn delete"
+            onClick={() => handleDelete(i)}
+            disabled={options.length <= 1}
+            title="删除"
+          >✕</button>
+        </div>
+      ))}
+      <button className="dropdown-option-add" onClick={handleAdd}>+ 添加选项</button>
+    </div>
+  );
+};
+
+// Toggle switch UI component (Task 4.3)
+const ToggleSwitch: React.FC<{
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+}> = ({ checked, onChange, label }) => (
+  <div className="toggle-switch-wrapper" onClick={() => onChange(!checked)}>
+    {label && <span className="toggle-switch-label">{label}</span>}
+    <div className={`toggle-switch ${checked ? 'on' : ''}`}>
+      <div className="toggle-switch-knob" />
+    </div>
+  </div>
+);
+
 type StyleState = 'default' | 'pressed' | 'focused' | 'disabled';
 
 const STYLE_STATES: { key: StyleState; label: string }[] = [
@@ -589,7 +694,7 @@ const PropertyEditor: React.FC = () => {
           )}
 
           {/* Shadow */}
-          <CollapsibleSection title="阴影">
+          {isSectionVisible('shadow', component.type) && <CollapsibleSection title="阴影">
             <div className="property-row">
               <label>颜色</label>
               <div className="color-input-wrapper">
@@ -654,10 +759,10 @@ const PropertyEditor: React.FC = () => {
               />
               <span className="range-value">{currentStyles.shadowOpacity ?? 255}</span>
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Transform */}
-          <CollapsibleSection title="变换">
+          {isSectionVisible('transform', component.type) && <CollapsibleSection title="变换">
             <div className="property-row">
               <label>旋转角度</label>
               <input
@@ -714,10 +819,10 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Scrollbar */}
-          <CollapsibleSection title="滚动条">
+          {isSectionVisible('scrollbar', component.type) && <CollapsibleSection title="滚动条">
             <div className="property-row">
               <label>模式</label>
               <select
@@ -756,10 +861,10 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Text / Font */}
-          <CollapsibleSection title="文本">
+          {isSectionVisible('textStyle', component.type) && <CollapsibleSection title="文本">
             <FontSelector currentStyles={currentStyles} handleStyleChange={handleStyleChange} />
             <div className="property-row">
               <label>字体大小</label>
@@ -801,10 +906,10 @@ const PropertyEditor: React.FC = () => {
                 <option value="strikethrough">删除线</option>
               </select>
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Gradient */}
-          <CollapsibleSection title="渐变">
+          {isSectionVisible('gradient', component.type) && <CollapsibleSection title="渐变">
             <div className="property-row">
               <label>方向</label>
               <select
@@ -845,10 +950,10 @@ const PropertyEditor: React.FC = () => {
               />
               <span className="range-value">{currentStyles.bgGradStop ?? 128}</span>
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Outline */}
-          <CollapsibleSection title="Outline">
+          {isSectionVisible('outline', component.type) && <CollapsibleSection title="Outline">
             <div className="property-row">
               <label>颜色</label>
               <div className="color-input-wrapper">
@@ -883,9 +988,10 @@ const PropertyEditor: React.FC = () => {
                 onChange={(e) => handleStyleChange('outlinePad', parseInt(e.target.value) || 0)}
               />
             </div>
-          </CollapsibleSection>
+          </CollapsibleSection>}
 
           {/* Blend mode */}
+          {isSectionVisible('blendMode', component.type) && (
           <div className="property-row" style={{ marginTop: 10 }}>
             <label>混合模式</label>
             <select
@@ -899,6 +1005,7 @@ const PropertyEditor: React.FC = () => {
               <option value="multiply">乘法</option>
             </select>
           </div>
+          )}
         </div>
 
         {/* Component-specific props */}
@@ -1024,6 +1131,7 @@ function renderFlagsSection(
   handlePropertyChange: (property: keyof LvglComponent, value: LvglComponent[keyof LvglComponent]) => void
 ): React.ReactNode {
   const flags = component.flags || {};
+  const isContainer = CONTAINER_TYPES.has(component.type);
 
   const handleFlagChange = (flagKey: keyof LvglFlags, checked: boolean) => {
     handlePropertyChange('flags', { ...flags, [flagKey]: checked });
@@ -1061,22 +1169,27 @@ function renderFlagsSection(
 
   return (
     <>
-      {FLAG_GROUPS.map((group) => (
-        <div key={group.label} className="flags-group">
-          <div className="flags-group-label">{group.label}</div>
-          {group.items.map((item) => (
-            <div key={item.key} className="flag-row">
-              <input
-                type="checkbox"
-                id={`flag-${item.key}`}
-                checked={!!flags[item.key]}
-                onChange={(e) => handleFlagChange(item.key, e.target.checked)}
-              />
-              <label htmlFor={`flag-${item.key}`}>{item.label}</label>
-            </div>
-          ))}
-        </div>
-      ))}
+      {FLAG_GROUPS.map((group) => {
+        // Filter scroll flags for non-container types
+        const items = isContainer ? group.items : group.items.filter(item => !SCROLL_FLAGS.has(item.key));
+        if (items.length === 0) return null;
+        return (
+          <div key={group.label} className="flags-group">
+            <div className="flags-group-label">{group.label}</div>
+            {items.map((item) => (
+              <div key={item.key} className="flag-row">
+                <input
+                  type="checkbox"
+                  id={`flag-${item.key}`}
+                  checked={!!flags[item.key]}
+                  onChange={(e) => handleFlagChange(item.key, e.target.checked)}
+                />
+                <label htmlFor={`flag-${item.key}`}>{item.label}</label>
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -1226,7 +1339,9 @@ function renderComponentProps(
               value={props.maxLength || 0}
               min={0}
               onChange={(e) => onChange('maxLength', parseInt(e.target.value) || 0)}
+              style={{ flex: 1 }}
             />
+            {(props.maxLength || 0) === 0 && <span style={{ fontSize: 11, color: '#999', marginLeft: 6, whiteSpace: 'nowrap' }}>(无限制)</span>}
           </div>
           <div className="property-row">
             <label>密码模式</label>
@@ -1276,10 +1391,9 @@ function renderComponentProps(
           <div className="section-header">开关</div>
           <div className="property-row">
             <label>开启</label>
-            <input
-              type="checkbox"
+            <ToggleSwitch
               checked={props.checked || false}
-              onChange={(e) => onChange('checked', e.target.checked)}
+              onChange={(checked) => onChange('checked', checked)}
             />
           </div>
         </div>
@@ -1295,7 +1409,14 @@ function renderComponentProps(
               <input
                 type="number"
                 value={props.min ?? 0}
-                onChange={(e) => onChange('min', parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const newMin = parseInt(e.target.value) || 0;
+                  onChange('min', newMin);
+                  const curVal = props.value ?? 50;
+                  const curMax = props.max ?? 100;
+                  if (curVal < newMin) onChange('value', newMin);
+                  if (curMax < newMin) onChange('max', newMin);
+                }}
               />
             </div>
             <div className="property-field">
@@ -1303,7 +1424,14 @@ function renderComponentProps(
               <input
                 type="number"
                 value={props.max ?? 100}
-                onChange={(e) => onChange('max', parseInt(e.target.value) || 100)}
+                onChange={(e) => {
+                  const newMax = parseInt(e.target.value) || 100;
+                  onChange('max', newMax);
+                  const curVal = props.value ?? 50;
+                  const curMin = props.min ?? 0;
+                  if (curVal > newMax) onChange('value', newMax);
+                  if (curMin > newMax) onChange('min', newMax);
+                }}
               />
             </div>
           </div>
@@ -1360,7 +1488,14 @@ function renderComponentProps(
               <input
                 type="number"
                 value={props.min ?? 0}
-                onChange={(e) => onChange('min', parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const newMin = parseInt(e.target.value) || 0;
+                  onChange('min', newMin);
+                  const curVal = props.value ?? 50;
+                  const curMax = props.max ?? 100;
+                  if (curVal < newMin) onChange('value', newMin);
+                  if (curMax < newMin) onChange('max', newMin);
+                }}
               />
             </div>
             <div className="property-field">
@@ -1368,7 +1503,14 @@ function renderComponentProps(
               <input
                 type="number"
                 value={props.max ?? 100}
-                onChange={(e) => onChange('max', parseInt(e.target.value) || 100)}
+                onChange={(e) => {
+                  const newMax = parseInt(e.target.value) || 100;
+                  onChange('max', newMax);
+                  const curVal = props.value ?? 50;
+                  const curMin = props.min ?? 0;
+                  if (curVal > newMax) onChange('value', newMax);
+                  if (curMin > newMax) onChange('min', newMax);
+                }}
               />
             </div>
           </div>
@@ -1421,14 +1563,11 @@ function renderComponentProps(
       return (
         <div className="property-section">
           <div className="section-header">下拉框</div>
-          <div className="property-row">
+          <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
             <label>选项</label>
-            <textarea
-              value={(props.options || ['Option 1', 'Option 2', 'Option 3']).join('\n')}
-              onChange={(e) => onChange('options', e.target.value.split('\n').filter((s: string) => s.trim()))}
-              placeholder="每行一个选项"
-              rows={4}
-              style={{ width: '100%', resize: 'vertical' }}
+            <DropdownOptionsEditor
+              options={props.options || ['Option 1', 'Option 2', 'Option 3']}
+              onChange={(newOptions) => onChange('options', newOptions)}
             />
           </div>
           <div className="property-row">

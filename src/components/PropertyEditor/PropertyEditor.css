@@ -1300,3 +1300,134 @@
   border-color: #1976D2;
   color: #fff;
 }
+
+/* Dropdown options editor (Task 3) */
+.dropdown-options-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-option-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dropdown-option-index {
+  width: 18px;
+  font-size: 10px;
+  color: #999;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.dropdown-option-input {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.15s;
+}
+
+.dropdown-option-input:focus {
+  border-color: #2196F3;
+}
+
+.dropdown-option-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #666;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.dropdown-option-btn:hover:not(:disabled) {
+  background: #e3f2fd;
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+.dropdown-option-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dropdown-option-btn.delete:hover:not(:disabled) {
+  background: #fbe9e7;
+  border-color: #e53935;
+  color: #e53935;
+}
+
+.dropdown-option-add {
+  background: none;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #666;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.dropdown-option-add:hover {
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+/* Toggle switch UI (Task 4.3) */
+.toggle-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-switch-label {
+  font-size: 12px;
+  color: #555;
+}
+
+.toggle-switch {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #ccc;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch.on {
+  background: #2196F3;
+}
+
+.toggle-switch-knob {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: left 0.2s;
+}
+
+.toggle-switch.on .toggle-switch-knob {
+  left: 18px;
+}
