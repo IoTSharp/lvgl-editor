@@ -8,18 +8,17 @@ export const componentCategories: ComponentCategory[] = [
   { id: 'display', name: '显示', icon: '📊', collapsed: false },
 ];
 
-// Default styles
-const defaultStyles = {
-  default: {
-    bgColor: '#ffffff',
-    borderColor: '#cccccc',
-    borderWidth: 1,
-    borderRadius: 4,
-    textColor: '#333333',
-    opacity: 1,
-    padding: 4,
-  },
-};
+// LVGL default theme colors (Light mode)
+// Source: lv_theme_default.c + lv_palette.c
+// color_scr = lv_palette_lighten(GREY, 4) = #F5F5F5
+// color_card = white = #FFFFFF
+// color_text = lv_palette_darken(GREY, 4) = #212121
+// color_grey = lv_palette_lighten(GREY, 2) = #E0E0E0
+// color_primary = lv_palette_main(BLUE) = #2196F3
+// color_primary_muted = #2196F3 @ 20% over white ≈ #D3EAFD
+//
+// Card style (obj, textarea, dropdown, chart, table, calendar):
+//   bgColor=#FFFFFF, borderColor=#E0E0E0, borderWidth=2, borderRadius=8, textColor=#212121
 
 // Component Definitions
 export const componentDefinitions: ComponentDefinition[] = [
@@ -34,13 +33,14 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { text: 'Button' },
     defaultStyles: {
       default: {
+        // btn style + bg_color_primary: primary bg, white text, no border
         bgColor: '#2196F3',
-        borderColor: '#1976D2',
+        borderColor: 'transparent',
         borderWidth: 0,
-        borderRadius: 4,
+        borderRadius: 8,
         textColor: '#ffffff',
         opacity: 1,
-        padding: 8,
+        padding: 10,
       },
     },
     isContainer: true,
@@ -55,11 +55,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { text: 'Label' },
     defaultStyles: {
       default: {
+        // label: no background (bg_opa=0), inherits text color from parent
         bgColor: 'transparent',
         borderColor: 'transparent',
         borderWidth: 0,
         borderRadius: 0,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -76,11 +77,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { src: '' },
     defaultStyles: {
       default: {
-        bgColor: '#f0f0f0',
-        borderColor: '#cccccc',
-        borderWidth: 1,
+        // img: no special theme style, transparent bg
+        bgColor: 'transparent',
+        borderColor: 'transparent',
+        borderWidth: 0,
         borderRadius: 0,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -97,11 +99,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { points: [[0, 0], [100, 0]] },
     defaultStyles: {
       default: {
-        bgColor: '#333333',
-        borderColor: 'transparent',
-        borderWidth: 0,
+        // line: line_color = color_text, line_width = 1
+        bgColor: 'transparent',
+        borderColor: '#212121',
+        borderWidth: 1,
         borderRadius: 0,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -118,7 +121,18 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultWidth: 150,
     defaultHeight: 80,
     defaultProps: { text: '', placeholder: 'Enter text...' },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // textarea: card style + pad_small
+        bgColor: '#ffffff',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 8,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 10,
+      },
+    },
     isContainer: false,
   },
   {
@@ -129,7 +143,18 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultWidth: 120,
     defaultHeight: 36,
     defaultProps: { options: ['Option 1', 'Option 2', 'Option 3'], selected: 0 },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // dropdown: card style + pad_small
+        bgColor: '#ffffff',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 8,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 10,
+      },
+    },
     isContainer: false,
   },
   {
@@ -142,13 +167,14 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { text: 'Checkbox', checked: false },
     defaultStyles: {
       default: {
+        // checkbox: no bg, pad_gap; marker has primary border + card bg
         bgColor: 'transparent',
-        borderColor: 'transparent',
-        borderWidth: 0,
-        borderRadius: 0,
-        textColor: '#333333',
+        borderColor: '#2196F3',
+        borderWidth: 2,
+        borderRadius: 4,
+        textColor: '#212121',
         opacity: 1,
-        padding: 4,
+        padding: 10,
       },
     },
     isContainer: false,
@@ -163,11 +189,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { checked: false },
     defaultStyles: {
       default: {
-        bgColor: '#cccccc',
+        // switch: bg_color_grey + circle; knob is white with primary color
+        bgColor: '#E0E0E0',
         borderColor: 'transparent',
         borderWidth: 0,
-        borderRadius: 13,
-        textColor: '#333333',
+        borderRadius: 9999,
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -184,11 +211,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { min: 0, max: 100, value: 50 },
     defaultStyles: {
       default: {
-        bgColor: '#e0e0e0',
+        // slider: bg_color_primary_muted (primary@20%) + circle
+        bgColor: '#D3EAFD',
         borderColor: 'transparent',
         borderWidth: 0,
-        borderRadius: 10,
-        textColor: '#333333',
+        borderRadius: 9999,
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -207,13 +235,14 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: {},
     defaultStyles: {
       default: {
-        bgColor: '#fafafa',
-        borderColor: '#e0e0e0',
-        borderWidth: 1,
-        borderRadius: 4,
-        textColor: '#333333',
+        // obj: card style — white bg, grey border
+        bgColor: '#ffffff',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 8,
+        textColor: '#212121',
         opacity: 1,
-        padding: 8,
+        padding: 16,
       },
     },
     isContainer: true,
@@ -231,7 +260,18 @@ export const componentDefinitions: ComponentDefinition[] = [
       tabPosition: 'top',
       tabChildMap: {}
     },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // tabview: scr style + pad_zero
+        bgColor: '#F5F5F5',
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 0,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 0,
+      },
+    },
     isContainer: true,
   },
   {
@@ -248,7 +288,18 @@ export const componentDefinitions: ComponentDefinition[] = [
       currentCol: 0,
       tileChildMap: {}
     },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // tileview: scr style
+        bgColor: '#F5F5F5',
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 0,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 0,
+      },
+    },
     isContainer: true,
   },
   {
@@ -266,11 +317,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     },
     defaultStyles: {
       default: {
-        bgColor: '#ffffff',
-        borderColor: '#cccccc',
-        borderWidth: 1,
+        // win: clip_corner; header=bg_color_grey, content=scr style
+        bgColor: '#F5F5F5',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
         borderRadius: 8,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -289,11 +341,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { min: 0, max: 100, value: 60 },
     defaultStyles: {
       default: {
-        bgColor: '#e0e0e0',
+        // bar: bg_color_primary_muted (primary@20%) + circle
+        bgColor: '#D3EAFD',
         borderColor: 'transparent',
         borderWidth: 0,
-        borderRadius: 10,
-        textColor: '#333333',
+        borderRadius: 9999,
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -310,11 +363,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { startAngle: 135, endAngle: 45, value: 60 },
     defaultStyles: {
       default: {
+        // arc: arc_indic bg=#E0E0E0, indicator=#2196F3, no bg fill
         bgColor: 'transparent',
         borderColor: '#2196F3',
-        borderWidth: 8,
+        borderWidth: 15,
         borderRadius: 0,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -331,11 +385,12 @@ export const componentDefinitions: ComponentDefinition[] = [
     defaultProps: { speed: 1000 },
     defaultStyles: {
       default: {
+        // spinner: same as arc — arc_indic bg=#E0E0E0, indicator=#2196F3
         bgColor: 'transparent',
         borderColor: '#2196F3',
-        borderWidth: 4,
+        borderWidth: 15,
         borderRadius: 0,
-        textColor: '#333333',
+        textColor: '#212121',
         opacity: 1,
         padding: 0,
       },
@@ -365,13 +420,14 @@ export const componentDefinitions: ComponentDefinition[] = [
     },
     defaultStyles: {
       default: {
+        // chart: card style + pad_small
         bgColor: '#ffffff',
-        borderColor: '#e0e0e0',
-        borderWidth: 1,
-        borderRadius: 4,
-        textColor: '#333333',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 8,
+        textColor: '#212121',
         opacity: 1,
-        padding: 8,
+        padding: 10,
       },
     },
     isContainer: false,
@@ -391,7 +447,18 @@ export const componentDefinitions: ComponentDefinition[] = [
       headerRow: true,
       cellAligns: [['left','left','left'],['left','left','left'],['left','left','left']]
     },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // table: card + pad_zero + no_radius
+        bgColor: '#ffffff',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 0,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 0,
+      },
+    },
     isContainer: false,
   },
   {
@@ -411,7 +478,18 @@ export const componentDefinitions: ComponentDefinition[] = [
       rangeStart: '',
       rangeEnd: ''
     },
-    defaultStyles: { ...defaultStyles },
+    defaultStyles: {
+      default: {
+        // calendar: card + pad_zero
+        bgColor: '#ffffff',
+        borderColor: '#E0E0E0',
+        borderWidth: 2,
+        borderRadius: 8,
+        textColor: '#212121',
+        opacity: 1,
+        padding: 0,
+      },
+    },
     isContainer: false,
   },
 ];

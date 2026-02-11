@@ -204,10 +204,14 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   const paddingStyles = buildPadding();
 
   // Resolve effective background color: ensure components are never accidentally invisible
+  // in the design canvas. Components with transparent bg are correct for LVGL, but need
+  // a visible fallback in the designer so users can see and interact with them.
   const resolvedBgColor = (() => {
     const bg = defaultStyle.bgColor;
-    // If bgColor is missing or empty, use a sensible fallback per component type
-    if (!bg || bg === '') {
+    const isMissing = !bg || bg === '';
+    const isTransparent = bg?.toLowerCase() === 'transparent';
+
+    if (isMissing || isTransparent) {
       switch (type) {
         case 'btn': return '#2196F3';
         case 'obj': return '#fafafa';
@@ -220,7 +224,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         case 'tabview': return '#ffffff';
         case 'tileview': return '#ffffff';
         case 'win': return '#ffffff';
-        default: return bg;
+        // These types are legitimately transparent — keep them that way
+        case 'label': return 'transparent';
+        case 'arc': return 'transparent';
+        case 'spinner': return 'transparent';
+        case 'checkbox': return 'transparent';
+        default: return bg || 'transparent';
       }
     }
     return bg;
@@ -234,7 +243,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     width: buildDimension(component.width, (component as unknown as Record<string, unknown>).widthMode as string | undefined),
     height: buildDimension(component.height, (component as unknown as Record<string, unknown>).heightMode as string | undefined),
     backgroundColor: background ? undefined : resolvedBgColor,
-    background: background || undefined,
+    ...(background ? { background } : {}),
     ...borderStyles,
     borderRadius: buildBorderRadius(),
     color: defaultStyle.textColor,
@@ -290,7 +299,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           <div className="lvgl-line" style={{
             width: '100%',
             height: '2px',
-            backgroundColor: defaultStyle.bgColor || '#333',
+            backgroundColor: defaultStyle.borderColor || defaultStyle.textColor || '#333',
             position: 'absolute',
             top: '50%',
             transform: 'translateY(-50%)',

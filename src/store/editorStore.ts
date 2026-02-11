@@ -20,7 +20,7 @@ function createDefaultPage(): Page {
     id: uuidv4(),
     name: 'Page 1',
     components: [],
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F5F5F5',
   };
 }
 
@@ -349,7 +349,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       id,
       name: `Page ${pageCount + 1}`,
       components: [],
-      backgroundColor: '#ffffff',
+      backgroundColor: '#F5F5F5',
     };
     
     set(state => ({
