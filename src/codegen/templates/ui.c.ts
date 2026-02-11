@@ -95,8 +95,12 @@ function generateStyleCode(
   const isV9 = options.lvglVersion === '9';
   
   if (styles.bgColor) {
-    lines.push(`${indent}lv_obj_set_style_bg_color(${varName}, ${colorToLvgl(styles.bgColor)}, ${selector});`);
-    lines.push(`${indent}lv_obj_set_style_bg_opa(${varName}, LV_OPA_COVER, ${selector});`);
+    if (styles.bgColor.toLowerCase() === 'transparent') {
+      lines.push(`${indent}lv_obj_set_style_bg_opa(${varName}, LV_OPA_TRANSP, ${selector});`);
+    } else {
+      lines.push(`${indent}lv_obj_set_style_bg_color(${varName}, ${colorToLvgl(styles.bgColor)}, ${selector});`);
+      lines.push(`${indent}lv_obj_set_style_bg_opa(${varName}, LV_OPA_COVER, ${selector});`);
+    }
   }
   
   if (styles.borderColor) {
@@ -583,17 +587,33 @@ function generatePropsCode(
       
     case 'tabview':
       if (props.tabs && Array.isArray(props.tabs)) {
+        if (isV9) {
+          // V9: set tab bar position and size before adding tabs
+          const posMap: Record<string, string> = {
+            'top': 'LV_DIR_TOP',
+            'bottom': 'LV_DIR_BOTTOM',
+            'left': 'LV_DIR_LEFT',
+            'right': 'LV_DIR_RIGHT',
+          };
+          const pos = posMap[props.tabPosition] || 'LV_DIR_TOP';
+          lines.push(`${indent}lv_tabview_set_tab_bar_position(${varName}, ${pos});`);
+          lines.push(`${indent}lv_tabview_set_tab_bar_size(${varName}, ${props.tabBarSize || 50});`);
+        }
         for (let i = 0; i < props.tabs.length; i++) {
           const tab = props.tabs[i];
           if (isV9) {
-            lines.push(`${indent}int32_t ${varName}_tab_${i} = lv_tabview_add_tab(${varName}, "${escapeCString(tab)}");`);
+            lines.push(`${indent}lv_obj_t * ${varName}_tab_${i} = lv_tabview_add_tab(${varName}, "${escapeCString(tab)}");`);
           } else {
             lines.push(`${indent}lv_tabview_add_tab(${varName}, "${escapeCString(tab)}");`);
           }
         }
       }
       if (props.activeTab !== undefined && props.activeTab > 0) {
-        lines.push(`${indent}lv_tabview_set_act(${varName}, ${props.activeTab}, LV_ANIM_OFF);`);
+        if (isV9) {
+          lines.push(`${indent}lv_tabview_set_active(${varName}, ${props.activeTab}, LV_ANIM_OFF);`);
+        } else {
+          lines.push(`${indent}lv_tabview_set_act(${varName}, ${props.activeTab}, LV_ANIM_OFF);`);
+        }
       }
       break;
       
@@ -601,7 +621,7 @@ function generatePropsCode(
       if (props.rows !== undefined && props.cols !== undefined) {
         for (let r = 0; r < props.rows; r++) {
           for (let c = 0; c < props.cols; c++) {
-            lines.push(`${indent}lv_tileview_add_tile(${varName}, ${c}, ${r}, LV_DIR_ALL);`);
+            lines.push(`${indent}lv_obj_t * ${varName}_tile_${r}_${c} = lv_tileview_add_tile(${varName}, ${c}, ${r}, LV_DIR_ALL);`);
           }
         }
       }
@@ -1000,8 +1020,51 @@ function generateComponentCode(
   lines.push('');
 
   // Recursively generate children
-  for (const child of component.children) {
-    lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources));
+  if (component.type === 'tabview' && component.props?.tabs?.length > 0) {
+    const tabChildMap: Record<string, string[]> = component.props.tabChildMap || {};
+    const childToTab: Record<string, string> = {};
+    for (const [tabIndex, childIds] of Object.entries(tabChildMap)) {
+      if (Array.isArray(childIds)) {
+        for (const childId of childIds) {
+          childToTab[childId] = `${varName}_tab_${tabIndex}`;
+        }
+      }
+    }
+    // Default fallback: unmapped children go to activeTab or tab 0
+    const defaultTab = `${varName}_tab_${component.props.activeTab || 0}`;
+    for (const child of component.children) {
+      const tabParent = childToTab[child.id] || defaultTab;
+      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources));
+    }
+  } else if (component.type === 'tileview' && component.props?.rows !== undefined && component.props?.cols !== undefined) {
+    const tileChildMap: Record<string, string[]> = component.props.tileChildMap || {};
+    const childToTile: Record<string, string> = {};
+    for (const [tileKey, childIds] of Object.entries(tileChildMap)) {
+      if (Array.isArray(childIds)) {
+        const [r, c] = tileKey.split('-');
+        for (const childId of childIds) {
+          childToTile[childId] = `${varName}_tile_${r}_${c}`;
+        }
+      }
+    }
+    // Default fallback: unmapped children go to tile 0,0
+    const defaultTile = `${varName}_tile_0_0`;
+    for (const child of component.children) {
+      const tileParent = childToTile[child.id] || defaultTile;
+      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources));
+    }
+  } else if (component.type === 'win') {
+    // Win children go into the content area
+    if (component.children.length > 0) {
+      lines.push(`${indent}lv_obj_t * ${varName}_content = lv_win_get_content(${varName});`);
+      for (const child of component.children) {
+        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources));
+      }
+    }
+  } else {
+    for (const child of component.children) {
+      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources));
+    }
   }
 
   return lines;

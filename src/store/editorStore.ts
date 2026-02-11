@@ -450,6 +450,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }),
     }));
     
+    // Auto-update tabChildMap / tileChildMap when adding to tabview / tileview
+    if (parentId) {
+      const parent = get().getComponentById(parentId);
+      if (parent?.type === 'tabview') {
+        const tabChildMap: Record<string, string[]> = { ...(parent.props?.tabChildMap || {}) };
+        const activeTab = String(parent.props?.activeTab || 0);
+        if (!tabChildMap[activeTab]) tabChildMap[activeTab] = [];
+        tabChildMap[activeTab] = [...tabChildMap[activeTab], id];
+        get().updateComponent(parentId, { props: { ...parent.props, tabChildMap } });
+      } else if (parent?.type === 'tileview') {
+        const tileChildMap: Record<string, string[]> = { ...(parent.props?.tileChildMap || {}) };
+        const key = `${parent.props?.currentRow || 0}-${parent.props?.currentCol || 0}`;
+        if (!tileChildMap[key]) tileChildMap[key] = [];
+        tileChildMap[key] = [...tileChildMap[key], id];
+        get().updateComponent(parentId, { props: { ...parent.props, tileChildMap } });
+      }
+    }
+    
     return id;
   },
   
@@ -472,6 +490,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   deleteComponents: (ids) => {
     if (ids.length === 0) return;
     const { currentPageId } = get();
+    
+    // Remove from parent's childMap before deleting
+    for (const id of ids) {
+      const comp = get().getComponentById(id);
+      if (comp?.parentId) {
+        const parent = get().getComponentById(comp.parentId);
+        if (parent?.type === 'tabview') {
+          const tabChildMap: Record<string, string[]> = { ...(parent.props?.tabChildMap || {}) };
+          for (const key of Object.keys(tabChildMap)) {
+            tabChildMap[key] = tabChildMap[key].filter((cid: string) => cid !== id);
+          }
+          get().updateComponent(comp.parentId, { props: { ...parent.props, tabChildMap } });
+        } else if (parent?.type === 'tileview') {
+          const tileChildMap: Record<string, string[]> = { ...(parent.props?.tileChildMap || {}) };
+          for (const key of Object.keys(tileChildMap)) {
+            tileChildMap[key] = tileChildMap[key].filter((cid: string) => cid !== id);
+          }
+          get().updateComponent(comp.parentId, { props: { ...parent.props, tileChildMap } });
+        }
+      }
+    }
+    
     set(state => ({
       pages: state.pages.map(page => {
         if (page.id === currentPageId) {
@@ -547,6 +587,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   
   reparentComponent: (id, newParentId) => {
     const { currentPageId } = get();
+    
+    // Remove from old parent's childMap before reparenting
+    const comp = get().getComponentById(id);
+    if (comp?.parentId) {
+      const oldParent = get().getComponentById(comp.parentId);
+      if (oldParent?.type === 'tabview') {
+        const tabChildMap: Record<string, string[]> = { ...(oldParent.props?.tabChildMap || {}) };
+        for (const key of Object.keys(tabChildMap)) {
+          tabChildMap[key] = tabChildMap[key].filter((cid: string) => cid !== id);
+        }
+        get().updateComponent(comp.parentId, { props: { ...oldParent.props, tabChildMap } });
+      } else if (oldParent?.type === 'tileview') {
+        const tileChildMap: Record<string, string[]> = { ...(oldParent.props?.tileChildMap || {}) };
+        for (const key of Object.keys(tileChildMap)) {
+          tileChildMap[key] = tileChildMap[key].filter((cid: string) => cid !== id);
+        }
+        get().updateComponent(comp.parentId, { props: { ...oldParent.props, tileChildMap } });
+      }
+    }
+    
     get().saveToHistory();
     set(state => ({
       pages: state.pages.map(page => {
@@ -559,6 +619,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         return page;
       }),
     }));
+    
+    // Add to new parent's childMap after reparenting
+    if (newParentId) {
+      const newParent = get().getComponentById(newParentId);
+      if (newParent?.type === 'tabview') {
+        const tabChildMap: Record<string, string[]> = { ...(newParent.props?.tabChildMap || {}) };
+        const activeTab = String(newParent.props?.activeTab || 0);
+        if (!tabChildMap[activeTab]) tabChildMap[activeTab] = [];
+        tabChildMap[activeTab] = [...tabChildMap[activeTab], id];
+        get().updateComponent(newParentId, { props: { ...newParent.props, tabChildMap } });
+      } else if (newParent?.type === 'tileview') {
+        const tileChildMap: Record<string, string[]> = { ...(newParent.props?.tileChildMap || {}) };
+        const key = `${newParent.props?.currentRow || 0}-${newParent.props?.currentCol || 0}`;
+        if (!tileChildMap[key]) tileChildMap[key] = [];
+        tileChildMap[key] = [...tileChildMap[key], id];
+        get().updateComponent(newParentId, { props: { ...newParent.props, tileChildMap } });
+      }
+    }
   },
   
   setComponents: (components) => {

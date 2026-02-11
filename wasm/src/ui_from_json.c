@@ -367,13 +367,35 @@ static lv_obj_t *create_calendar(lv_obj_t *parent, const cJSON *comp) {
 static lv_obj_t *create_tabview(lv_obj_t *parent, const cJSON *comp) {
     lv_obj_t *tv = lv_tabview_create(parent);
     const cJSON *props = cJSON_GetObjectItemCaseSensitive(comp, "props");
+    const char *comp_id = cjson_get_string(comp, "id");
     if (props) {
+        /* Set tab bar position */
+        const char *pos = cjson_get_string(props, "tabPosition");
+        if (pos) {
+            lv_dir_t dir = LV_DIR_TOP;
+            if (strcmp(pos, "bottom") == 0) dir = LV_DIR_BOTTOM;
+            else if (strcmp(pos, "left") == 0) dir = LV_DIR_LEFT;
+            else if (strcmp(pos, "right") == 0) dir = LV_DIR_RIGHT;
+            lv_tabview_set_tab_bar_position(tv, dir);
+        }
+        int tab_size = cjson_get_int(props, "tabBarSize", 50);
+        lv_tabview_set_tab_bar_size(tv, tab_size);
+
         cJSON *tabs = cJSON_GetObjectItemCaseSensitive(props, "tabs");
         if (cJSON_IsArray(tabs)) {
+            int idx = 0;
             cJSON *tab;
             cJSON_ArrayForEach(tab, tabs) {
-                if (cJSON_IsString(tab))
-                    lv_tabview_add_tab(tv, tab->valuestring);
+                if (cJSON_IsString(tab)) {
+                    lv_obj_t *page = lv_tabview_add_tab(tv, tab->valuestring);
+                    /* Register tab page with virtual ID so children can find it */
+                    if (comp_id && page) {
+                        char vid[128];
+                        snprintf(vid, sizeof(vid), "%s__tab__%d", comp_id, idx);
+                        id_map_add(vid, page);
+                    }
+                    idx++;
+                }
             }
         }
         int active = cjson_get_int(props, "activeTab", 0);
@@ -385,12 +407,19 @@ static lv_obj_t *create_tabview(lv_obj_t *parent, const cJSON *comp) {
 static lv_obj_t *create_tileview(lv_obj_t *parent, const cJSON *comp) {
     lv_obj_t *tv = lv_tileview_create(parent);
     const cJSON *props = cJSON_GetObjectItemCaseSensitive(comp, "props");
+    const char *comp_id = cjson_get_string(comp, "id");
     if (props) {
         int rows = cjson_get_int(props, "rows", 2);
         int cols = cjson_get_int(props, "cols", 2);
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                lv_tileview_add_tile(tv, (uint8_t)c, (uint8_t)r, LV_DIR_ALL);
+                lv_obj_t *tile = lv_tileview_add_tile(tv, (uint8_t)c, (uint8_t)r, LV_DIR_ALL);
+                /* Register tile with virtual ID */
+                if (comp_id && tile) {
+                    char vid[128];
+                    snprintf(vid, sizeof(vid), "%s__tile__%d-%d", comp_id, r, c);
+                    id_map_add(vid, tile);
+                }
             }
         }
         int cr = cjson_get_int(props, "currentRow", 0);
@@ -403,9 +432,19 @@ static lv_obj_t *create_tileview(lv_obj_t *parent, const cJSON *comp) {
 static lv_obj_t *create_win(lv_obj_t *parent, const cJSON *comp) {
     lv_obj_t *win = lv_win_create(parent);
     const cJSON *props = cJSON_GetObjectItemCaseSensitive(comp, "props");
+    const char *comp_id = cjson_get_string(comp, "id");
     if (props) {
         const char *title = cjson_get_string(props, "title");
         if (title) lv_win_add_title(win, title);
+    }
+    /* Register win content area with virtual ID */
+    if (comp_id) {
+        lv_obj_t *content = lv_win_get_content(win);
+        if (content) {
+            char vid[128];
+            snprintf(vid, sizeof(vid), "%s__win_content", comp_id);
+            id_map_add(vid, content);
+        }
     }
     return win;
 }

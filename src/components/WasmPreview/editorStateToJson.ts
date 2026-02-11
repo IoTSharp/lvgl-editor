@@ -40,14 +40,56 @@ interface WasmComponent {
 function flattenTree(
   components: LvglComponent[],
   parentId: string | null,
+  parentComp?: LvglComponent,
 ): WasmComponent[] {
   const result: WasmComponent[] = [];
 
+  // Build child-to-tab/tile mapping for container parents
+  let childToVirtualParent: Record<string, string> = {};
+  if (parentComp?.type === 'tabview' && parentComp.props?.tabs) {
+    const tabChildMap: Record<string, string[]> = parentComp.props.tabChildMap || {};
+    const defaultTab = String(parentComp.props.activeTab || 0);
+    for (const [tabIndex, childIds] of Object.entries(tabChildMap)) {
+      if (Array.isArray(childIds)) {
+        for (const childId of childIds) {
+          childToVirtualParent[childId] = `${parentComp.id}__tab__${tabIndex}`;
+        }
+      }
+    }
+    // Default: unmapped children go to activeTab
+    for (const comp of components) {
+      if (!childToVirtualParent[comp.id]) {
+        childToVirtualParent[comp.id] = `${parentComp.id}__tab__${defaultTab}`;
+      }
+    }
+  } else if (parentComp?.type === 'tileview' && parentComp.props?.rows !== undefined) {
+    const tileChildMap: Record<string, string[]> = parentComp.props.tileChildMap || {};
+    const defaultTile = `${parentComp.props.currentRow || 0}-${parentComp.props.currentCol || 0}`;
+    for (const [tileKey, childIds] of Object.entries(tileChildMap)) {
+      if (Array.isArray(childIds)) {
+        for (const childId of childIds) {
+          childToVirtualParent[childId] = `${parentComp.id}__tile__${tileKey}`;
+        }
+      }
+    }
+    for (const comp of components) {
+      if (!childToVirtualParent[comp.id]) {
+        childToVirtualParent[comp.id] = `${parentComp.id}__tile__${defaultTile}`;
+      }
+    }
+  } else if (parentComp?.type === 'win') {
+    for (const comp of components) {
+      childToVirtualParent[comp.id] = `${parentComp.id}__win_content`;
+    }
+  }
+
   for (const comp of components) {
+    const effectiveParent = childToVirtualParent[comp.id] || parentId;
+
     const wc: WasmComponent = {
       type: comp.type,
       id: comp.id,
-      parent: parentId,
+      parent: effectiveParent,
       x: comp.x,
       y: comp.y,
       width: comp.width,
@@ -80,7 +122,7 @@ function flattenTree(
     result.push(wc);
 
     if (comp.children.length > 0) {
-      result.push(...flattenTree(comp.children, comp.id));
+      result.push(...flattenTree(comp.children, comp.id, comp));
     }
   }
 

@@ -629,10 +629,36 @@ const PreviewPanel: React.FC = () => {
         ctx.stroke();
       }
 
-      // Render children (apply padding offset)
+      // Render children (apply padding offset, filter by tab/tile)
       const padTop = styles.paddingTop ?? styles.padding ?? 0;
       const padLeft = styles.paddingLeft ?? styles.padding ?? 0;
-      comp.children.forEach(child => renderComponent(child, x + padLeft, y + padTop));
+      
+      let visibleChildren = comp.children;
+      let childOffsetX = x + padLeft;
+      let childOffsetY = y + padTop;
+      
+      if (comp.type === 'tabview') {
+        const tabChildMap: Record<string, string[]> = comp.props?.tabChildMap || {};
+        const activeTab = String(comp.props?.activeTab || 0);
+        const activeChildIds = tabChildMap[activeTab] || [];
+        if (Object.keys(tabChildMap).length > 0) {
+          visibleChildren = comp.children.filter(c => activeChildIds.includes(c.id));
+        }
+        // Offset for tab bar height
+        childOffsetY = y + padTop + 30;
+      } else if (comp.type === 'tileview') {
+        const tileChildMap: Record<string, string[]> = comp.props?.tileChildMap || {};
+        const activeKey = `${comp.props?.currentRow || 0}-${comp.props?.currentCol || 0}`;
+        const activeChildIds = tileChildMap[activeKey] || [];
+        if (Object.keys(tileChildMap).length > 0) {
+          visibleChildren = comp.children.filter(c => activeChildIds.includes(c.id));
+        }
+      } else if (comp.type === 'win') {
+        // Offset for window title bar
+        childOffsetY = y + padTop + 32;
+      }
+      
+      visibleChildren.forEach(child => renderComponent(child, childOffsetX, childOffsetY));
 
       // Restore transform if applied
       if (hasTransform) {

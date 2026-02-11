@@ -19,7 +19,7 @@ export interface GeneratedCode {
 }
 
 export const DEFAULT_CODEGEN_OPTIONS: CodeGenOptions = {
-  lvglVersion: '8',
+  lvglVersion: '9',
   namingStyle: 'snake_case',
   indentStyle: 'spaces',
   indentSize: 4,

@@ -34,6 +34,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   children,
 }) => {
   const setHoveredComponent = useEditorStore(state => state.setHoveredComponent);
+  const updateComponent = useEditorStore(state => state.updateComponent);
   const { styles, props, type } = component;
   const defaultStyle = styles.default;
 
@@ -452,10 +453,14 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 <div key={i} style={{
                   padding: '8px 16px',
                   fontSize: '12px',
+                  cursor: 'pointer',
                   borderBottom: i === (props.activeTab || 0) ? '2px solid #2196F3' : '2px solid transparent',
                   color: i === (props.activeTab || 0) ? '#2196F3' : '#666',
                   fontWeight: i === (props.activeTab || 0) ? 600 : 400,
                   marginBottom: '-2px',
+                }} onClick={(e) => {
+                  e.stopPropagation();
+                  updateComponent(component.id, { props: { ...props, activeTab: i } });
                 }}>
                   {tab}
                 </div>

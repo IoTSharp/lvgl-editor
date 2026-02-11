@@ -599,8 +599,27 @@ const Canvas: React.FC = () => {
   };
 
   // Render components recursively
-  const renderComponents = (comps: LvglComponent[], offsetX = 0, offsetY = 0) => {
-    return comps.map(comp => (
+  const renderComponents = (comps: LvglComponent[], offsetX = 0, offsetY = 0, parentComp?: LvglComponent) => {
+    // Filter children for tabview/tileview based on active tab/tile
+    let visibleComps = comps;
+    if (parentComp?.type === 'tabview') {
+      const tabChildMap: Record<string, string[]> = parentComp.props?.tabChildMap || {};
+      const activeTab = String(parentComp.props?.activeTab || 0);
+      const activeChildIds = tabChildMap[activeTab] || [];
+      // If tabChildMap is empty, show all children (backward compat); otherwise filter
+      if (Object.keys(tabChildMap).length > 0) {
+        visibleComps = comps.filter(c => activeChildIds.includes(c.id));
+      }
+    } else if (parentComp?.type === 'tileview') {
+      const tileChildMap: Record<string, string[]> = parentComp.props?.tileChildMap || {};
+      const activeKey = `${parentComp.props?.currentRow || 0}-${parentComp.props?.currentCol || 0}`;
+      const activeChildIds = tileChildMap[activeKey] || [];
+      if (Object.keys(tileChildMap).length > 0) {
+        visibleComps = comps.filter(c => activeChildIds.includes(c.id));
+      }
+    }
+
+    return visibleComps.map(comp => (
       <CanvasComponent
         key={comp.id}
         component={comp}
@@ -614,7 +633,7 @@ const Canvas: React.FC = () => {
         onContextMenu={(e) => handleContextMenu(e, comp.id)}
       >
         {comp.children.length > 0 &&
-          renderComponents(comp.children, offsetX + comp.x, offsetY + comp.y)}
+          renderComponents(comp.children, offsetX + comp.x, offsetY + comp.y, comp)}
       </CanvasComponent>
     ));
   };

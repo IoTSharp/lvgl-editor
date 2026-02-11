@@ -17,7 +17,7 @@ const CodePreview: React.FC = () => {
   const fontResources = useResourceStore((s) => s.fonts);
   const [selectedFile, setSelectedFile] = useState<keyof GeneratedCode>('ui.c');
   const [isLoading, setIsLoading] = useState(true);
-  const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('8');
+  const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('9');
 
   const fileNames = getGeneratedFileNames();
 
