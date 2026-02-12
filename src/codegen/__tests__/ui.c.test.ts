@@ -249,13 +249,24 @@ describe('generateUiSource', () => {
       expect(result).toContain('lv_chart_set_next_value(ui_temp_chart,');
     });
 
-    it('creates spinner with speed and arcLength', () => {
+    it('creates spinner with speed and arcLength (v9)', () => {
       const spinner = createComponent('spinner', {
         name: 'loader',
         props: { speed: 2000, arcLength: 90 },
       });
       const pages = [createPage({ name: 'main', components: [spinner] })];
       const result = generateUiSource(pages, defaultOptions());
+      expect(result).toContain('ui_loader = lv_spinner_create(ui_screen_main);');
+      expect(result).toContain('lv_spinner_set_anim_params(ui_loader, 2000, 90);');
+    });
+
+    it('creates spinner with old API (v8)', () => {
+      const spinner = createComponent('spinner', {
+        name: 'loader',
+        props: { speed: 2000, arcLength: 90 },
+      });
+      const pages = [createPage({ name: 'main', components: [spinner] })];
+      const result = generateUiSource(pages, defaultOptions({ lvglVersion: '8' }));
       expect(result).toContain('ui_loader = lv_spinner_create(ui_screen_main, 2000, 90);');
     });
 

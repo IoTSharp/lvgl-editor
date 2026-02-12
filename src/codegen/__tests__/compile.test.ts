@@ -140,6 +140,7 @@ describe('Compile verification', { timeout: 300_000 }, () => {
         createComponent('textarea', { name: 'notes_ta', props: { placeholder: 'Enter notes...' } }),
         createComponent('dropdown', { name: 'lang_dd', props: { options: 'English\nChinese\nJapanese' } }),
         createComponent('bar', { name: 'progress_bar', props: { min: 0, max: 100, value: 30 } }),
+        createComponent('spinner', { name: 'loading_sp', props: { speed: 1000, arcLength: 60 } }),
       ],
     });
     const code = generateCode([page1, page2], defaultOptions());

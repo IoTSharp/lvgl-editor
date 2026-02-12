@@ -67,6 +67,9 @@ function getCreateFunction(type: string, parentVar: string, options: CodeGenOpti
     return `lv_tabview_create(${parentVar}, ${dirMap[position] || 'LV_DIR_TOP'}, 50)`;
   }
   if (type === 'spinner') {
+    if (isV9) {
+      return `lv_spinner_create(${parentVar})`;
+    }
     const speed = props?.speed || 1000;
     const arcLength = props?.arcLength || 60;
     return `lv_spinner_create(${parentVar}, ${speed}, ${arcLength})`;
@@ -576,12 +579,19 @@ function generatePropsCode(
       break;
       
     case 'spinner':
-      // Spinner properties are set in create function
-      if (props.speed && props.speed !== 1000) {
-        lines.push(`${indent}// Note: Spinner speed ${props.speed}ms set in create function`);
-      }
-      if (props.arcLength && props.arcLength !== 60) {
-        lines.push(`${indent}// Note: Spinner arc length ${props.arcLength}° set in create function`);
+      if (isV9) {
+        // V9: speed and arc length set via lv_spinner_set_anim_params
+        const speed = props.speed || 1000;
+        const arcLength = props.arcLength || 60;
+        lines.push(`${indent}lv_spinner_set_anim_params(${varName}, ${speed}, ${arcLength});`);
+      } else {
+        // V8: speed and arc length set in create function
+        if (props.speed && props.speed !== 1000) {
+          lines.push(`${indent}// Note: Spinner speed ${props.speed}ms set in create function`);
+        }
+        if (props.arcLength && props.arcLength !== 60) {
+          lines.push(`${indent}// Note: Spinner arc length ${props.arcLength}° set in create function`);
+        }
       }
       break;
       
