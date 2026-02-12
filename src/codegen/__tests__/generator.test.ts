@@ -1,241 +1,142 @@
 import { describe, it, expect } from 'vitest';
-import { generateCode, getGeneratedFileNames } from '../generator';
-import type { Page } from '../../types';
+import { generateCode, generateSingleFile, getGeneratedFileNames } from '../generator';
+import { defaultOptions, createPage, createComponent, createEvent, createBuiltinAction, createFontResource } from './helpers';
+import type { GeneratedCode } from '../types';
 
-function createTestPage(overrides: Partial<Page> = {}): Page {
-  return {
-    id: 'page-1',
-    name: 'Main',
-    components: [],
-    backgroundColor: '#ffffff',
-    ...overrides,
-  };
-}
+describe('getGeneratedFileNames', () => {
+  it('returns all 6 file names', () => {
+    const names = getGeneratedFileNames();
+    expect(names).toEqual(['ui.h', 'ui.c', 'ui_events.h', 'ui_events.c', 'ui_logic.h', 'ui_logic.c']);
+  });
 
-function createTestComponent(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'comp-1',
-    type: 'btn',
-    name: 'MyButton',
-    x: 10,
-    y: 20,
-    width: 100,
-    height: 40,
-    children: [],
-    props: { text: 'Click Me' },
-    styles: {
-      default: {
-        bgColor: '#2196F3',
-        borderColor: '#1976D2',
-        borderWidth: 0,
-        borderRadius: 4,
-        textColor: '#ffffff',
-        opacity: 1,
-        padding: 8,
-      },
-    },
-    events: [],
-    animations: [],
-    parentId: null,
-    locked: false,
-    visible: true,
-    ...overrides,
-  };
-}
+  it('returns the correct length', () => {
+    expect(getGeneratedFileNames()).toHaveLength(6);
+  });
+});
 
 describe('generateCode', () => {
-  it('should return all 6 generated files', () => {
-    const pages = [createTestPage()];
-    const code = generateCode(pages);
-    const expectedFiles = getGeneratedFileNames();
-    expect(Object.keys(code)).toHaveLength(6);
-    for (const file of expectedFiles) {
-      expect(code).toHaveProperty(file);
-      expect(typeof code[file]).toBe('string');
-      expect(code[file].length).toBeGreaterThan(0);
+  it('returns an object with all 6 file keys', () => {
+    const code = generateCode([]);
+    const keys = Object.keys(code) as (keyof GeneratedCode)[];
+    expect(keys).toEqual(['ui.h', 'ui.c', 'ui_events.h', 'ui_events.c', 'ui_logic.h', 'ui_logic.c']);
+  });
+
+  it('all values are non-empty strings', () => {
+    const code = generateCode([createPage({ name: 'main' })]);
+    for (const content of Object.values(code)) {
+      expect(typeof content).toBe('string');
+      expect(content.length).toBeGreaterThan(0);
     }
   });
 
-  it('should generate ui.c with correct component creation code', () => {
-    const btn = createTestComponent();
-    const pages = [createTestPage({ components: [btn] })];
+  it('generates correct ui.h content', () => {
+    const pages = [createPage({ name: 'home' })];
     const code = generateCode(pages);
-    const uiC = code['ui.c'];
-
-    // Should contain the button create call
-    expect(uiC).toContain('lv_btn_create');
-    // Should contain position setting
-    expect(uiC).toContain('lv_obj_set_pos');
-    // Should contain size setting
-    expect(uiC).toContain('lv_obj_set_size');
-    // Should contain the button text
-    expect(uiC).toContain('Click Me');
+    expect(code['ui.h']).toContain('#ifndef UI_H');
+    expect(code['ui.h']).toContain('extern lv_obj_t *ui_screen_home;');
+    expect(code['ui.h']).toContain('void ui_init(void);');
   });
 
-  it('should generate ui.h with correct declarations', () => {
-    const btn = createTestComponent();
-    const pages = [createTestPage({ components: [btn] })];
-    const code = generateCode(pages);
-    const uiH = code['ui.h'];
-
-    // Should have include guard
-    expect(uiH).toContain('#ifndef UI_H');
-    expect(uiH).toContain('#define UI_H');
-    expect(uiH).toContain('#endif');
-    // Should include lvgl.h
-    expect(uiH).toContain('#include "lvgl.h"');
-    // Should declare screen variable
-    expect(uiH).toContain('extern lv_obj_t *ui_screen_');
-    // Should declare component variable
-    expect(uiH).toContain('extern lv_obj_t *ui_');
-    // Should declare ui_init
-    expect(uiH).toContain('void ui_init(void);');
-  });
-
-  it('should generate event callback registration for components with events', () => {
-    const btnWithEvent = createTestComponent({
-      events: [
-        {
-          id: 'evt-1',
-          eventType: 'LV_EVENT_CLICKED',
-          handlerType: 'builtin' as const,
-          action: {
-            type: 'navigate' as const,
-            targetPage: 'Settings',
-          },
-        },
-      ],
+  it('generates correct ui_events.h content', () => {
+    const btn = createComponent('btn', {
+      name: 'myBtn',
+      events: [createEvent({ eventType: 'LV_EVENT_CLICKED' })],
     });
-    const pages = [
-      createTestPage({ components: [btnWithEvent] }),
-      createTestPage({ id: 'page-2', name: 'Settings' }),
-    ];
+    const pages = [createPage({ name: 'main', components: [btn] })];
     const code = generateCode(pages);
-    const uiC = code['ui.c'];
-
-    // Should contain event callback registration
-    expect(uiC).toContain('lv_obj_add_event_cb');
-    expect(uiC).toContain('LV_EVENT_CLICKED');
-
-    // Events header should declare the handler
-    const eventsH = code['ui_events.h'];
-    expect(eventsH).toContain('ui_event_');
-    expect(eventsH).toContain('lv_event_t *e');
-
-    // Events source should contain the handler implementation
-    const eventsC = code['ui_events.c'];
-    expect(eventsC).toContain('lv_event_get_code');
+    expect(code['ui_events.h']).toContain('#ifndef UI_EVENTS_H');
+    expect(code['ui_events.h']).toContain('ui_event_my_btn_clicked');
   });
 
-  it('should generate multiple screens for multiple pages', () => {
-    const pages = [
-      createTestPage({ id: 'p1', name: 'Home' }),
-      createTestPage({ id: 'p2', name: 'Settings' }),
-      createTestPage({ id: 'p3', name: 'About' }),
-    ];
-    const code = generateCode(pages);
-    const uiC = code['ui.c'];
-    const uiH = code['ui.h'];
-
-    // Each page should have a screen variable
-    expect(uiC).toContain('ui_screen_home');
-    expect(uiC).toContain('ui_screen_settings');
-    expect(uiC).toContain('ui_screen_about');
-
-    // Each page should have init and load functions
-    expect(uiC).toContain('ui_screen_home_init');
-    expect(uiC).toContain('ui_screen_settings_init');
-    expect(uiC).toContain('ui_screen_about_init');
-
-    // Header should declare all screens
-    expect(uiH).toContain('ui_screen_home');
-    expect(uiH).toContain('ui_screen_settings');
-    expect(uiH).toContain('ui_screen_about');
-
-    // ui_init should call all init functions
-    expect(uiC).toContain('ui_screen_home_init()');
-    expect(uiC).toContain('ui_screen_settings_init()');
-    expect(uiC).toContain('ui_screen_about_init()');
-  });
-
-  it('should generate correct code for label component', () => {
-    const label = createTestComponent({
-      id: 'comp-label',
-      type: 'label',
-      name: 'StatusLabel',
-      props: { text: 'Hello World' },
+  it('generates correct ui_events.c content', () => {
+    const btn = createComponent('btn', {
+      name: 'myBtn',
+      events: [createEvent({
+        eventType: 'LV_EVENT_CLICKED',
+        handlerType: 'builtin',
+        action: createBuiltinAction({ type: 'show', targetComponent: 'panel' }),
+      })],
     });
-    const pages = [createTestPage({ components: [label] })];
+    const pages = [createPage({ name: 'main', components: [btn] })];
     const code = generateCode(pages);
-    const uiC = code['ui.c'];
-
-    expect(uiC).toContain('lv_label_create');
-    expect(uiC).toContain('lv_label_set_text');
-    expect(uiC).toContain('Hello World');
+    expect(code['ui_events.c']).toContain('#include "ui.h"');
+    expect(code['ui_events.c']).toContain('lv_obj_clear_flag(ui_panel, LV_OBJ_FLAG_HIDDEN)');
   });
 
-  it('should respect codegen options for naming style', () => {
-    const btn = createTestComponent({ name: 'MyButton' });
-    const pages = [createTestPage({ components: [btn] })];
-
-    const snakeCode = generateCode(pages, { namingStyle: 'snake_case' });
-    const camelCode = generateCode(pages, { namingStyle: 'camelCase' });
-
-    // snake_case should produce underscored names
-    expect(snakeCode['ui.c']).toContain('ui_my_button');
-    // camelCase should produce camelCased names
-    expect(camelCode['ui.c']).toContain('ui_mybutton');
+  it('handles empty pages', () => {
+    const code = generateCode([]);
+    expect(code['ui.h']).toContain('#ifndef UI_H');
+    expect(code['ui_events.h']).toContain('#ifndef UI_EVENTS_H');
   });
 
-  it('should generate slider with range and value', () => {
-    const slider = createTestComponent({
-      id: 'comp-slider',
-      type: 'slider',
-      name: 'VolumeSlider',
-      props: { min: 0, max: 100, value: 50 },
-    });
-    const pages = [createTestPage({ components: [slider] })];
-    const code = generateCode(pages);
-    const uiC = code['ui.c'];
-
-    expect(uiC).toContain('lv_slider_create');
-    expect(uiC).toContain('lv_slider_set_range');
-    expect(uiC).toContain('lv_slider_set_value');
+  it('applies custom options', () => {
+    const btn = createComponent('btn', { name: 'my_button' });
+    const pages = [createPage({ name: 'main_page', components: [btn] })];
+    const code = generateCode(pages, { namingStyle: 'camelCase', generateComments: false });
+    expect(code['ui.h']).toContain('ui_screen_mainPage');
+    expect(code['ui.h']).toContain('ui_myButton');
+    expect(code['ui.h']).not.toContain('Screen Declarations');
   });
 
-  it('should generate nested children correctly', () => {
-    const child = createTestComponent({
-      id: 'child-1',
-      type: 'label',
-      name: 'ChildLabel',
-      props: { text: 'Nested' },
-      parentId: 'comp-container',
-    });
-    const container = createTestComponent({
-      id: 'comp-container',
-      type: 'obj',
-      name: 'Container',
-      props: {},
-      children: [child],
-    });
-    const pages = [createTestPage({ components: [container] })];
-    const code = generateCode(pages);
-    const uiC = code['ui.c'];
-
-    expect(uiC).toContain('lv_obj_create');
-    expect(uiC).toContain('lv_label_create');
-    expect(uiC).toContain('Nested');
+  it('passes font resources to ui.h', () => {
+    const font = createFontResource({ cFontName: 'font_custom', sizes: [12] });
+    const code = generateCode([], {}, [], undefined, [], [font]);
+    expect(code['ui.h']).toContain('LV_FONT_DECLARE(font_custom_12);');
   });
 
-  it('should load first screen in ui_init', () => {
-    const pages = [
-      createTestPage({ name: 'Home' }),
-      createTestPage({ id: 'p2', name: 'Settings' }),
-    ];
-    const code = generateCode(pages);
-    const uiC = code['ui.c'];
+  it('uses default options when none provided', () => {
+    const code = generateCode([createPage({ name: 'test' })]);
+    // Default has generateComments: true
+    expect(code['ui.h']).toContain('Screen Declarations');
+  });
+});
 
-    // Should load the first screen
-    expect(uiC).toContain('ui_load_screen_home()');
+describe('generateSingleFile', () => {
+  it('returns ui.h content', () => {
+    const pages = [createPage({ name: 'main' })];
+    const content = generateSingleFile(pages, 'ui.h');
+    expect(content).toContain('#ifndef UI_H');
+    expect(content).toContain('extern lv_obj_t *ui_screen_main;');
+  });
+
+  it('returns ui.c content', () => {
+    const pages = [createPage({ name: 'main' })];
+    const content = generateSingleFile(pages, 'ui.c');
+    expect(content).toContain('#include "ui.h"');
+  });
+
+  it('returns ui_events.h content', () => {
+    const content = generateSingleFile([], 'ui_events.h');
+    expect(content).toContain('#ifndef UI_EVENTS_H');
+  });
+
+  it('returns ui_events.c content', () => {
+    const content = generateSingleFile([], 'ui_events.c');
+    expect(content).toContain('#include "ui_events.h"');
+  });
+
+  it('returns ui_logic.h content', () => {
+    const content = generateSingleFile([], 'ui_logic.h');
+    expect(content).toContain('#ifndef UI_LOGIC_H');
+  });
+
+  it('returns ui_logic.c content', () => {
+    const content = generateSingleFile([], 'ui_logic.c');
+    expect(content).toContain('#include "ui_logic.h"');
+  });
+
+  it('applies custom options', () => {
+    const btn = createComponent('btn', { name: 'my_button' });
+    const pages = [createPage({ name: 'main', components: [btn] })];
+    const content = generateSingleFile(pages, 'ui.h', { namingStyle: 'camelCase' });
+    expect(content).toContain('ui_myButton');
+  });
+
+  it('matches corresponding generateCode output', () => {
+    const pages = [createPage({ name: 'main' })];
+    const opts = { generateComments: true };
+    const allCode = generateCode(pages, opts);
+    const single = generateSingleFile(pages, 'ui.h', opts);
+    expect(single).toBe(allCode['ui.h']);
   });
 });

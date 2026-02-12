@@ -3,6 +3,7 @@ import {
   toSnakeCase,
   toCamelCase,
   toPascalCase,
+  convertName,
   toValidCIdentifier,
   getComponentVarName,
   getScreenVarName,
@@ -13,263 +14,264 @@ import {
   opacityToLvgl,
   escapeCString,
 } from '../utils/nameUtils';
-import type { CodeGenOptions } from '../types';
-
-const snakeOpts: CodeGenOptions = {
-  lvglVersion: '8',
-  namingStyle: 'snake_case',
-  indentStyle: 'spaces',
-  indentSize: 4,
-  generateComments: true,
-  userCodeMarkers: true,
-};
-
-const camelOpts: CodeGenOptions = {
-  ...snakeOpts,
-  namingStyle: 'camelCase',
-};
+import { defaultOptions } from './helpers';
 
 describe('nameUtils', () => {
-  // --- toSnakeCase ---
+  // ─── toSnakeCase ───
   describe('toSnakeCase', () => {
-    it('should convert camelCase to snake_case', () => {
+    it('converts camelCase', () => {
       expect(toSnakeCase('myButton')).toBe('my_button');
     });
 
-    it('should convert PascalCase to snake_case', () => {
+    it('converts PascalCase', () => {
       expect(toSnakeCase('MyButton')).toBe('my_button');
     });
 
-    it('should handle already snake_case', () => {
+    it('keeps already snake_case', () => {
       expect(toSnakeCase('my_button')).toBe('my_button');
     });
 
-    it('should replace special characters with underscores', () => {
-      expect(toSnakeCase('my-button.test')).toBe('my_button_test');
+    it('handles spaces and special chars', () => {
+      expect(toSnakeCase('my button!')).toBe('my_button_');
     });
 
-    it('should collapse multiple underscores', () => {
+    it('collapses multiple underscores', () => {
       expect(toSnakeCase('my__button')).toBe('my_button');
+    });
+
+    it('handles empty string', () => {
+      expect(toSnakeCase('')).toBe('');
+    });
+
+    it('handles single character', () => {
+      expect(toSnakeCase('A')).toBe('a');
+    });
+
+    it('handles consecutive uppercase', () => {
+      expect(toSnakeCase('HTMLParser')).toBe('h_t_m_l_parser');
     });
   });
 
-  // --- toCamelCase ---
+  // ─── toCamelCase ───
   describe('toCamelCase', () => {
-    it('should convert snake_case to camelCase', () => {
+    it('converts snake_case', () => {
       expect(toCamelCase('my_button')).toBe('myButton');
     });
 
-    it('should handle single word', () => {
+    it('converts space-separated', () => {
+      expect(toCamelCase('my button')).toBe('myButton');
+    });
+
+    it('handles single word', () => {
       expect(toCamelCase('button')).toBe('button');
     });
 
-    it('should handle special characters', () => {
-      expect(toCamelCase('my-button')).toBe('myButton');
+    it('handles empty string', () => {
+      expect(toCamelCase('')).toBe('');
     });
 
-    it('should handle multiple segments', () => {
-      expect(toCamelCase('my_cool_button_text')).toBe('myCoolButtonText');
-    });
-
-    it('should handle PascalCase input', () => {
-      expect(toCamelCase('MyButton')).toBe('mybutton');
+    it('lowercases first word', () => {
+      expect(toCamelCase('My_Button')).toBe('myButton');
     });
   });
 
-  // --- toPascalCase ---
+  // ─── toPascalCase ───
   describe('toPascalCase', () => {
-    it('should convert snake_case to PascalCase', () => {
+    it('converts snake_case', () => {
       expect(toPascalCase('my_button')).toBe('MyButton');
     });
 
-    it('should capitalize single word', () => {
+    it('converts space-separated', () => {
+      expect(toPascalCase('my button')).toBe('MyButton');
+    });
+
+    it('capitalizes single word', () => {
       expect(toPascalCase('button')).toBe('Button');
     });
 
-    it('should handle special characters', () => {
-      expect(toPascalCase('my-button')).toBe('MyButton');
-    });
-
-    it('should handle multiple segments', () => {
-      expect(toPascalCase('my_cool_button')).toBe('MyCoolButton');
-    });
-
-    it('should handle already PascalCase', () => {
-      expect(toPascalCase('MyButton')).toBe('Mybutton');
+    it('handles empty string', () => {
+      expect(toPascalCase('')).toBe('');
     });
   });
 
-  // --- toValidCIdentifier ---
+  // ─── convertName ───
+  describe('convertName', () => {
+    it('uses snake_case when namingStyle is snake_case', () => {
+      expect(convertName('myButton', defaultOptions({ namingStyle: 'snake_case' }))).toBe('my_button');
+    });
+
+    it('uses camelCase when namingStyle is camelCase', () => {
+      expect(convertName('my_button', defaultOptions({ namingStyle: 'camelCase' }))).toBe('myButton');
+    });
+  });
+
+  // ─── toValidCIdentifier ───
   describe('toValidCIdentifier', () => {
-    it('should keep valid identifiers unchanged', () => {
-      expect(toValidCIdentifier('my_button')).toBe('my_button');
+    it('replaces invalid characters with underscore', () => {
+      expect(toValidCIdentifier('my-button!')).toBe('my_button_');
     });
 
-    it('should replace invalid characters with underscores', () => {
-      expect(toValidCIdentifier('my-button.test')).toBe('my_button_test');
+    it('prepends underscore if starts with digit', () => {
+      expect(toValidCIdentifier('1button')).toBe('_1button');
     });
 
-    it('should prefix with underscore if starts with digit', () => {
-      expect(toValidCIdentifier('123abc')).toBe('_123abc');
+    it('keeps valid identifiers unchanged', () => {
+      expect(toValidCIdentifier('my_button_1')).toBe('my_button_1');
     });
 
-    it('should handle empty-ish names', () => {
-      expect(toValidCIdentifier('---')).toBe('___');
-    });
-
-    it('should keep underscores and alphanumerics', () => {
-      expect(toValidCIdentifier('btn_1_ok')).toBe('btn_1_ok');
+    it('handles empty string', () => {
+      expect(toValidCIdentifier('')).toBe('');
     });
   });
 
-  // --- getComponentVarName ---
+  // ─── getComponentVarName ───
   describe('getComponentVarName', () => {
-    it('should generate snake_case variable name with ui_ prefix', () => {
-      expect(getComponentVarName('MyButton', snakeOpts)).toBe('ui_my_button');
+    it('generates snake_case var name', () => {
+      expect(getComponentVarName('myButton', defaultOptions())).toBe('ui_my_button');
     });
 
-    it('should generate camelCase variable name with ui_ prefix', () => {
-      expect(getComponentVarName('my_button', camelOpts)).toBe('ui_myButton');
-    });
-
-    it('should handle component names with special chars', () => {
-      const name = getComponentVarName('Button-1', snakeOpts);
-      expect(name).toMatch(/^ui_/);
-      expect(name).not.toContain('-');
-    });
-
-    it('should handle names starting with numbers', () => {
-      const name = getComponentVarName('1button', snakeOpts);
-      expect(name).toMatch(/^ui_/);
-    });
-
-    it('should produce different results for different naming styles', () => {
-      const snake = getComponentVarName('MyButton', snakeOpts);
-      const camel = getComponentVarName('MyButton', camelOpts);
-      expect(snake).not.toBe(camel);
+    it('generates camelCase var name', () => {
+      expect(getComponentVarName('my_button', defaultOptions({ namingStyle: 'camelCase' }))).toBe('ui_myButton');
     });
   });
 
-  // --- getScreenVarName ---
+  // ─── getScreenVarName ───
   describe('getScreenVarName', () => {
-    it('should generate screen variable with ui_screen_ prefix (snake)', () => {
-      expect(getScreenVarName('Page 1', snakeOpts)).toMatch(/^ui_screen_/);
+    it('generates snake_case screen var', () => {
+      expect(getScreenVarName('MainPage', defaultOptions())).toBe('ui_screen_main_page');
     });
 
-    it('should generate screen variable with ui_screen_ prefix (camel)', () => {
-      expect(getScreenVarName('Page 1', camelOpts)).toMatch(/^ui_screen_/);
-    });
-
-    it('should handle page names with spaces', () => {
-      const name = getScreenVarName('Main Screen', snakeOpts);
-      expect(name).not.toContain(' ');
-    });
-
-    it('should produce valid C identifiers', () => {
-      const name = getScreenVarName('Page-1', snakeOpts);
-      expect(name).toMatch(/^[a-zA-Z_][a-zA-Z0-9_]*$/);
-    });
-
-    it('should differentiate pages by name', () => {
-      const name1 = getScreenVarName('Page 1', snakeOpts);
-      const name2 = getScreenVarName('Page 2', snakeOpts);
-      expect(name1).not.toBe(name2);
+    it('generates camelCase screen var', () => {
+      expect(getScreenVarName('main_page', defaultOptions({ namingStyle: 'camelCase' }))).toBe('ui_screen_mainPage');
     });
   });
 
-  // --- getEventHandlerName ---
+  // ─── getEventHandlerName ───
   describe('getEventHandlerName', () => {
-    it('should generate event handler name', () => {
-      const name = getEventHandlerName('MyButton', 'LV_EVENT_CLICKED', snakeOpts);
-      expect(name).toMatch(/^ui_event_/);
-      expect(name).toContain('clicked');
+    it('generates event handler name', () => {
+      const result = getEventHandlerName('myButton', 'LV_EVENT_CLICKED', defaultOptions());
+      expect(result).toBe('ui_event_my_button_clicked');
     });
 
-    it('should strip LV_EVENT_ prefix from event type', () => {
-      const name = getEventHandlerName('btn', 'LV_EVENT_VALUE_CHANGED', snakeOpts);
-      expect(name).toContain('value_changed');
-    });
-  });
-
-  // --- getScreenInitFuncName / getScreenLoadFuncName ---
-  describe('screen function names', () => {
-    it('should generate init function name', () => {
-      const name = getScreenInitFuncName('Page 1', snakeOpts);
-      expect(name).toMatch(/^ui_screen_.*_init$/);
+    it('strips LV_EVENT_ prefix', () => {
+      const result = getEventHandlerName('btn', 'LV_EVENT_VALUE_CHANGED', defaultOptions());
+      expect(result).toBe('ui_event_btn_value_changed');
     });
 
-    it('should generate load function name', () => {
-      const name = getScreenLoadFuncName('Page 1', snakeOpts);
-      expect(name).toMatch(/^ui_load_screen_/);
+    it('generates camelCase handler name', () => {
+      const result = getEventHandlerName('btn', 'LV_EVENT_CLICKED', defaultOptions({ namingStyle: 'camelCase' }));
+      expect(result).toBe('ui_event_btnClicked');
     });
   });
 
-  // --- colorToLvgl ---
+  // ─── getScreenInitFuncName ───
+  describe('getScreenInitFuncName', () => {
+    it('generates init function name', () => {
+      expect(getScreenInitFuncName('main', defaultOptions())).toBe('ui_screen_main_init');
+    });
+
+    it('generates camelCase init function name', () => {
+      expect(getScreenInitFuncName('main_page', defaultOptions({ namingStyle: 'camelCase' }))).toBe('ui_screen_mainPage_init');
+    });
+  });
+
+  // ─── getScreenLoadFuncName ───
+  describe('getScreenLoadFuncName', () => {
+    it('generates load function name', () => {
+      expect(getScreenLoadFuncName('main', defaultOptions())).toBe('ui_load_screen_main');
+    });
+
+    it('generates camelCase load function name', () => {
+      expect(getScreenLoadFuncName('main_page', defaultOptions({ namingStyle: 'camelCase' }))).toBe('ui_load_screen_mainPage');
+    });
+  });
+
+  // ─── colorToLvgl ───
   describe('colorToLvgl', () => {
-    it('should convert hex color with #', () => {
-      expect(colorToLvgl('#ff0000')).toBe('lv_color_hex(0xFF0000)');
+    it('converts hex color with #', () => {
+      expect(colorToLvgl('#FF0000')).toBe('lv_color_hex(0xFF0000)');
     });
 
-    it('should convert hex color without #', () => {
-      expect(colorToLvgl('00ff00')).toBe('lv_color_hex(0x00FF00)');
+    it('converts hex color without #', () => {
+      expect(colorToLvgl('00FF00')).toBe('lv_color_hex(0x00FF00)');
     });
 
-    it('should handle mixed case', () => {
-      expect(colorToLvgl('#aaBBcc')).toBe('lv_color_hex(0xAABBCC)');
+    it('handles 3-char hex', () => {
+      expect(colorToLvgl('#FFF')).toBe('lv_color_hex(0xFFF)');
     });
 
-    it('should handle white', () => {
-      expect(colorToLvgl('#ffffff')).toBe('lv_color_hex(0xFFFFFF)');
+    it('handles 8-char hex (with alpha), takes first 6', () => {
+      expect(colorToLvgl('#FF000080')).toBe('lv_color_hex(0xFF0000)');
     });
 
-    it('should handle black', () => {
-      expect(colorToLvgl('#000000')).toBe('lv_color_hex(0x000000)');
+    it('returns black for transparent', () => {
+      expect(colorToLvgl('transparent')).toBe('lv_color_hex(0x000000)');
+    });
+
+    it('returns black for empty string', () => {
+      expect(colorToLvgl('')).toBe('lv_color_hex(0x000000)');
+    });
+
+    it('returns black for invalid color', () => {
+      expect(colorToLvgl('not-a-color')).toBe('lv_color_hex(0x000000)');
+    });
+
+    it('uppercases hex digits', () => {
+      expect(colorToLvgl('#abcdef')).toBe('lv_color_hex(0xABCDEF)');
     });
   });
 
-  // --- opacityToLvgl ---
+  // ─── opacityToLvgl ───
   describe('opacityToLvgl', () => {
-    it('should convert 1 to 255', () => {
-      expect(opacityToLvgl(1)).toBe(255);
+    it('converts 1.0 to 255', () => {
+      expect(opacityToLvgl(1.0)).toBe(255);
     });
 
-    it('should convert 0 to 0', () => {
-      expect(opacityToLvgl(0)).toBe(0);
+    it('converts 0.0 to 0', () => {
+      expect(opacityToLvgl(0.0)).toBe(0);
     });
 
-    it('should convert 0.5 to 128', () => {
+    it('converts 0.5 to 128', () => {
       expect(opacityToLvgl(0.5)).toBe(128);
     });
+
+    it('rounds correctly', () => {
+      expect(opacityToLvgl(0.1)).toBe(26);
+    });
   });
 
-  // --- escapeCString ---
+  // ─── escapeCString ───
   describe('escapeCString', () => {
-    it('should escape backslashes', () => {
-      expect(escapeCString('path\\to\\file')).toBe('path\\\\to\\\\file');
+    it('escapes backslash', () => {
+      expect(escapeCString('a\\b')).toBe('a\\\\b');
     });
 
-    it('should escape double quotes', () => {
+    it('escapes double quotes', () => {
       expect(escapeCString('say "hello"')).toBe('say \\"hello\\"');
     });
 
-    it('should escape newlines', () => {
+    it('escapes newline', () => {
       expect(escapeCString('line1\nline2')).toBe('line1\\nline2');
     });
 
-    it('should escape tabs', () => {
-      expect(escapeCString('col1\tcol2')).toBe('col1\\tcol2');
+    it('escapes carriage return', () => {
+      expect(escapeCString('a\rb')).toBe('a\\rb');
     });
 
-    it('should escape carriage returns', () => {
-      expect(escapeCString('line1\rline2')).toBe('line1\\rline2');
+    it('escapes tab', () => {
+      expect(escapeCString('a\tb')).toBe('a\\tb');
     });
 
-    it('should handle combined escapes', () => {
-      expect(escapeCString('a\\b"c\nd')).toBe('a\\\\b\\"c\\nd');
+    it('handles empty string', () => {
+      expect(escapeCString('')).toBe('');
     });
 
-    it('should leave normal strings unchanged', () => {
-      expect(escapeCString('Hello World')).toBe('Hello World');
+    it('handles string with no special chars', () => {
+      expect(escapeCString('hello world')).toBe('hello world');
+    });
+
+    it('handles multiple escapes', () => {
+      expect(escapeCString('"a\nb\\"')).toBe('\\"a\\nb\\\\\\"');
     });
   });
 });
