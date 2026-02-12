@@ -638,13 +638,13 @@ function generatePropsCode(
         lines.push(`${indent}// Note: Window header height ${props.headerHeight}px is set in lv_win_create()`);
       }
       if (props.showCloseBtn) {
-        lines.push(`${indent}lv_win_add_btn(${varName}, LV_SYMBOL_CLOSE, 40);`);
+        lines.push(`${indent}${isV9 ? 'lv_win_add_button' : 'lv_win_add_btn'}(${varName}, LV_SYMBOL_CLOSE, 40);`);
       }
       if (props.headerButtons && Array.isArray(props.headerButtons)) {
         for (const btn of props.headerButtons) {
           const icon = btn.icon || 'LV_SYMBOL_SETTINGS';
           const width = btn.width || 40;
-          lines.push(`${indent}lv_win_add_btn(${varName}, ${icon}, ${width});`);
+          lines.push(`${indent}${isV9 ? 'lv_win_add_button' : 'lv_win_add_btn'}(${varName}, ${icon}, ${width});`);
         }
       }
       break;

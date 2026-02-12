@@ -293,7 +293,7 @@ describe('generateUiSource', () => {
       const result = generateUiSource(pages, defaultOptions({ lvglVersion: '9' }));
       expect(result).toContain('ui_dialog = lv_win_create(ui_screen_main);');
       expect(result).toContain('lv_win_add_title(ui_dialog, "My Window");');
-      expect(result).toContain('lv_win_add_btn(ui_dialog, LV_SYMBOL_CLOSE, 40);');
+      expect(result).toContain('lv_win_add_button(ui_dialog, LV_SYMBOL_CLOSE, 40);');
     });
 
     it('creates calendar with date', () => {
