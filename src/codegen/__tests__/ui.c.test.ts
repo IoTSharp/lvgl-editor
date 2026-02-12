@@ -167,7 +167,7 @@ describe('generateUiSource', () => {
       expect(result).toContain('ui_input = lv_textarea_create(ui_screen_main);');
       expect(result).toContain('lv_textarea_set_placeholder_text(ui_input, "Enter text");');
       expect(result).toContain('lv_textarea_set_password_mode(ui_input, true);');
-      expect(result).toContain('lv_textarea_set_max_line(ui_input, 1);');
+      expect(result).toContain('lv_textarea_set_one_line(ui_input, true);');
     });
 
     it('creates textarea oneLine for v8', () => {

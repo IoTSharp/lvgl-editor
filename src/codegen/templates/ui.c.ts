@@ -427,11 +427,7 @@ function generatePropsCode(
         lines.push(`${indent}lv_textarea_set_password_mode(${varName}, true);`);
       }
       if (props.oneLine) {
-        if (isV9) {
-          lines.push(`${indent}lv_textarea_set_max_line(${varName}, 1);`);
-        } else {
-          lines.push(`${indent}lv_textarea_set_one_line(${varName}, true);`);
-        }
+        lines.push(`${indent}lv_textarea_set_one_line(${varName}, true);`);
       }
       break;
       
