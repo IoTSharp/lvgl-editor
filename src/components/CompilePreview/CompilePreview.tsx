@@ -8,7 +8,8 @@ import { generateCode } from '../../codegen';
 import { compileCode, type CompileStatus, type WasmRuntime, type FontCompileRequest } from './compilerService';
 import { getCharsetRanges } from '../../resources/converters/fontConverter';
 import type { LvglComponent } from '../../types';
-import type { FontResource } from '../../resources/types';
+import type { FontResource, ImageResource } from '../../resources/types';
+import { loadImageFromBase64, generateImageCCode, DEFAULT_IMAGE_OPTIONS } from '../../resources/converters/imageConverter';
 import './CompilePreview.css';
 
 /**
@@ -215,6 +216,35 @@ const CompilePreview: React.FC = () => {
       userFiles[fileName] = content;
     }
 
+    // Generate image C array files for used image resources
+    if (imageResources.length > 0) {
+      const usedImageIds = new Set<string>();
+      const walkImages = (components: LvglComponent[]) => {
+        for (const comp of components) {
+          if (comp.type === 'img' && comp.props.src) {
+            const matched = imageResources.find(
+              (img) => img.id === comp.props.src || img.name === comp.props.src
+            );
+            if (matched) usedImageIds.add(matched.id);
+          }
+          walkImages(comp.children);
+        }
+      };
+      for (const page of pages) walkImages(page.components);
+
+      const usedImages = imageResources.filter((img) => usedImageIds.has(img.id));
+      for (const img of usedImages) {
+        try {
+          const { imageData } = await loadImageFromBase64(img.data);
+          const convOptions = { ...DEFAULT_IMAGE_OPTIONS, format: img.format };
+          const result = generateImageCCode(img.cArrayName, imageData, convOptions);
+          userFiles[`${img.cArrayName}.c`] = result.cCode;
+        } catch (err) {
+          console.error(`Failed to generate C code for image ${img.name}:`, err);
+        }
+      }
+    }
+
     // Build font compile requests by dynamically collecting used font+size combos
     const usedFontSizes = collectUsedCustomFontSizes(pages, fontResources, projectDefaultFont, projectDefaultFontSize);
     const fontRequests: FontCompileRequest[] = fontResources
@@ -271,7 +301,7 @@ const CompilePreview: React.FC = () => {
       setStatus('done');
       setStatusMessage('编译成功（无运行时）');
     }
-  }, [status, generateCCode, canvas.width, canvas.height, renderFramebuffer, stopRuntime, startEventLoop, pages, fontResources, projectDefaultFont, projectDefaultFontSize]);
+  }, [status, generateCCode, canvas.width, canvas.height, renderFramebuffer, stopRuntime, startEventLoop, pages, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize]);
 
   // Handle stop button
   const handleStop = useCallback(() => {
