@@ -1093,7 +1093,9 @@ function generateScreenInitFunc(
   page: Page,
   options: CodeGenOptions,
   needsPagePrefix: Set<string>,
-  imageResources: ImageResource[] = []
+  imageResources: ImageResource[] = [],
+  defaultFont?: string,
+  fontResources: FontResource[] = []
 ): string {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -1111,6 +1113,18 @@ function generateScreenInitFunc(
   // Screen background color
   if (page.backgroundColor) {
     lines.push(`${indent}lv_obj_set_style_bg_color(${screenVar}, ${colorToLvgl(page.backgroundColor)}, 0);`);
+  }
+
+  // Set default font on this screen
+  if (defaultFont && defaultFont !== 'montserrat_14') {
+    const isBuiltin = defaultFont.match(/^montserrat_(\d+)$/);
+    if (isBuiltin) {
+      lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &lv_font_${defaultFont}, 0);`);
+    } else {
+      const fontRes = fontResources.find(f => f.cFontName === defaultFont);
+      const size = fontRes?.sizes?.[0] || 16;
+      lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &${defaultFont}_${size}, 0);`);
+    }
   }
   lines.push('');
   
@@ -1261,7 +1275,7 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   }
   
   for (const page of pages) {
-    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources));
+    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources, defaultFont, fontResources));
     lines.push('');
   }
   
@@ -1284,23 +1298,6 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   
   const indent = getIndent(options);
   lines.push('void ui_init(void) {');
-  
-  // Set default font if configured (non-builtin default)
-  if (defaultFont && defaultFont !== 'montserrat_14') {
-    if (options.generateComments) {
-      lines.push(`${indent}${generateComment('Set default font', options)}`);
-    }
-    const isBuiltin = defaultFont.match(/^montserrat_(\d+)$/);
-    if (isBuiltin) {
-      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &lv_font_${defaultFont}, 0);`);
-    } else {
-      // Custom font — find the resource to get the first available size
-      const fontRes = fontResources.find(f => f.cFontName === defaultFont);
-      const size = fontRes?.sizes?.[0] || 16;
-      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &${defaultFont}_${size}, 0);`);
-    }
-    lines.push('');
-  }
 
   // Theme initialization
   if (theme) {

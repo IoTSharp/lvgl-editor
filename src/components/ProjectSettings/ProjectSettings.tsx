@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore } from '../../store/appStore';
+import { useAppStore, parseFontSize } from '../../store/appStore';
 import { useProjectStore } from '../../store/projectStore';
 import type { ProjectConfig } from '../../store/projectStore';
 import { useEditorStore } from '../../store/editorStore';
@@ -17,7 +17,7 @@ const FONT_OPTIONS = [
 ];
 
 const ProjectSettings: React.FC = () => {
-  const { currentProjectId, setShowProjectSettings } = useAppStore();
+  const { currentProjectId, setShowProjectSettings, setDefaultFontSize } = useAppStore();
   const { getProjectConfig, updateProjectConfig } = useProjectStore();
   const { setCanvasSize } = useEditorStore();
   const fonts = useResourceStore((s) => s.fonts);
@@ -63,6 +63,9 @@ const ProjectSettings: React.FC = () => {
     };
     await updateProjectConfig(updated);
     setCanvasSize(width, height);
+    // Update canvas default font size
+    const fontRes = fonts.find(f => f.cFontName === defaultFont);
+    setDefaultFontSize(parseFontSize(defaultFont, fontRes?.sizes));
     setShowProjectSettings(false);
     toast.success('项目设置已保存');
     if (lvglChanged) {

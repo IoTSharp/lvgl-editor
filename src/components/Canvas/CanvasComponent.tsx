@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LvglComponent, ResizeHandle } from '../../types';
 import { useEditorStore } from '../../store/editorStore';
+import { useAppStore } from '../../store/appStore';
 import { useResourceStore } from '../../resources/resourceStore';
 import './CanvasComponent.css';
 
@@ -35,6 +36,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 }) => {
   const setHoveredComponent = useEditorStore(state => state.setHoveredComponent);
   const updateComponent = useEditorStore(state => state.updateComponent);
+  const defaultFontSize = useAppStore(state => state.defaultFontSize);
   const { styles, props, type } = component;
   const defaultStyle = styles.default;
 
@@ -278,7 +280,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             width: '100%',
             height: '100%',
             color: defaultStyle.textColor || '#ffffff',
-            fontSize: props.fontSize || 13,
+            fontSize: props.fontSize || defaultFontSize,
           }}>
             {props.text || 'Button'}
           </div>
@@ -288,7 +290,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         return (
           <span className="lvgl-label" style={{
             color: defaultStyle.textColor || '#333333',
-            fontSize: props.fontSize || 13,
+            fontSize: props.fontSize || defaultFontSize,
           }}>{props.text || 'Label'}</span>
         );
       
@@ -365,7 +367,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             }}>
               {props.checked && <span style={{ color: '#fff', fontSize: '12px', lineHeight: 1 }}>✓</span>}
             </div>
-            <span style={{ fontSize: 13 }}>{props.text || 'Checkbox'}</span>
+            <span style={{ fontSize: defaultFontSize }}>{props.text || 'Checkbox'}</span>
           </div>
         );
       

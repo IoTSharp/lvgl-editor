@@ -35,7 +35,7 @@ import {
   loadProjectFromFile,
 } from './resources/projectManager';
 import { useEditorStore } from './store/editorStore';
-import { useAppStore } from './store/appStore';
+import { useAppStore, parseFontSize } from './store/appStore';
 import { useProjectStore } from './store/projectStore';
 import type { Page } from './types';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -45,7 +45,7 @@ import './App.css';
 type TabType = 'design' | 'logic' | 'code' | 'preview';
 
 const App: React.FC = () => {
-  const { currentView, currentProjectId, showProjectSettings, openProject, goToProjectList, setShowProjectSettings, setLastSaveTime } = useAppStore();
+  const { currentView, currentProjectId, showProjectSettings, openProject, goToProjectList, setShowProjectSettings, setLastSaveTime, setDefaultFontSize } = useAppStore();
   const { loadProjectData, getProjectConfig, saveProjectData, exportProject, importProject } = useProjectStore();
 
   // On mount: check lastOpenProjectId
@@ -63,6 +63,9 @@ const App: React.FC = () => {
             if (data.logicGraphs) {
               useLogicEditorStore.getState().setGraphs(data.logicGraphs);
             }
+            // Set default font size from project config
+            const fontRes = fonts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
+            setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes));
             openProject(lastId);
           }).catch(() => {
             // Failed to load, show project list
@@ -92,6 +95,7 @@ const App: React.FC = () => {
     setShowProjectSettings={setShowProjectSettings}
     goToProjectList={goToProjectList}
     setLastSaveTime={setLastSaveTime}
+    setDefaultFontSize={setDefaultFontSize}
     saveProjectData={saveProjectData}
     exportProject={exportProject}
     importProject={importProject}
@@ -108,6 +112,7 @@ interface EditorViewProps {
   setShowProjectSettings: (v: boolean) => void;
   goToProjectList: () => void;
   setLastSaveTime: (t: number) => void;
+  setDefaultFontSize: (size: number) => void;
   saveProjectData: (id: string, pages: Page[], logicGraphs: import('./components/LogicEditor/types').LogicGraph[], images: import('./resources/types').ImageResource[], fonts: import('./resources/types').FontResource[]) => Promise<void>;
   exportProject: (id: string) => Promise<import('./resources/types').ProjectFile>;
   importProject: (file: import('./resources/types').ProjectFile, name?: string) => Promise<string>;
@@ -122,6 +127,7 @@ const EditorView: React.FC<EditorViewProps> = ({
   setShowProjectSettings,
   goToProjectList,
   setLastSaveTime,
+  setDefaultFontSize,
   saveProjectData,
   exportProject,
   importProject,
@@ -238,6 +244,8 @@ const EditorView: React.FC<EditorViewProps> = ({
         if (data.logicGraphs) {
           useLogicEditorStore.getState().setGraphs(data.logicGraphs);
         }
+        const fontRes = fnts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
+        setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes));
         openProject(id);
         setProjectName(cfg.name);
       }
