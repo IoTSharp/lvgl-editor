@@ -3,7 +3,8 @@ import { useEditorStore } from '../../store/editorStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources';
 import { generateCode } from '../../codegen';
-import { compileCode, type CompileStatus, type WasmRuntime } from './compilerService';
+import { compileCode, type CompileStatus, type WasmRuntime, type FontCompileRequest } from './compilerService';
+import { getCharsetRanges } from '../../resources/converters/fontConverter';
 import './CompilePreview.css';
 
 /** Map JS keyboard event.key to LVGL key codes */
@@ -124,6 +125,21 @@ const CompilePreview: React.FC = () => {
       userFiles[fileName] = content;
     }
 
+    // Build font compile requests from font resources
+    const fontRequests: FontCompileRequest[] = fontResources.map((font) => {
+      const ranges = getCharsetRanges(font.charset, font.customChars);
+      const rangeStr = ranges
+        .map(([start, end]) => `0x${start.toString(16)}-0x${end.toString(16)}`)
+        .join(',');
+      return {
+        data: font.data,
+        cFontName: font.cFontName,
+        sizes: font.sizes,
+        ranges: rangeStr,
+        bpp: font.bpp,
+      };
+    });
+
     const result = await compileCode(
       userFiles,
       canvas.width,
@@ -132,6 +148,7 @@ const CompilePreview: React.FC = () => {
         setStatus(newStatus);
         setStatusMessage(message);
       },
+      fontRequests.length > 0 ? fontRequests : undefined,
     );
 
     setCompileOutput(result.output);

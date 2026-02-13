@@ -247,7 +247,9 @@ function generateStyleCode(
     if (builtinMatch) {
       lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &lv_font_montserrat_${builtinMatch[1]}, ${selector});`);
     } else {
-      lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &font_${styles.textFont}, ${selector});`);
+      // Custom font resource: variable name is cFontName_size (e.g. ui_font_noto_16)
+      const fontSize = styles.textFontSize || 16;
+      lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &${styles.textFont}_${fontSize}, ${selector});`);
     }
   }
   if (styles.textFontSize !== undefined && styles.textFontSize !== 14) {

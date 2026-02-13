@@ -44,6 +44,15 @@ interface EmscriptenModule {
   _main?: () => number;
 }
 
+/** Font data for server-side conversion */
+export interface FontCompileRequest {
+  data: string;       // base64 data URI
+  cFontName: string;  // e.g. "ui_font_noto"
+  sizes: number[];    // e.g. [16, 24]
+  ranges: string;     // pre-computed range string, e.g. "0x20-0x7e"
+  bpp: number;        // 1 | 2 | 4 | 8
+}
+
 /**
  * Compile C code on the server and return a WasmRuntime for interactive use.
  */
@@ -52,6 +61,7 @@ export async function compileCode(
   width: number,
   height: number,
   onStatus?: (status: CompileStatus, message: string) => void,
+  fonts?: FontCompileRequest[],
 ): Promise<CompileResult> {
   const result: CompileResult = {
     success: false,
@@ -77,7 +87,7 @@ export async function compileCode(
     const resp = await fetch('/api/compile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files, width, height }),
+      body: JSON.stringify({ files, fonts: fonts ?? [], width, height }),
     });
 
     if (!resp.ok) {

@@ -14,6 +14,15 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 
+// Font data sent from the client for server-side conversion
+interface FontRequest {
+  data: string;       // base64 data URI (data:font/ttf;base64,...)
+  cFontName: string;  // e.g. "ui_font_noto"
+  sizes: number[];    // e.g. [16, 24]
+  ranges: string;     // pre-computed range args, e.g. "0x20-0x7e"
+  bpp: number;        // 1 | 2 | 4 | 8
+}
+
 // Paths
 const EMSDK_ENV = '/home/xcssa/.openclaw/workspace/tools/emsdk/emsdk_env.sh';
 const LVGL_PARENT_DIR = '/home/xcssa/.openclaw/workspace/tools';
@@ -166,6 +175,55 @@ function runShell(cmd: string, cwd: string): Promise<{ stdout: string; stderr: s
   });
 }
 
+/**
+ * Convert font files to LVGL C sources using lv_font_conv.
+ * Returns a map of filename → C source content.
+ */
+async function convertFonts(
+  fonts: FontRequest[],
+  workDir: string,
+): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+
+  for (const font of fonts) {
+    // Decode base64 to a temp file
+    const raw = font.data.replace(/^data:[^;]+;base64,/, '');
+    const fontBytes = Buffer.from(raw, 'base64');
+
+    // Detect extension from data URI or default to .ttf
+    const ext = font.data.includes('font/opentype') || font.data.includes('.otf') ? '.otf' : '.ttf';
+    const fontFile = join(workDir, `${font.cFontName}${ext}`);
+    await writeFile(fontFile, fontBytes);
+
+    // Build range args
+    const rangeArgs = font.ranges
+      .split(',')
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .map((r) => `--range=${r}`)
+      .join(' ');
+
+    for (const size of font.sizes) {
+      const outName = `${font.cFontName}_${size}`;
+      const outFile = join(workDir, `${outName}.c`);
+
+      const cmd = `lv_font_conv --font "${fontFile}" --size=${size} --bpp=${font.bpp} ${rangeArgs} --format=lvgl --output="${outFile}" --no-compress`;
+
+      const convResult = await runShell(cmd, workDir);
+      if (convResult.code !== 0) {
+        throw new Error(
+          `lv_font_conv failed for ${outName}: ${convResult.stderr || convResult.stdout}`,
+        );
+      }
+
+      const cContent = await readFile(outFile, 'utf-8');
+      result[`${outName}.c`] = cContent;
+    }
+  }
+
+  return result;
+}
+
 export default function compilePlugin(): Plugin {
   return {
     name: 'lvgl-compile',
@@ -185,11 +243,12 @@ export default function compilePlugin(): Plugin {
         }
         const body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as {
           files: Record<string, string>;
+          fonts?: FontRequest[];
           width: number;
           height: number;
         };
 
-        const { files, width, height } = body;
+        const { files, fonts, width, height } = body;
         const buildId = randomUUID();
         const buildDir = join(tmpdir(), `lvgl-build-${buildId}`);
 
@@ -203,6 +262,27 @@ export default function compilePlugin(): Plugin {
 
           // Write main_wrapper.c
           await writeFile(join(buildDir, 'main_wrapper.c'), generateMainWrapper(width, height), 'utf-8');
+
+          // Convert font resources via lv_font_conv
+          let fontCFiles: Record<string, string> = {};
+          if (fonts && fonts.length > 0) {
+            try {
+              fontCFiles = await convertFonts(fonts, buildDir);
+              // Write generated font .c files into buildDir
+              for (const [name, content] of Object.entries(fontCFiles)) {
+                await writeFile(join(buildDir, name), content, 'utf-8');
+              }
+            } catch (fontErr) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                success: false,
+                error: `字体转换失败: ${String(fontErr)}`,
+                buildId: '',
+              }));
+              return;
+            }
+          }
 
           // Check liblvgl_emcc.a exists
           if (!existsSync(LIBLVGL_PATH)) {
@@ -218,7 +298,8 @@ export default function compilePlugin(): Plugin {
 
           // Collect .c files from user
           const cFiles = Object.keys(files).filter(f => f.endsWith('.c'));
-          const sourceFiles = ['main_wrapper.c', ...cFiles].join(' ');
+          const fontFiles = Object.keys(fontCFiles);
+          const sourceFiles = ['main_wrapper.c', ...cFiles, ...fontFiles].join(' ');
 
           const emccCmd = `source ${EMSDK_ENV} 2>/dev/null && emcc ${sourceFiles} \
             -O2 -DLV_CONF_INCLUDE_SIMPLE \
