@@ -1,10 +1,12 @@
 import React from 'react';
 import { useEditorStore } from '../../store/editorStore';
+import { useAppStore } from '../../store/appStore';
 import { getComponentDefinition } from '../../utils/componentDefinitions';
 import './StatusBar.css';
 
 const StatusBar: React.FC = () => {
   const { canvas, selection, components, getComponentById, setZoom, toggleGrid, setSnapToGrid } = useEditorStore();
+  const { lastSaveTime } = useAppStore();
   
   const selectedCount = selection.selectedIds.length;
   const selectedComponent = selectedCount === 1 ? getComponentById(selection.selectedIds[0]) : undefined;
@@ -19,6 +21,12 @@ const StatusBar: React.FC = () => {
   const handleZoomIn = () => setZoom(canvas.zoom + 0.1);
   const handleZoomOut = () => setZoom(canvas.zoom - 0.1);
   const handleZoomReset = () => setZoom(1);
+
+  const formatSaveTime = (ts: number | null): string => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="status-bar">
@@ -48,6 +56,15 @@ const StatusBar: React.FC = () => {
         <div className="status-item">
           <span className="status-text">组件: {totalComponents}</span>
         </div>
+
+        {lastSaveTime && (
+          <>
+            <div className="status-divider" />
+            <div className="status-item">
+              <span className="status-text status-save-time">已保存 {formatSaveTime(lastSaveTime)}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="status-right">

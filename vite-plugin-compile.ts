@@ -2,6 +2,7 @@
  * Vite plugin: server-side C compilation via emcc
  *
  * POST /api/compile  → compile user code, return { success, error?, buildId }
+ * POST /api/project/build-lvgl → build project-specific LVGL static library
  * GET  /api/build/:id/output.js   → Emscripten JS glue
  * GET  /api/build/:id/output.wasm → compiled WASM binary
  */
@@ -11,7 +12,7 @@ import { execFile } from 'node:child_process';
 import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 
 // Font data sent from the client for server-side conversion
@@ -23,18 +24,113 @@ interface FontRequest {
   bpp: number;        // 1 | 2 | 4 | 8
 }
 
+// Project LVGL config from client
+interface LvglConfigRequest {
+  colorFormat: 'RGB565' | 'RGB888' | 'ARGB8888';
+  fontLarge: boolean;
+  defaultFont: string;
+  memSize: number; // KB
+}
+
 // Paths
 const EMSDK_ENV = '/home/xcssa/.openclaw/workspace/tools/emsdk/emsdk_env.sh';
 const LVGL_PARENT_DIR = '/home/xcssa/.openclaw/workspace/tools';
 const PROJECT_DIR = '/home/xcssa/.openclaw/workspace/projects/lvgl-editor';
 const LV_CONF_DIR = join(PROJECT_DIR, 'wasm');
 const LIBLVGL_PATH = join(PROJECT_DIR, 'wasm/build/liblvgl_emcc.a');
+const LV_CONF_TEMPLATE_PATH = join(PROJECT_DIR, 'wasm/lv_conf.h');
 
 // Build cache: buildId → directory path
 const builds = new Map<string, string>();
 
+// LVGL lib cache: configHash → { libPath, confDir, building }
+const lvglLibCache = new Map<string, { libPath: string; confDir: string; ready: boolean; error?: string }>();
+const lvglLibBuilding = new Map<string, Promise<{ libPath: string; confDir: string }>>();
+
 // Cleanup old builds after 10 minutes
 const BUILD_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * Compute a hash for the LVGL config to use as cache key
+ */
+function hashLvglConfig(config: LvglConfigRequest): string {
+  const str = JSON.stringify(config);
+  return createHash('md5').update(str).digest('hex').slice(0, 12);
+}
+
+/**
+ * Generate a custom lv_conf.h based on the template and project config
+ */
+async function generateCustomLvConf(config: LvglConfigRequest): Promise<string> {
+  let template = await readFile(LV_CONF_TEMPLATE_PATH, 'utf-8');
+
+  // Color depth
+  const colorDepth = config.colorFormat === 'RGB565' ? 16 : config.colorFormat === 'RGB888' ? 24 : 32;
+  template = template.replace(
+    /#define LV_COLOR_DEPTH\s+\d+/,
+    `#define LV_COLOR_DEPTH ${colorDepth}`,
+  );
+
+  // Font large
+  template = template.replace(
+    /#define LV_FONT_FMT_TXT_LARGE\s+\d+/,
+    `#define LV_FONT_FMT_TXT_LARGE ${config.fontLarge ? 1 : 0}`,
+  );
+
+  // Default font
+  template = template.replace(
+    /#define LV_FONT_DEFAULT\s+.+/,
+    `#define LV_FONT_DEFAULT &lv_font_${config.defaultFont}`,
+  );
+
+  return template;
+}
+
+/**
+ * Build a project-specific LVGL static library
+ */
+async function buildLvglLib(config: LvglConfigRequest): Promise<{ libPath: string; confDir: string }> {
+  const configHash = hashLvglConfig(config);
+  const cacheDir = join(tmpdir(), `lvgl-lib-${configHash}`);
+  const libPath = join(cacheDir, 'liblvgl_emcc.a');
+
+  // Check if already cached
+  if (existsSync(libPath)) {
+    return { libPath, confDir: cacheDir };
+  }
+
+  await mkdir(cacheDir, { recursive: true });
+
+  // Generate custom lv_conf.h
+  const customConf = await generateCustomLvConf(config);
+  await writeFile(join(cacheDir, 'lv_conf.h'), customConf, 'utf-8');
+
+  const LVGL_DIR = join(LVGL_PARENT_DIR, 'lvgl');
+
+  // Build command (similar to build_lvgl_lib.sh but using custom conf dir)
+  const buildCmd = `source ${EMSDK_ENV} 2>/dev/null && \
+    find "${LVGL_DIR}/src" -name "*.c" > /tmp/lvgl_sources_${configHash}.txt && \
+    mkdir -p "${cacheDir}/objs" && \
+    while IFS= read -r src; do
+      obj="${cacheDir}/objs/$(echo "$src" | sed 's|/|_|g').o"
+      if [ ! -f "$obj" ] || [ "$src" -nt "$obj" ]; then
+        emcc -O2 -c "$src" -o "$obj" \
+          -I"${cacheDir}" \
+          -I"${LVGL_PARENT_DIR}" \
+          -DLV_CONF_INCLUDE_SIMPLE \
+          -Wno-unused-function \
+          -Wno-implicit-function-declaration
+      fi
+    done < /tmp/lvgl_sources_${configHash}.txt && \
+    emar rcs "${libPath}" "${cacheDir}"/objs/*.o`;
+
+  const result = await runShell(buildCmd, cacheDir);
+  if (result.code !== 0) {
+    throw new Error(`LVGL library build failed: ${result.stderr || result.stdout}`);
+  }
+
+  return { libPath, confDir: cacheDir };
+}
 
 function generateMainWrapper(width: number, height: number): string {
   return `#include "lvgl/lvgl.h"
@@ -169,7 +265,7 @@ function runShell(cmd: string, cwd: string): Promise<{ stdout: string; stderr: s
       resolve({
         stdout: stdout ?? '',
         stderr: stderr ?? '',
-        code: err ? (err as NodeJS.ErrnoException & { code?: number }).status ?? 1 : 0,
+        code: err ? (err as NodeJS.ErrnoException & { status?: number }).status ?? 1 : 0,
       });
     });
   });
@@ -224,10 +320,81 @@ async function convertFonts(
   return result;
 }
 
+/**
+ * Resolve the LVGL library path and conf include dir for a given config.
+ * Uses cache or falls back to default.
+ */
+async function resolveLvglLib(lvglConfig?: LvglConfigRequest): Promise<{ libPath: string; confIncludeDir: string }> {
+  if (!lvglConfig) {
+    // Use default library
+    return { libPath: LIBLVGL_PATH, confIncludeDir: LV_CONF_DIR };
+  }
+
+  const configHash = hashLvglConfig(lvglConfig);
+  const cached = lvglLibCache.get(configHash);
+  if (cached?.ready && existsSync(cached.libPath)) {
+    return { libPath: cached.libPath, confIncludeDir: cached.confDir };
+  }
+
+  // Check if already building
+  let buildPromise = lvglLibBuilding.get(configHash);
+  if (!buildPromise) {
+    buildPromise = buildLvglLib(lvglConfig).then(result => {
+      lvglLibCache.set(configHash, { libPath: result.libPath, confDir: result.confDir, ready: true });
+      lvglLibBuilding.delete(configHash);
+      return result;
+    }).catch(err => {
+      lvglLibCache.set(configHash, { libPath: '', confDir: '', ready: false, error: String(err) });
+      lvglLibBuilding.delete(configHash);
+      throw err;
+    });
+    lvglLibBuilding.set(configHash, buildPromise);
+  }
+
+  const result = await buildPromise;
+  return { libPath: result.libPath, confIncludeDir: result.confDir };
+}
+
 export default function compilePlugin(): Plugin {
   return {
     name: 'lvgl-compile',
     configureServer(server) {
+      // POST /api/project/build-lvgl — build project-specific LVGL library
+      server.middlewares.use('/api/project/build-lvgl', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method Not Allowed');
+          return;
+        }
+
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) {
+          chunks.push(chunk as Buffer);
+        }
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as {
+          lvglConfig: LvglConfigRequest;
+        };
+
+        try {
+          const { libPath, confIncludeDir } = await resolveLvglLib(body.lvglConfig);
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            success: true,
+            configHash: hashLvglConfig(body.lvglConfig),
+            libPath,
+            confDir: confIncludeDir,
+          }));
+        } catch (err) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            success: false,
+            error: String(err),
+          }));
+        }
+      });
+
       // POST /api/compile
       server.middlewares.use('/api/compile', async (req, res) => {
         if (req.method !== 'POST') {
@@ -246,14 +413,45 @@ export default function compilePlugin(): Plugin {
           fonts?: FontRequest[];
           width: number;
           height: number;
+          lvglConfig?: LvglConfigRequest;
         };
 
-        const { files, fonts, width, height } = body;
+        const { files, fonts, width, height, lvglConfig } = body;
         const buildId = randomUUID();
         const buildDir = join(tmpdir(), `lvgl-build-${buildId}`);
 
         try {
           await mkdir(buildDir, { recursive: true });
+
+          // Resolve LVGL library (project-specific or default)
+          let libPath: string;
+          let confIncludeDir: string;
+          try {
+            const resolved = await resolveLvglLib(lvglConfig);
+            libPath = resolved.libPath;
+            confIncludeDir = resolved.confIncludeDir;
+          } catch (libErr) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: false,
+              error: `LVGL 库编译失败: ${String(libErr)}`,
+              buildId: '',
+            }));
+            return;
+          }
+
+          // Check lib exists
+          if (!existsSync(libPath)) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: false,
+              error: 'liblvgl_emcc.a not found. Run wasm/build_lvgl_lib.sh first.',
+              buildId: '',
+            }));
+            return;
+          }
 
           // Write user files
           for (const [name, content] of Object.entries(files)) {
@@ -284,18 +482,6 @@ export default function compilePlugin(): Plugin {
             }
           }
 
-          // Check liblvgl_emcc.a exists
-          if (!existsSync(LIBLVGL_PATH)) {
-            res.statusCode = 500;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({
-              success: false,
-              error: 'liblvgl_emcc.a not found. Run wasm/build_lvgl_lib.sh first.',
-              buildId: '',
-            }));
-            return;
-          }
-
           // Collect .c files from user
           const cFiles = Object.keys(files).filter(f => f.endsWith('.c'));
           const fontFiles = Object.keys(fontCFiles);
@@ -306,9 +492,9 @@ export default function compilePlugin(): Plugin {
             -I${LVGL_PARENT_DIR} \
             -I${LVGL_PARENT_DIR}/lvgl \
             -I${LVGL_PARENT_DIR}/lvgl/src \
-            -I${LV_CONF_DIR} \
+            -I${confIncludeDir} \
             -I. \
-            ${LIBLVGL_PATH} \
+            ${libPath} \
             -sALLOW_MEMORY_GROWTH=1 \
             -sINITIAL_MEMORY=33554432 \
             -sEXPORTED_FUNCTIONS="['_main','_app_tick','_app_mouse_event','_app_key_event','_wasi_get_framebuffer','_wasi_get_fb_ready','_wasi_clear_fb_ready','_wasi_get_width','_wasi_get_height']" \

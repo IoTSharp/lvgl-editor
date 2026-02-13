@@ -102,6 +102,20 @@ export interface ProjectFile {
   variables: ProjectVariable[];
   logicGraphs?: LogicGraph[];
   codeGenOptions: CodeGenOptions;
+  // Extended fields (optional, for project round-trip)
+  display?: {
+    width: number;
+    height: number;
+    colorDepth: 16 | 24 | 32;
+    rotation: 0 | 90 | 180 | 270;
+  };
+  lvglConfig?: {
+    version: '9';
+    colorFormat: 'RGB565' | 'RGB888' | 'ARGB8888';
+    fontLarge: boolean;
+    defaultFont: string;
+    memSize: number;
+  };
 }
 
 export interface ProjectPage {

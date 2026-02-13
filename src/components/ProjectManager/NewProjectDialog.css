@@ -1,0 +1,89 @@
+.new-project-dialog {
+  min-width: 420px;
+  max-width: 520px;
+}
+
+.new-project-title {
+  padding: 20px 24px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.new-project-body {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.npd-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.npd-input {
+  padding: 7px 10px;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5c;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.npd-input:focus {
+  border-color: #5c6bc0;
+}
+
+.npd-select {
+  padding: 7px 10px;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5c;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.npd-select:focus {
+  border-color: #5c6bc0;
+}
+
+.npd-row {
+  display: flex;
+  gap: 12px;
+}
+
+.npd-half {
+  flex: 1;
+}
+
+.npd-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #bbb;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #3a3a5c;
+}
+
+.npd-checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  cursor: pointer;
+}
+
+.npd-checkbox-label input[type="checkbox"] {
+  accent-color: #5c6bc0;
+  width: 16px;
+  height: 16px;
+}

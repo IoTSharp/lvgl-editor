@@ -28,14 +28,15 @@ import { HierarchyPanel } from './components/HierarchyPanel';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ResourcePanel, useResourceStore } from './resources';
 import { useLogicEditorStore } from './components/LogicEditor';
+import { ProjectListPage } from './components/ProjectManager';
+import { ProjectSettings } from './components/ProjectSettings';
 import {
-  createProjectFile,
   downloadProject,
   loadProjectFromFile,
-  autoSaveProject,
-  loadAutoSavedProject,
 } from './resources/projectManager';
 import { useEditorStore } from './store/editorStore';
+import { useAppStore } from './store/appStore';
+import { useProjectStore } from './store/projectStore';
 import type { Page } from './types';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { getComponentDefinition } from './utils/componentDefinitions';
@@ -44,19 +45,109 @@ import './App.css';
 type TabType = 'design' | 'logic' | 'code' | 'preview';
 
 const App: React.FC = () => {
+  const { currentView, currentProjectId, showProjectSettings, openProject, goToProjectList, setShowProjectSettings, setLastSaveTime } = useAppStore();
+  const { loadProjectData, getProjectConfig, saveProjectData, exportProject, importProject } = useProjectStore();
+
+  // On mount: check lastOpenProjectId
+  useEffect(() => {
+    const lastId = localStorage.getItem('lastOpenProjectId');
+    if (lastId) {
+      // Verify project still exists, then open
+      getProjectConfig(lastId).then(cfg => {
+        if (cfg) {
+          // Load project data into stores
+          loadProjectData(lastId).then(({ data, images, fonts }) => {
+            useEditorStore.getState().setPages(data.pages as Page[]);
+            useEditorStore.getState().setCanvasSize(cfg.display.width, cfg.display.height);
+            useResourceStore.getState().importResources({ images, fonts });
+            if (data.logicGraphs) {
+              useLogicEditorStore.getState().setGraphs(data.logicGraphs);
+            }
+            openProject(lastId);
+          }).catch(() => {
+            // Failed to load, show project list
+          });
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (currentView === 'projectList') {
+    return (
+      <div className="app">
+        <ProjectListPage />
+        <Toast messages={[]} onRemove={() => {}} />
+        <Modal />
+      </div>
+    );
+  }
+
+  return <EditorView
+    currentProjectId={currentProjectId}
+    showProjectSettings={showProjectSettings}
+    setShowProjectSettings={setShowProjectSettings}
+    goToProjectList={goToProjectList}
+    setLastSaveTime={setLastSaveTime}
+    saveProjectData={saveProjectData}
+    exportProject={exportProject}
+    importProject={importProject}
+    loadProjectData={loadProjectData}
+    getProjectConfig={getProjectConfig}
+    openProject={openProject}
+  />;
+};
+
+// Separate editor view to keep hooks stable
+interface EditorViewProps {
+  currentProjectId: string | null;
+  showProjectSettings: boolean;
+  setShowProjectSettings: (v: boolean) => void;
+  goToProjectList: () => void;
+  setLastSaveTime: (t: number) => void;
+  saveProjectData: (id: string, pages: Page[], logicGraphs: import('./components/LogicEditor/types').LogicGraph[], images: import('./resources/types').ImageResource[], fonts: import('./resources/types').FontResource[]) => Promise<void>;
+  exportProject: (id: string) => Promise<import('./resources/types').ProjectFile>;
+  importProject: (file: import('./resources/types').ProjectFile, name?: string) => Promise<string>;
+  loadProjectData: (id: string) => Promise<{ data: { pages: Page[]; logicGraphs: import('./components/LogicEditor/types').LogicGraph[] }; images: import('./resources/types').ImageResource[]; fonts: import('./resources/types').FontResource[] }>;
+  getProjectConfig: (id: string) => Promise<import('./store/projectStore').ProjectConfig | undefined>;
+  openProject: (id: string) => void;
+}
+
+const EditorView: React.FC<EditorViewProps> = ({
+  currentProjectId,
+  showProjectSettings,
+  setShowProjectSettings,
+  goToProjectList,
+  setLastSaveTime,
+  saveProjectData,
+  exportProject,
+  importProject,
+  loadProjectData,
+  getProjectConfig,
+  openProject,
+}) => {
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
-  const { addComponent, canvas, pages, clearComponents, setPages } = useEditorStore();
-  const { images, fonts, importResources, clearAllResources } = useResourceStore();
-  const { messages, removeToast, success, error, info } = useToast();
-  
+  const { addComponent, canvas, pages, setPages, setCanvasSize } = useEditorStore();
+  const { images, fonts, importResources } = useResourceStore();
+  const { messages, removeToast, success, error } = useToast();
+
   // UI State
   const [showResourcePanel, setShowResourcePanel] = useState(false);
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('design');
   const [previewMode, setPreviewMode] = useState<'simple' | 'wasm' | 'compile'>('simple');
+  const [projectName, setProjectName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load project name
+  useEffect(() => {
+    if (!currentProjectId) return;
+    getProjectConfig(currentProjectId).then(cfg => {
+      if (cfg) setProjectName(cfg.name);
+    });
+  }, [currentProjectId, getProjectConfig]);
 
   // Configure drag sensors
   const mouseSensor = useSensor(MouseSensor, {
@@ -69,129 +160,134 @@ const App: React.FC = () => {
   // Track dragging state for overlay
   const [activeDragType, setActiveDragType] = React.useState<string | null>(null);
 
-  // Auto-save effect
+  // Auto-save to IndexedDB
   useEffect(() => {
-    const saveInterval = setInterval(() => {
-      const logicGraphs = useLogicEditorStore.getState().graphs;
-      const project = createProjectFile(
-        'autosave',
-        pages,
-        canvas,
-        images,
-        fonts,
-        logicGraphs
-      );
-      autoSaveProject(project);
-    }, 30000); // Auto-save every 30 seconds
+    if (!currentProjectId) return;
 
-    return () => clearInterval(saveInterval);
-  }, [pages, canvas, images, fonts]);
+    const doSave = async () => {
+      try {
+        const logicGraphs = useLogicEditorStore.getState().graphs;
+        await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
+        setLastSaveTime(Date.now());
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+      }
+    };
 
-  // Load auto-saved project on mount
-  useEffect(() => {
-    const autoSaved = loadAutoSavedProject();
-    if (autoSaved && autoSaved.pages && autoSaved.pages.length > 0) {
-      // Ask user if they want to restore
-      modal.confirm('发现自动保存的项目，是否恢复？').then(shouldRestore => {
-        if (shouldRestore) {
-          setPages(autoSaved.pages as Page[]);
-          if (autoSaved.resources) {
-            importResources(autoSaved.resources);
-          }
-          if (autoSaved.logicGraphs) {
-            useLogicEditorStore.getState().setGraphs(autoSaved.logicGraphs);
-          }
-          info('已恢复自动保存的项目');
-        }
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const saveInterval = setInterval(doSave, 30000);
 
-  // Project management handlers
-  const handleNewProjectClick = useCallback(async () => {
-    if (await modal.confirm('创建新项目将清除当前所有内容，确定继续吗？')) {
-      clearComponents();
-      clearAllResources();
-      useLogicEditorStore.getState().setGraphs([]);
-      success('已创建新项目');
-    }
-  }, [clearComponents, clearAllResources, success]);
-
-  const handleSaveProjectClick = useCallback(async () => {
-    const projectName = await modal.prompt('请输入项目名称:', 'my-project');
-    if (!projectName) return;
-
-    const logicGraphs = useLogicEditorStore.getState().graphs;
-    const project = createProjectFile(
-      projectName,
-      pages,
-      canvas,
-      images,
-      fonts,
-      logicGraphs
-    );
-    downloadProject(project);
-    success(`项目 "${projectName}" 已保存`);
-  }, [pages, canvas, images, fonts, success]);
-
-  // Listen for keyboard shortcut events
-  useEffect(() => {
-    const handleToggleHelp = () => setShowHelpPanel(prev => !prev);
-    const handleSaveProject = () => handleSaveProjectClick();
-    const handleOpenProject = () => fileInputRef.current?.click();
-    const handleNewProject = () => handleNewProjectClick();
-
-    window.addEventListener('toggle-help-panel', handleToggleHelp);
-    window.addEventListener('save-project', handleSaveProject);
-    window.addEventListener('open-project', handleOpenProject);
-    window.addEventListener('new-project', handleNewProject);
+    // Save on beforeunload
+    const handleBeforeUnload = () => {
+      // Fire-and-forget; IndexedDB transactions may or may not complete
+      doSave();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('toggle-help-panel', handleToggleHelp);
-      window.removeEventListener('save-project', handleSaveProject);
-      window.removeEventListener('open-project', handleOpenProject);
-      window.removeEventListener('new-project', handleNewProject);
+      clearInterval(saveInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [handleSaveProjectClick, handleNewProjectClick]);
+  }, [currentProjectId, pages, images, fonts, saveProjectData, setLastSaveTime]);
 
-  const handleLoadProject = () => {
+  // Project management handlers
+  const handleSaveProject = useCallback(async () => {
+    if (!currentProjectId) return;
+    try {
+      const logicGraphs = useLogicEditorStore.getState().graphs;
+      await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
+      setLastSaveTime(Date.now());
+      success('项目已保存');
+    } catch (err) {
+      error('保存失败: ' + String(err));
+    }
+  }, [currentProjectId, pages, images, fonts, saveProjectData, setLastSaveTime, success, error]);
+
+  const handleExportProject = useCallback(async () => {
+    if (!currentProjectId) return;
+    try {
+      // Save first
+      const logicGraphs = useLogicEditorStore.getState().graphs;
+      await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
+      const project = await exportProject(currentProjectId);
+      downloadProject(project);
+      success(`项目已导出`);
+    } catch (err) {
+      error('导出失败: ' + String(err));
+    }
+  }, [currentProjectId, pages, images, fonts, saveProjectData, exportProject, success, error]);
+
+  const handleImportProject = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       const project = await loadProjectFromFile(file);
-
-      // Load all pages
-      if (project.pages && project.pages.length > 0) {
-        setPages(project.pages as Page[]);
+      const id = await importProject(project, project.name);
+      const cfg = await getProjectConfig(id);
+      if (cfg) {
+        const { data, images: imgs, fonts: fnts } = await loadProjectData(id);
+        setPages(data.pages as Page[]);
+        setCanvasSize(cfg.display.width, cfg.display.height);
+        importResources({ images: imgs, fonts: fnts });
+        if (data.logicGraphs) {
+          useLogicEditorStore.getState().setGraphs(data.logicGraphs);
+        }
+        openProject(id);
+        setProjectName(cfg.name);
       }
-
-      // Load resources
-      if (project.resources) {
-        importResources(project.resources);
-      }
-
-      // Load logic graphs
-      if (project.logicGraphs) {
-        useLogicEditorStore.getState().setGraphs(project.logicGraphs);
-      }
-
-      success(`项目 "${project.name}" 加载成功！`);
+      success(`项目「${project.name}」导入成功`);
     } catch (err) {
-      console.error('Failed to load project:', err);
-      error('加载项目失败：' + (err as Error).message);
+      error('导入失败: ' + String(err));
     }
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const handleNewProjectClick = useCallback(async () => {
+    if (await modal.confirm('创建新项目将返回项目列表，当前项目会自动保存。继续吗？')) {
+      // Save current project first
+      if (currentProjectId) {
+        const logicGraphs = useLogicEditorStore.getState().graphs;
+        await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
+      }
+      goToProjectList();
+    }
+  }, [currentProjectId, pages, images, fonts, saveProjectData, goToProjectList]);
+
+  const handleBackToList = useCallback(async () => {
+    // Save current project first
+    if (currentProjectId) {
+      try {
+        const logicGraphs = useLogicEditorStore.getState().graphs;
+        await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
+      } catch {
+        // ignore
+      }
+    }
+    goToProjectList();
+  }, [currentProjectId, pages, images, fonts, saveProjectData, goToProjectList]);
+
+  // Listen for keyboard shortcut events
+  useEffect(() => {
+    const handleToggleHelp = () => setShowHelpPanel(prev => !prev);
+    const handleSaveProjectEvt = () => handleSaveProject();
+    const handleOpenProject = () => handleImportProject();
+    const handleNewProject = () => handleNewProjectClick();
+
+    window.addEventListener('toggle-help-panel', handleToggleHelp);
+    window.addEventListener('save-project', handleSaveProjectEvt);
+    window.addEventListener('open-project', handleOpenProject);
+    window.addEventListener('new-project', handleNewProject);
+
+    return () => {
+      window.removeEventListener('toggle-help-panel', handleToggleHelp);
+      window.removeEventListener('save-project', handleSaveProjectEvt);
+      window.removeEventListener('open-project', handleOpenProject);
+      window.removeEventListener('new-project', handleNewProject);
+    };
+  }, [handleSaveProject, handleNewProjectClick]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
@@ -207,29 +303,25 @@ const App: React.FC = () => {
     // Check if dropped on canvas
     if (over?.id === 'canvas-drop-area' && active.data.current?.type === 'new-component') {
       const componentType = active.data.current.componentType;
-      
+
       // Get drop position relative to canvas
-      // The delta gives us the movement from the drag start
       const canvasElement = document.querySelector('.canvas');
       if (canvasElement) {
         const rect = canvasElement.getBoundingClientRect();
         const dropX = (event.activatorEvent as MouseEvent).clientX;
         const dropY = (event.activatorEvent as MouseEvent).clientY;
-        
-        // Calculate position relative to canvas, accounting for zoom and pan
+
         let x = (dropX - rect.left) / canvas.zoom;
         let y = (dropY - rect.top) / canvas.zoom;
-        
-        // Add the delta from dragging
+
         if (event.delta) {
           x += event.delta.x / canvas.zoom;
           y += event.delta.y / canvas.zoom;
         }
-        
-        // Ensure position is within canvas bounds
+
         x = Math.max(0, Math.min(x, canvas.width - 50));
         y = Math.max(0, Math.min(y, canvas.height - 50));
-        
+
         addComponent(componentType, x, y);
       }
     }
@@ -238,7 +330,7 @@ const App: React.FC = () => {
   // Render drag overlay
   const renderDragOverlay = () => {
     if (!activeDragType) return null;
-    
+
     const definition = getComponentDefinition(activeDragType);
     if (!definition) return null;
 
@@ -287,21 +379,21 @@ const App: React.FC = () => {
             </DragOverlay>
           </DndContext>
         );
-      
+
       case 'logic':
         return (
           <div className="app-body full-panel">
             <LogicEditor />
           </div>
         );
-      
+
       case 'code':
         return (
           <div className="app-body full-panel">
             <CodePreview />
           </div>
         );
-      
+
       case 'preview':
         return (
           <div className="app-body full-panel">
@@ -330,7 +422,7 @@ const App: React.FC = () => {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -340,58 +432,66 @@ const App: React.FC = () => {
     <div className="app">
       <div className="app-header">
         <div className="app-logo">
+          <button className="back-to-list-btn" onClick={handleBackToList} title="返回项目列表">
+            ◀
+          </button>
           <span className="logo-icon">📐</span>
-          <span className="logo-text">LVGL UI Editor</span>
+          <span className="logo-text project-name-display">{projectName || 'LVGL UI Editor'}</span>
         </div>
-        
+
         {/* Main tabs */}
         <div className="app-tabs">
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'design' ? 'active' : ''}`}
             onClick={() => setActiveTab('design')}
           >
             🎨 设计
           </button>
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'logic' ? 'active' : ''}`}
             onClick={() => setActiveTab('logic')}
           >
             🔗 逻辑
           </button>
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'code' ? 'active' : ''}`}
             onClick={() => setActiveTab('code')}
           >
             💻 代码
           </button>
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
             onClick={() => setActiveTab('preview')}
           >
             📱 预览
           </button>
         </div>
-        
+
         <div className="app-toolbar">
-          <ToolbarButton icon="📄" label="新建" onClick={handleNewProjectClick} shortcut="Ctrl+N" />
-          <ToolbarButton icon="📂" label="打开" onClick={handleLoadProject} shortcut="Ctrl+O" />
-          <ToolbarButton icon="💾" label="保存" onClick={handleSaveProjectClick} shortcut="Ctrl+S" />
+          <ToolbarButton icon="💾" label="保存" onClick={handleSaveProject} shortcut="Ctrl+S" />
+          <ToolbarButton icon="📤" label="导出" onClick={handleExportProject} />
+          <ToolbarButton icon="📥" label="导入" onClick={handleImportProject} />
           <div className="toolbar-divider" />
           <ToolbarButton icon="↩️" label="撤销" onClick={() => useEditorStore.getState().undo()} shortcut="Ctrl+Z" />
           <ToolbarButton icon="↪️" label="重做" onClick={() => useEditorStore.getState().redo()} shortcut="Ctrl+Y" />
           <div className="toolbar-divider" />
-          <ToolbarButton 
-            icon="📦" 
-            label="资源" 
+          <ToolbarButton
+            icon="📦"
+            label="资源"
             onClick={() => setShowResourcePanel(!showResourcePanel)}
             active={showResourcePanel}
+          />
+          <ToolbarButton
+            icon="⚙️"
+            label="设置"
+            onClick={() => setShowProjectSettings(true)}
           />
           <div className="toolbar-divider" />
           <ThemeSelector />
           <div className="toolbar-divider" />
-          <ToolbarButton 
-            icon="❓" 
-            label="帮助" 
+          <ToolbarButton
+            icon="❓"
+            label="帮助"
             onClick={() => setShowHelpPanel(true)}
             shortcut="F1"
           />
@@ -404,14 +504,17 @@ const App: React.FC = () => {
           style={{ display: 'none' }}
         />
       </div>
-      
+
       {renderMainContent()}
-      
+
       <StatusBar />
-      
+
       {/* Help Panel */}
       <HelpPanel isOpen={showHelpPanel} onClose={() => setShowHelpPanel(false)} />
-      
+
+      {/* Project Settings */}
+      {showProjectSettings && <ProjectSettings />}
+
       {/* Toast notifications */}
       <Toast messages={messages} onRemove={removeToast} />
 
@@ -432,8 +535,8 @@ interface ToolbarButtonProps {
 }
 
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, label, onClick, disabled, active, shortcut }) => (
-  <button 
-    className={`toolbar-button ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`} 
+  <button
+    className={`toolbar-button ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`}
     onClick={onClick}
     disabled={disabled}
     title={shortcut ? `${label} (${shortcut})` : label}
