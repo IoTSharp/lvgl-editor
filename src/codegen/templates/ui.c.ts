@@ -311,10 +311,15 @@ function generatePropsCode(
     if (props.fontResource) {
       const fontName = props.fontResource as string;
       const fontSize = props.fontSize || 16;
-      lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${fontName}_${fontSize}, 0);`);
-    } else if (props.fontSize && props.fontSize !== 14) {
-      lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &lv_font_montserrat_${props.fontSize}, 0);`);
+      // Check if it's a builtin font reference (montserrat_XX)
+      const builtinMatch = fontName.match(/^montserrat_(\d+)$/);
+      if (builtinMatch) {
+        lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &lv_font_${fontName}, 0);`);
+      } else {
+        lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${fontName}_${fontSize}, 0);`);
+      }
     }
+    // If no fontResource is set, the component inherits the project default font — no code needed
     if (props.textAlign) {
       const alignMap: Record<string, string> = {
         'left': 'LV_TEXT_ALIGN_LEFT',
