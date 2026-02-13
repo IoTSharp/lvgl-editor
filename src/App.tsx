@@ -183,6 +183,8 @@ const EditorView: React.FC<EditorViewProps> = ({
       }
     };
 
+    // Debounce: save shortly after any change, plus periodic interval
+    const debounceTimer = setTimeout(doSave, 1000);
     const saveInterval = setInterval(doSave, 30000);
 
     // Save on beforeunload
@@ -193,6 +195,7 @@ const EditorView: React.FC<EditorViewProps> = ({
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
+      clearTimeout(debounceTimer);
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
