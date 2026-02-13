@@ -128,9 +128,9 @@ const CompilePreview: React.FC = () => {
     // Build font compile requests from font resources
     const fontRequests: FontCompileRequest[] = fontResources.map((font) => {
       const ranges = getCharsetRanges(font.charset, font.customChars);
-      const rangeStr = ranges
-        .map(([start, end]) => `0x${start.toString(16)}-0x${end.toString(16)}`)
-        .join(',');
+      const rangeStr = ranges.length > 0
+        ? ranges.map(([start, end]) => `0x${start.toString(16)}-0x${end.toString(16)}`).join(',')
+        : '0x20-0x7E'; // fallback to basic ASCII
       return {
         data: font.data,
         cFontName: font.cFontName,

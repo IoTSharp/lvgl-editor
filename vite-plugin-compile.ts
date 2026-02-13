@@ -291,13 +291,17 @@ async function convertFonts(
     const fontFile = join(workDir, `${font.cFontName}${ext}`);
     await writeFile(fontFile, fontBytes);
 
-    // Build range args
-    const rangeArgs = font.ranges
+    // Build range args — fall back to basic ASCII if empty
+    const rangeParts = font.ranges
       .split(',')
       .map((r) => r.trim())
-      .filter(Boolean)
-      .map((r) => `--range=${r}`)
-      .join(' ');
+      .filter(Boolean);
+
+    if (rangeParts.length === 0) {
+      rangeParts.push('0x20-0x7E');
+    }
+
+    const rangeArgs = rangeParts.map((r) => `--range=${r}`).join(' ');
 
     for (const size of font.sizes) {
       const outName = `${font.cFontName}_${size}`;
