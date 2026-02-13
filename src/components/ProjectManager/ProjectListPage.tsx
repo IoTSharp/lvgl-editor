@@ -76,8 +76,9 @@ const ProjectListPage: React.FC = () => {
     try {
       const id = await createProject(name, display, lvglConfig);
       setShowNewDialog(false);
-      handleOpenProject(id);
+      await handleOpenProject(id);
     } catch (err) {
+      console.error('创建项目失败:', err);
       toast.error('创建项目失败: ' + String(err));
     }
   };

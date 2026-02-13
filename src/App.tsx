@@ -73,11 +73,14 @@ const App: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Toast hook must be called unconditionally (before any early return)
+  const { messages: toastMessages, removeToast: removeGlobalToast } = useToast();
+
   if (currentView === 'projectList') {
     return (
       <div className="app">
         <ProjectListPage />
-        <Toast messages={[]} onRemove={() => {}} />
+        <Toast messages={toastMessages} onRemove={removeGlobalToast} />
         <Modal />
       </div>
     );
