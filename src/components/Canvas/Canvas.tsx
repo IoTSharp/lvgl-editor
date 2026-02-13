@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core';
 import { useEditorStore } from '../../store/editorStore';
 import type { LvglComponent, ResizeHandle } from '../../types';
+import { getComponentDefinition } from '../../utils/componentDefinitions';
 import CanvasComponent from './CanvasComponent';
 import AlignmentGuides from './AlignmentGuides';
 import ContextMenu, { type ContextMenuItem } from '../ContextMenu';
@@ -10,6 +11,7 @@ import {
   copySelectedComponents,
   cutSelectedComponents,
   pasteClipboardComponents,
+  pasteIntoContainer,
   duplicateSelectedComponents,
   selectAllComponents,
 } from '../../hooks/useKeyboardShortcuts';
@@ -35,11 +37,38 @@ function flattenComponents(comps: LvglComponent[], offsetX = 0, offsetY = 0): Ar
   return result;
 }
 
+// Find component in tree by id
+function findComponentInTree(components: LvglComponent[], id: string): LvglComponent | undefined {
+  for (const comp of components) {
+    if (comp.id === id) return comp;
+    const found = findComponentInTree(comp.children, id);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+// Calculate absolute position of a component
+function getAbsolutePosition(comp: LvglComponent, allComps: LvglComponent[]): { x: number; y: number } {
+  let absX = comp.x;
+  let absY = comp.y;
+  let pid = comp.parentId;
+  while (pid) {
+    const parent = findComponentInTree(allComps, pid);
+    if (!parent) break;
+    absX += parent.x;
+    absY += parent.y;
+    pid = parent.parentId;
+  }
+  return { x: absX, y: absY };
+}
+
 const Canvas: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const dragStartMousePos = useRef({ x: 0, y: 0 });
+  const dragStartCompPos = useRef({ x: 0, y: 0 });
   const [spacePressed, setSpacePressed] = useState(false);
   const rafRef = useRef<number>(0);
 
@@ -95,6 +124,8 @@ const Canvas: React.FC = () => {
   const sendBackward = useEditorStore(s => s.sendBackward);
   const moveComponentAndUpdateDrag = useEditorStore(s => s.moveComponentAndUpdateDrag);
   const resizeComponentAndUpdateDrag = useEditorStore(s => s.resizeComponentAndUpdateDrag);
+  const reparentComponent = useEditorStore(s => s.reparentComponent);
+  const moveComponent = useEditorStore(s => s.moveComponent);
 
   // Get current page and its components
   const currentPage = pages.find(p => p.id === currentPageId);
@@ -304,15 +335,39 @@ const Canvas: React.FC = () => {
 
           // Handle component move
           if (currentDrag.dragType === 'move' && currentDrag.draggedComponentId) {
-            const deltaX = x - currentDrag.startX;
-            const deltaY = y - currentDrag.startY;
-            const comp = useEditorStore.getState().getComponentById(currentDrag.draggedComponentId);
+            const state = useEditorStore.getState();
+            let comp = state.getComponentById(currentDrag.draggedComponentId);
+            
+            // If dragging a nested component, hoist it to root to avoid clipping
+            // and ensure smooth dragging across the canvas
+            if (comp && comp.parentId) {
+              // 1. Reparent to root
+              reparentComponent(comp.id, null);
+              
+              // 2. Update position to be absolute based on captured DOM position
+              // Use the position captured at drag start which accounts for complex layouts (flex/grid)
+              moveComponent(comp.id, dragStartCompPos.current.x, dragStartCompPos.current.y);
+              
+              // Refresh component reference after updates so downstream logic uses absolute coords
+              comp = state.getComponentById(comp.id);
+            }
+
             if (comp) {
+              // Calculate absolute movement based on initial drag position to avoid accumulated errors
+              // and ensure consistent tracking with mouse
+              const totalDeltaX = x - dragStartMousePos.current.x;
+              const totalDeltaY = y - dragStartMousePos.current.y;
+              
+              const newX = dragStartCompPos.current.x + totalDeltaX;
+              const newY = dragStartCompPos.current.y + totalDeltaY;
+
               moveComponentAndUpdateDrag(
                 currentDrag.draggedComponentId,
-                comp.x + deltaX,
-                comp.y + deltaY,
-                x,
+                newX,
+                newY,
+                // Pass current mouse pos as "start" to keep drag state updated, 
+                // though we don't rely on it for delta calculation anymore.
+                x, 
                 y
               );
             }
@@ -320,6 +375,8 @@ const Canvas: React.FC = () => {
 
           // Handle resize
           if (currentDrag.dragType === 'resize' && currentDrag.draggedComponentId && currentDrag.resizeHandle) {
+             // For resize, we can also use absolute calculation if needed, but resize logic is complex per-handle.
+             // Currently kept as is, but ensuring we use the right mouse pos.
             handleResize(currentDrag.draggedComponentId, currentDrag.resizeHandle, x, y);
           }
         });
@@ -379,9 +436,91 @@ const Canvas: React.FC = () => {
       if (drag.dragType === 'move' || drag.dragType === 'resize') {
         saveToHistory();
       }
+
+      // Auto-reparent: when a move-drag ends over a container, reparent into it
+      // Only check reparent if the component was actually moved (not just clicked)
+      if (drag.dragType === 'move' && drag.draggedComponentId) {
+        const state = useEditorStore.getState();
+        const draggedComp = state.getComponentById(drag.draggedComponentId);
+        const actuallyMoved = draggedComp && (
+          Math.abs(draggedComp.x - dragStartCompPos.current.x) > 2 ||
+          Math.abs(draggedComp.y - dragStartCompPos.current.y) > 2
+        );
+        if (draggedComp && actuallyMoved) {
+          const currentPage = state.pages.find(p => p.id === state.currentPageId);
+          const allComps = currentPage?.components || [];
+
+          // Calculate the absolute position of the dragged component
+          const draggedAbs = getAbsolutePosition(draggedComp, allComps);
+          const centerX = draggedAbs.x + draggedComp.width / 2;
+          const centerY = draggedAbs.y + draggedComp.height / 2;
+
+          // Find the deepest container under the center of the dragged component
+          // (excluding the dragged component itself and its descendants)
+          const isDescendantOf = (compId: string, ancestorId: string, comps: LvglComponent[]): boolean => {
+            const comp = findComponentInTree(comps, compId);
+            if (!comp) return false;
+            let pid = comp.parentId;
+            while (pid) {
+              if (pid === ancestorId) return true;
+              const parent = findComponentInTree(comps, pid);
+              if (!parent) break;
+              pid = parent.parentId;
+            }
+            return false;
+          };
+
+          type HitResult = { comp: LvglComponent; absX: number; absY: number } | null;
+          const findDeepestContainer = (
+            comps: LvglComponent[],
+            offsetX: number,
+            offsetY: number,
+          ): HitResult => {
+            for (let i = comps.length - 1; i >= 0; i--) {
+              const comp = comps[i];
+              if (comp.id === drag.draggedComponentId) continue;
+              if (isDescendantOf(comp.id, drag.draggedComponentId!, allComps)) continue;
+
+              const absX = comp.x + offsetX;
+              const absY = comp.y + offsetY;
+
+              if (
+                centerX >= absX && centerX <= absX + comp.width &&
+                centerY >= absY && centerY <= absY + comp.height
+              ) {
+                const def = getComponentDefinition(comp.type);
+                if (def?.isContainer) {
+                  const deeper = findDeepestContainer(comp.children, absX, absY);
+                  return deeper || { comp, absX, absY };
+                }
+              }
+            }
+            return null;
+          };
+
+          const container = findDeepestContainer(allComps, 0, 0);
+          const newParentId = container ? container.comp.id : null;
+
+          // Only reparent if the parent actually changed
+          if (newParentId !== draggedComp.parentId) {
+            // Convert absolute position to be relative to the new parent
+            if (container) {
+              const newX = draggedAbs.x - container.absX;
+              const newY = draggedAbs.y - container.absY;
+              moveComponent(drag.draggedComponentId, newX, newY);
+            } else {
+              // Moving to root — position is already absolute
+              moveComponent(drag.draggedComponentId, draggedAbs.x, draggedAbs.y);
+            }
+            reparentComponent(drag.draggedComponentId, newParentId);
+          }
+        }
+      }
+
       endDrag();
+      canvasRef.current?.classList.remove('dragging-move');
     }
-  }, [selectComponents, saveToHistory, endDrag]);
+  }, [selectComponents, saveToHistory, endDrag, reparentComponent, moveComponent]);
 
   // Handle component selection
   const handleComponentClick = useCallback(
@@ -431,6 +570,29 @@ const Canvas: React.FC = () => {
           currentX: x,
           currentY: y,
         });
+        dragStartMousePos.current = { x, y };
+        
+        if (comp) {
+          // If component has a parent, we want to capture its VISUAL absolute position
+          // because we will hoist it to root on first move.
+          // We use DOM rects to be robust against complex parent layouts (flex/grid).
+          if (comp.parentId && e.currentTarget) {
+            const domRect = (e.currentTarget as Element).getBoundingClientRect();
+            const canvasRect = canvasRef.current?.getBoundingClientRect();
+            if (canvasRect) {
+              dragStartCompPos.current = {
+                x: (domRect.left - canvasRect.left) / state.canvas.zoom,
+                y: (domRect.top - canvasRect.top) / state.canvas.zoom
+              };
+            } else {
+              dragStartCompPos.current = { x: comp.x, y: comp.y };
+            }
+          } else {
+            dragStartCompPos.current = { x: comp.x, y: comp.y };
+          }
+        }
+        
+        canvasRef.current?.classList.add('dragging-move');
       }
     },
     [selectComponent, startDrag]

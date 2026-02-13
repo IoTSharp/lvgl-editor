@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useEditorStore } from '../store/editorStore';
 import type { LvglComponent } from '../types';
+import { getComponentDefinition } from '../utils/componentDefinitions';
 import { v4 as uuidv4 } from 'uuid';
 
 // Clipboard storage (in-memory for now)
@@ -111,7 +112,7 @@ export function useKeyboardShortcuts() {
     console.log(`Cut ${components.length} component(s)`);
   }, [getSelectedComponents, selection.selectedIds, deleteComponents, saveToHistory]);
 
-  // Paste components
+  // Paste components (into selected container if applicable)
   const pasteComponents = useCallback(() => {
     if (!clipboard || clipboard.components.length === 0) return;
     
@@ -121,21 +122,48 @@ export function useKeyboardShortcuts() {
     
     saveToHistory();
     
+    // Check if a single container is selected — paste into it
+    let targetParentId: string | null = null;
+    if (store.selection.selectedIds.length === 1) {
+      const selectedComp = store.getComponentById(store.selection.selectedIds[0]);
+      if (selectedComp) {
+        const def = getComponentDefinition(selectedComp.type);
+        if (def?.isContainer) {
+          targetParentId = selectedComp.id;
+        }
+      }
+    }
+    
     // Clone with new IDs and offset position
     const newComponents = clipboard.components.map(comp => {
-      const cloned = cloneComponentWithNewIds(comp);
+      const cloned = cloneComponentWithNewIds(comp, targetParentId);
       // Offset position slightly so pasted components are visible
       cloned.x += 20;
       cloned.y += 20;
       return cloned;
     });
     
-    // Add to current page
+    // Add to current page (into container or root)
+    const addToTree = (comps: LvglComponent[], parentId: string | null, newComps: LvglComponent[]): LvglComponent[] => {
+      if (parentId === null) {
+        return [...comps, ...newComps];
+      }
+      return comps.map(comp => {
+        if (comp.id === parentId) {
+          return { ...comp, children: [...comp.children, ...newComps] };
+        }
+        if (comp.children.length > 0) {
+          return { ...comp, children: addToTree(comp.children, parentId, newComps) };
+        }
+        return comp;
+      });
+    };
+    
     const newPages = store.pages.map(page => {
       if (page.id === store.currentPageId) {
         return {
           ...page,
-          components: [...page.components, ...newComponents],
+          components: addToTree(page.components, targetParentId, newComponents),
         };
       }
       return page;
@@ -146,7 +174,7 @@ export function useKeyboardShortcuts() {
     // Select pasted components
     selectComponents(newComponents.map(c => c.id));
     
-    console.log(`Pasted ${newComponents.length} component(s)`);
+    console.log(`Pasted ${newComponents.length} component(s)${targetParentId ? ' into container' : ''}`);
   }, [saveToHistory, selectComponents]);
 
   // Duplicate (copy + paste in one action)
@@ -345,18 +373,95 @@ export function pasteClipboardComponents(): void {
 
   store.saveToHistory();
 
+  // Check if a single container is selected — paste into it
+  let targetParentId: string | null = null;
+  if (store.selection.selectedIds.length === 1) {
+    const selectedComp = store.getComponentById(store.selection.selectedIds[0]);
+    if (selectedComp) {
+      const def = getComponentDefinition(selectedComp.type);
+      if (def?.isContainer) {
+        targetParentId = selectedComp.id;
+      }
+    }
+  }
+
   const newComponents = clipboard.components.map(comp => {
-    const cloned = cloneComponentWithNewIds(comp);
+    const cloned = cloneComponentWithNewIds(comp, targetParentId);
     cloned.x += 20;
     cloned.y += 20;
     return cloned;
   });
 
+  const addToTree = (comps: LvglComponent[], parentId: string | null, newComps: LvglComponent[]): LvglComponent[] => {
+    if (parentId === null) {
+      return [...comps, ...newComps];
+    }
+    return comps.map(comp => {
+      if (comp.id === parentId) {
+        return { ...comp, children: [...comp.children, ...newComps] };
+      }
+      if (comp.children.length > 0) {
+        return { ...comp, children: addToTree(comp.children, parentId, newComps) };
+      }
+      return comp;
+    });
+  };
+
   const newPages = store.pages.map(page => {
     if (page.id === store.currentPageId) {
       return {
         ...page,
-        components: [...page.components, ...newComponents],
+        components: addToTree(page.components, targetParentId, newComponents),
+      };
+    }
+    return page;
+  });
+
+  useEditorStore.setState({ pages: newPages });
+  store.selectComponents(newComponents.map(c => c.id));
+}
+
+/**
+ * Paste clipboard components into a specific container by id.
+ */
+export function pasteIntoContainer(containerId: string): void {
+  if (!clipboard || clipboard.components.length === 0) return;
+
+  const store = useEditorStore.getState();
+  const currentPage = store.pages.find(p => p.id === store.currentPageId);
+  if (!currentPage) return;
+
+  const container = store.getComponentById(containerId);
+  if (!container) return;
+  const def = getComponentDefinition(container.type);
+  if (!def?.isContainer) return;
+
+  store.saveToHistory();
+
+  const newComponents = clipboard.components.map(comp => {
+    const cloned = cloneComponentWithNewIds(comp, containerId);
+    cloned.x += 20;
+    cloned.y += 20;
+    return cloned;
+  });
+
+  const addToTree = (comps: LvglComponent[], parentId: string, newComps: LvglComponent[]): LvglComponent[] => {
+    return comps.map(comp => {
+      if (comp.id === parentId) {
+        return { ...comp, children: [...comp.children, ...newComps] };
+      }
+      if (comp.children.length > 0) {
+        return { ...comp, children: addToTree(comp.children, parentId, newComps) };
+      }
+      return comp;
+    });
+  };
+
+  const newPages = store.pages.map(page => {
+    if (page.id === store.currentPageId) {
+      return {
+        ...page,
+        components: addToTree(page.components, containerId, newComponents),
       };
     }
     return page;

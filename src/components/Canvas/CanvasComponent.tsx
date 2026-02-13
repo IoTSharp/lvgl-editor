@@ -310,7 +310,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     opacity: component.visible === false ? 0.3 : (defaultStyle.opacity !== undefined ? defaultStyle.opacity : 1),
     ...paddingStyles,
     boxSizing: 'border-box',
-    overflow: 'hidden',
     pointerEvents: component.visible === false ? 'none' : undefined,
     // Shadow
     boxShadow: buildBoxShadow(),
@@ -569,7 +568,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 </div>
               ))}
             </div>
-            <div style={{ flex: 1, padding: '8px', overflow: 'hidden' }}>{children}</div>
+            <div className="lvgl-tabview-content" style={{ flex: 1, padding: '8px' }}>{children}</div>
           </div>
         );
       
@@ -590,7 +589,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
               <span>{props.title || 'Window'}</span>
               {props.showCloseBtn !== false && <span style={{ color: '#999', cursor: 'pointer' }}>✕</span>}
             </div>
-            <div style={{ flex: 1, padding: '8px', overflow: 'hidden' }}>{children}</div>
+            <div className="lvgl-win-content" style={{ flex: 1, padding: '8px' }}>{children}</div>
           </div>
         );
       

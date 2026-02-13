@@ -2,6 +2,7 @@
   cursor: move;
   user-select: none;
   transition: box-shadow 0.15s;
+  overflow: hidden;
 }
 
 .canvas-component:hover {
@@ -133,7 +134,20 @@
   outline: 1px dashed #999;
 }
 
-/* Align badge */
+/* During drag, allow components to overflow their parent containers */
+.canvas.dragging-move,
+.canvas.dragging-move .canvas-component,
+.canvas.dragging-move .lvgl-tabview-content,
+.canvas.dragging-move .lvgl-win-content,
+.canvas.dragging-move .lvgl-obj {
+  overflow: visible !important;
+}
+
+/* Container content areas default overflow */
+.lvgl-tabview-content,
+.lvgl-win-content {
+  overflow: hidden;
+}
 .align-badge {
   position: absolute;
   top: -10px;
