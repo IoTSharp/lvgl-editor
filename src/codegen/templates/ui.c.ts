@@ -494,6 +494,12 @@ function generatePropsCode(
           lines.push(`${indent}${imgSetSrc}(${varName}, &${props.src});`);
         }
       }
+      // Stretch image to fill the widget area (matches editor canvas behavior)
+      if (isV9) {
+        lines.push(`${indent}lv_image_set_inner_align(${varName}, LV_IMAGE_ALIGN_STRETCH);`);
+      } else {
+        lines.push(`${indent}// Note: LVGL v8 does not support image inner align; manual scaling needed`);
+      }
       if (props.rotation && props.rotation !== 0) {
         if (isV9) {
           lines.push(`${indent}lv_image_set_rotation(${varName}, ${props.rotation * 10});`);

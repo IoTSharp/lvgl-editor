@@ -794,9 +794,7 @@ const CanvasImageContent: React.FC<{ src?: string }> = React.memo(({ src }) => {
           width: '100%',
           height: '100%',
           backgroundImage: `url(${matched.data})`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
+          backgroundSize: '100% 100%',
         }}
       />
     );
