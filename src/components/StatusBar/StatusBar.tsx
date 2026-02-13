@@ -5,7 +5,7 @@ import { getComponentDefinition } from '../../utils/componentDefinitions';
 import './StatusBar.css';
 
 const StatusBar: React.FC = () => {
-  const { canvas, selection, components, getComponentById, setZoom, toggleGrid, setSnapToGrid } = useEditorStore();
+  const { canvas, selection, components, getComponentById, toggleGrid, setSnapToGrid } = useEditorStore();
   const { lastSaveTime } = useAppStore();
   
   const selectedCount = selection.selectedIds.length;
@@ -17,10 +17,6 @@ const StatusBar: React.FC = () => {
     return comps.reduce((acc, comp) => acc + 1 + countComponents(comp.children), 0);
   };
   const totalComponents = countComponents(components);
-
-  const handleZoomIn = () => setZoom(canvas.zoom + 0.1);
-  const handleZoomOut = () => setZoom(canvas.zoom - 0.1);
-  const handleZoomReset = () => setZoom(1);
 
   const formatSaveTime = (ts: number | null): string => {
     if (!ts) return '';
@@ -94,17 +90,6 @@ const StatusBar: React.FC = () => {
           <span className="icon">⊡</span>
           吸附
         </button>
-        
-        <div className="status-divider" />
-        
-        {/* Zoom controls */}
-        <div className="zoom-controls">
-          <button onClick={handleZoomOut} title="缩小">−</button>
-          <button className="zoom-level" onClick={handleZoomReset} title="重置缩放">
-            {Math.round(canvas.zoom * 100)}%
-          </button>
-          <button onClick={handleZoomIn} title="放大">+</button>
-        </div>
       </div>
     </div>
   );

@@ -489,7 +489,20 @@ const Canvas: React.FC = () => {
                 centerY >= absY && centerY <= absY + comp.height
               ) {
                 const def = getComponentDefinition(comp.type);
-                if (def?.isContainer) {
+                
+                // Special handling for Button:
+                // Although it is technically a container (can hold labels/images),
+                // we only want to drop into it if dragging a Label or Image.
+                // Otherwise, treat it as a non-container to avoid accidental nesting.
+                let isContainer = def?.isContainer;
+                if (isContainer && comp.type === 'btn') {
+                   const allowedTypes = ['label', 'img'];
+                   if (!draggedComp || !allowedTypes.includes(draggedComp.type)) {
+                     isContainer = false;
+                   }
+                }
+
+                if (isContainer) {
                   const deeper = findDeepestContainer(comp.children, absX, absY);
                   return deeper || { comp, absX, absY };
                 }
@@ -771,6 +784,21 @@ const Canvas: React.FC = () => {
     return items;
   }, [saveToHistory, deleteComponents, bringToFront, bringForward, sendBackward, sendToBack]);
 
+  // Handle zoom controls
+  const handleZoomIn = useCallback(() => {
+    const { canvas: c } = useEditorStore.getState();
+    setZoom(c.zoom + 0.1);
+  }, [setZoom]);
+
+  const handleZoomOut = useCallback(() => {
+    const { canvas: c } = useEditorStore.getState();
+    setZoom(c.zoom - 0.1);
+  }, [setZoom]);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1);
+  }, [setZoom]);
+
   // Render grid
   const renderGrid = () => {
     if (!canvas.showGrid) return null;
@@ -905,6 +933,15 @@ const Canvas: React.FC = () => {
           {renderBoxSelection()}
           <AlignmentGuides guides={alignmentGuides} />
         </div>
+      </div>
+      
+      {/* Zoom controls */}
+      <div className="zoom-controls">
+        <button onClick={handleZoomOut} title="缩小">−</button>
+        <button className="zoom-level" onClick={handleZoomReset} title="重置缩放">
+          {Math.round(canvas.zoom * 100)}%
+        </button>
+        <button onClick={handleZoomIn} title="放大">+</button>
       </div>
       
       {/* Context Menu */}
