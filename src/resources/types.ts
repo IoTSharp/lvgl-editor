@@ -115,6 +115,8 @@ export interface ProjectFile {
     fontLarge: boolean;
     defaultFont: string;
     defaultFontSize?: number;
+    useBuiltinSymbols?: boolean;
+    symbolFont?: string;
     memSize: number;
   };
 }

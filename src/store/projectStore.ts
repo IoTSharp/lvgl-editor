@@ -24,6 +24,8 @@ export interface LvglConfig {
   fontLarge: boolean;
   defaultFont: string;
   defaultFontSize?: number; // Only used when defaultFont is a custom font
+  useBuiltinSymbols: boolean; // Inject LVGL built-in symbol font declarations
+  symbolFont?: string; // Built-in font for symbols, e.g. 'montserrat_14'
   memSize: number; // KB
 }
 
@@ -72,6 +74,8 @@ export const DEFAULT_LVGL_CONFIG: LvglConfig = {
   colorFormat: 'ARGB8888',
   fontLarge: true,
   defaultFont: 'montserrat_14',
+  useBuiltinSymbols: true,
+  symbolFont: 'montserrat_14',
   memSize: 64,
 };
 

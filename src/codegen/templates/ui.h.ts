@@ -39,7 +39,7 @@ function getAllComponents(pages: Page[]): { component: LvglComponent; pageName: 
 /**
  * Generate ui.h header file
  */
-export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: FontResource[] = [], defaultFont?: string, defaultFontSize?: number): string {
+export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: FontResource[] = [], defaultFont?: string, defaultFontSize?: number, useBuiltinSymbols?: boolean): string {
   const lines: string[] = [];
   
   // Includes
@@ -165,6 +165,16 @@ export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: 
     lines.push('');
   }
   
+  // Symbol font declaration
+  if (useBuiltinSymbols) {
+    if (options.generateComments) {
+      lines.push(generateSectionHeader('Symbol Font', options));
+      lines.push('');
+    }
+    lines.push('extern const lv_font_t *ui_symbol_font;');
+    lines.push('');
+  }
+
   // Function declarations
   if (options.generateComments) {
     lines.push(generateSectionHeader('Function Declarations', options));

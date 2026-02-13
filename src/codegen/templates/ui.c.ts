@@ -893,7 +893,9 @@ function generateComponentCode(
   needsPagePrefix: Set<string>,
   imageResources: ImageResource[] = [],
   defaultFont?: string,
-  defaultFontSize?: number
+  defaultFontSize?: number,
+  useBuiltinSymbols?: boolean,
+  symbolFont?: string
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -1073,7 +1075,7 @@ function generateComponentCode(
     const defaultTab = `${varName}_tab_${component.props.activeTab || 0}`;
     for (const child of component.children) {
       const tabParent = childToTab[child.id] || defaultTab;
-      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
+      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
     }
   } else if (component.type === 'tileview' && component.props?.rows !== undefined && component.props?.cols !== undefined) {
     const tileChildMap: Record<string, string[]> = component.props.tileChildMap || {};
@@ -1090,19 +1092,19 @@ function generateComponentCode(
     const defaultTile = `${varName}_tile_0_0`;
     for (const child of component.children) {
       const tileParent = childToTile[child.id] || defaultTile;
-      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
+      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
     }
   } else if (component.type === 'win') {
     // Win children go into the content area
     if (component.children.length > 0) {
       lines.push(`${indent}lv_obj_t * ${varName}_content = lv_win_get_content(${varName});`);
       for (const child of component.children) {
-        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
+        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
       }
     }
   } else {
     for (const child of component.children) {
-      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
+      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
     }
   }
 
@@ -1119,7 +1121,9 @@ function generateScreenInitFunc(
   imageResources: ImageResource[] = [],
   defaultFont?: string,
   defaultFontSize?: number,
-  fontResources: FontResource[] = []
+  fontResources: FontResource[] = [],
+  useBuiltinSymbols?: boolean,
+  symbolFont?: string
 ): string {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -1154,7 +1158,7 @@ function generateScreenInitFunc(
   
   // Generate components
   for (const component of page.components) {
-    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
+    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
   }
   
   // User code section
@@ -1285,12 +1289,34 @@ function collectUsedCustomFonts(
 /**
  * Generate ui.c source file
  */
-export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, defaultFontSize?: number, fontResources: FontResource[] = []): string {
+export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, defaultFontSize?: number, fontResources: FontResource[] = [], useBuiltinSymbols?: boolean, symbolFont?: string): string {
   const lines: string[] = [];
   
   // Includes
   lines.push(generateInclude('ui.h'));
   lines.push(generateInclude('ui_events.h'));
+
+  // Built-in symbols note
+  if (useBuiltinSymbols) {
+    const symFontName = symbolFont ? `lv_font_${symbolFont}` : 'lv_font_montserrat_14';
+    lines.push('');
+    if (options.generateComments) {
+      lines.push('/*');
+      lines.push(` * LVGL Built-in Symbols (FontAwesome subset) — using font: ${symFontName}`);
+      lines.push(' * Usage: lv_label_set_text(label, LV_SYMBOL_OK " Accept");');
+      lines.push(` *        lv_obj_set_style_text_font(label, &${symFontName}, 0);`);
+      lines.push(' * Symbols: LV_SYMBOL_AUDIO, LV_SYMBOL_VIDEO, LV_SYMBOL_LIST, LV_SYMBOL_OK,');
+      lines.push(' * LV_SYMBOL_CLOSE, LV_SYMBOL_POWER, LV_SYMBOL_SETTINGS, LV_SYMBOL_HOME,');
+      lines.push(' * LV_SYMBOL_DOWNLOAD, LV_SYMBOL_DRIVE, LV_SYMBOL_REFRESH, LV_SYMBOL_PLAY,');
+      lines.push(' * LV_SYMBOL_PAUSE, LV_SYMBOL_STOP, LV_SYMBOL_PREV, LV_SYMBOL_NEXT,');
+      lines.push(' * LV_SYMBOL_LEFT, LV_SYMBOL_RIGHT, LV_SYMBOL_UP, LV_SYMBOL_DOWN,');
+      lines.push(' * LV_SYMBOL_PLUS, LV_SYMBOL_MINUS, LV_SYMBOL_WARNING, LV_SYMBOL_WIFI,');
+      lines.push(' * LV_SYMBOL_BLUETOOTH, LV_SYMBOL_TRASH, LV_SYMBOL_EDIT, LV_SYMBOL_SAVE,');
+      lines.push(' * LV_SYMBOL_FILE, LV_SYMBOL_BELL, LV_SYMBOL_KEYBOARD, LV_SYMBOL_GPS, etc.');
+      lines.push(' */');
+    }
+    lines.push(`const lv_font_t *ui_symbol_font = &${symFontName};`);
+  }
 
   // Collect used image resources and add extern declarations
   const usedImageResources = collectUsedImages(pages, imageResources);
@@ -1387,7 +1413,7 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   }
   
   for (const page of pages) {
-    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources, defaultFont, defaultFontSize, fontResources));
+    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources, defaultFont, defaultFontSize, fontResources, useBuiltinSymbols, symbolFont));
     lines.push('');
   }
   
@@ -1410,6 +1436,17 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   
   const indent = getIndent(options);
   lines.push('void ui_init(void) {');
+
+  // Set symbol font as fallback for custom default font
+  if (useBuiltinSymbols && defaultFont && !/^montserrat_\d+$/.test(defaultFont)) {
+    const symFontName = symbolFont ? `lv_font_${symbolFont}` : 'lv_font_montserrat_14';
+    const defaultFontCName = `${defaultFont}_${defaultFontSize || 16}`;
+    lines.push('');
+    if (options.generateComments) {
+      lines.push(`${indent}${generateComment('Set built-in symbol font as fallback for custom default font', options)}`);
+    }
+    lines.push(`${indent}((lv_font_t *)&${defaultFontCName})->fallback = &${symFontName};`);
+  }
 
   // Theme initialization
   if (theme) {

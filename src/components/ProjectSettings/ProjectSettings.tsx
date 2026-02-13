@@ -32,6 +32,8 @@ const ProjectSettings: React.FC = () => {
   const [fontLarge, setFontLarge] = useState(true);
   const [defaultFont, setDefaultFont] = useState('montserrat_14');
   const [defaultFontSize, setDefaultFontSizeLocal] = useState<number>(16);
+  const [useBuiltinSymbols, setUseBuiltinSymbols] = useState(true);
+  const [symbolFont, setSymbolFont] = useState('montserrat_14');
   const [memSize, setMemSize] = useState(64);
 
   useEffect(() => {
@@ -46,6 +48,8 @@ const ProjectSettings: React.FC = () => {
       setFontLarge(cfg.lvglConfig.fontLarge);
       setDefaultFont(cfg.lvglConfig.defaultFont);
       setDefaultFontSizeLocal(cfg.lvglConfig.defaultFontSize || 16);
+      setUseBuiltinSymbols(cfg.lvglConfig.useBuiltinSymbols !== false);
+      setSymbolFont(cfg.lvglConfig.symbolFont || 'montserrat_14');
       setMemSize(cfg.lvglConfig.memSize);
     });
   }, [currentProjectId, getProjectConfig]);
@@ -59,6 +63,7 @@ const ProjectSettings: React.FC = () => {
       config.lvglConfig.fontLarge !== fontLarge ||
       config.lvglConfig.defaultFont !== defaultFont ||
       config.lvglConfig.defaultFontSize !== (isCustomFont ? defaultFontSize : undefined) ||
+      config.lvglConfig.useBuiltinSymbols !== useBuiltinSymbols ||
       config.lvglConfig.memSize !== memSize;
 
     const updated: ProjectConfig = {
@@ -71,6 +76,8 @@ const ProjectSettings: React.FC = () => {
         fontLarge,
         defaultFont,
         defaultFontSize: isCustomFont ? defaultFontSize : undefined,
+        useBuiltinSymbols,
+        symbolFont: useBuiltinSymbols ? symbolFont : undefined,
         memSize,
       },
     };
@@ -153,6 +160,22 @@ const ProjectSettings: React.FC = () => {
               <select className="npd-select" value={defaultFontSize} onChange={e => setDefaultFontSizeLocal(Number(e.target.value))}>
                 {FONT_SIZE_OPTIONS.map(s => (
                   <option key={s} value={s}>{s}px</option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label className="npd-label npd-checkbox-label">
+            <input type="checkbox" checked={useBuiltinSymbols} onChange={e => setUseBuiltinSymbols(e.target.checked)} />
+            注入 LVGL 内置图标（FontAwesome Symbols）
+          </label>
+
+          {useBuiltinSymbols && (
+            <label className="npd-label">
+              图标字体
+              <select className="npd-select" value={symbolFont} onChange={e => setSymbolFont(e.target.value)}>
+                {FONT_OPTIONS.map(f => (
+                  <option key={f} value={f}>{f}</option>
                 ))}
               </select>
             </label>

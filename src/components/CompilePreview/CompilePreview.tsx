@@ -114,6 +114,8 @@ const CompilePreview: React.FC = () => {
 
   const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
   const [projectDefaultFontSize, setProjectDefaultFontSize] = useState<number | undefined>();
+  const [projectUseBuiltinSymbols, setProjectUseBuiltinSymbols] = useState<boolean>(true);
+  const [projectSymbolFont, setProjectSymbolFont] = useState<string | undefined>();
 
   // Load project default font
   useEffect(() => {
@@ -122,14 +124,16 @@ const CompilePreview: React.FC = () => {
       if (cfg) {
         setProjectDefaultFont(cfg.lvglConfig.defaultFont);
         setProjectDefaultFontSize(cfg.lvglConfig.defaultFontSize);
+        setProjectUseBuiltinSymbols(cfg.lvglConfig.useBuiltinSymbols !== false);
+        setProjectSymbolFont(cfg.lvglConfig.symbolFont);
       }
     });
   }, [currentProjectId, getProjectConfig]);
 
   // Generate C code from current editor state
   const generateCCode = useCallback(() => {
-    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize);
-  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize]);
+    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont);
+  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont]);
 
   // Render framebuffer to canvas
   const renderFramebuffer = useCallback((fbData: Uint8Array, width: number, height: number) => {

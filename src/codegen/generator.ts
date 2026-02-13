@@ -28,13 +28,15 @@ export function generateCode(
   imageResources: ImageResource[] = [],
   fontResources: FontResource[] = [],
   defaultFont?: string,
-  defaultFontSize?: number
+  defaultFontSize?: number,
+  useBuiltinSymbols?: boolean,
+  symbolFont?: string
 ): GeneratedCode {
   const opts: CodeGenOptions = { ...DEFAULT_CODEGEN_OPTIONS, ...options };
   
   return {
-    'ui.h': generateUiHeader(pages, opts, fontResources, defaultFont, defaultFontSize),
-    'ui.c': generateUiSource(pages, opts, theme, imageResources, defaultFont, defaultFontSize, fontResources),
+    'ui.h': generateUiHeader(pages, opts, fontResources, defaultFont, defaultFontSize, useBuiltinSymbols),
+    'ui.c': generateUiSource(pages, opts, theme, imageResources, defaultFont, defaultFontSize, fontResources, useBuiltinSymbols, symbolFont),
     'ui_events.h': generateEventsHeader(pages, opts),
     'ui_events.c': generateEventsSource(pages, opts),
     'ui_logic.h': generateLogicHeader(opts, logicGraphs),
@@ -54,15 +56,17 @@ export function generateSingleFile(
   imageResources: ImageResource[] = [],
   fontResources: FontResource[] = [],
   defaultFont?: string,
-  defaultFontSize?: number
+  defaultFontSize?: number,
+  useBuiltinSymbols?: boolean,
+  symbolFont?: string
 ): string {
   const opts: CodeGenOptions = { ...DEFAULT_CODEGEN_OPTIONS, ...options };
   
   switch (fileName) {
     case 'ui.h':
-      return generateUiHeader(pages, opts, fontResources, defaultFont, defaultFontSize);
+      return generateUiHeader(pages, opts, fontResources, defaultFont, defaultFontSize, useBuiltinSymbols);
     case 'ui.c':
-      return generateUiSource(pages, opts, theme, imageResources, defaultFont, defaultFontSize, fontResources);
+      return generateUiSource(pages, opts, theme, imageResources, defaultFont, defaultFontSize, fontResources, useBuiltinSymbols, symbolFont);
     case 'ui_events.h':
       return generateEventsHeader(pages, opts);
     case 'ui_events.c':
