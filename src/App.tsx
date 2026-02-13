@@ -138,7 +138,7 @@ const EditorView: React.FC<EditorViewProps> = ({
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
-  const { addComponent, canvas, pages, setPages, setCanvasSize } = useEditorStore();
+  const { addComponent, pages, setPages, setCanvasSize } = useEditorStore();
   const { images, fonts, importResources } = useResourceStore();
   const { messages, removeToast, success, error } = useToast();
 
@@ -319,24 +319,24 @@ const EditorView: React.FC<EditorViewProps> = ({
       const canvasElement = document.querySelector('.canvas');
       if (canvasElement) {
         const rect = canvasElement.getBoundingClientRect();
-        const dropX = (event.activatorEvent as MouseEvent).clientX;
-        const dropY = (event.activatorEvent as MouseEvent).clientY;
+        // Compute final mouse position: activator origin + drag delta
+        const activator = event.activatorEvent as MouseEvent;
+        const finalX = activator.clientX + (event.delta?.x || 0);
+        const finalY = activator.clientY + (event.delta?.y || 0);
 
-        let x = (dropX - rect.left) / canvas.zoom;
-        let y = (dropY - rect.top) / canvas.zoom;
+        // rect is already transformed (includes zoom + pan), so dividing
+        // the offset by the current zoom gives us logical canvas coordinates
+        const currentCanvas = useEditorStore.getState().canvas;
+        let x = (finalX - rect.left) / currentCanvas.zoom;
+        let y = (finalY - rect.top) / currentCanvas.zoom;
 
-        if (event.delta) {
-          x += event.delta.x / canvas.zoom;
-          y += event.delta.y / canvas.zoom;
-        }
-
-        x = Math.max(0, Math.min(x, canvas.width - 50));
-        y = Math.max(0, Math.min(y, canvas.height - 50));
+        x = Math.max(0, Math.min(x, currentCanvas.width - 50));
+        y = Math.max(0, Math.min(y, currentCanvas.height - 50));
 
         addComponent(componentType, x, y);
       }
     }
-  }, [addComponent, canvas]);
+  }, [addComponent]);
 
   // Render drag overlay
   const renderDragOverlay = () => {
