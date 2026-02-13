@@ -158,8 +158,12 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
   };
   
   const handleExtractChars = () => {
-    const chars = extractCharsFromText(customCharsInput);
+    const input = selectedFont?.customChars ?? customCharsInput;
+    const chars = extractCharsFromText(input);
     setCustomCharsInput(chars);
+    if (selectedFont) {
+      updateFont(selectedFont.id, { customChars: chars });
+    }
   };
   
   const handleCopyText = (text: string) => {
@@ -331,8 +335,11 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
             <div className="detail-section">
               <label>自定义字符:</label>
               <textarea
-                value={customCharsInput}
-                onChange={(e) => setCustomCharsInput(e.target.value)}
+                value={selectedFont.customChars ?? customCharsInput}
+                onChange={(e) => {
+                  setCustomCharsInput(e.target.value);
+                  updateFont(selectedFont.id, { customChars: e.target.value });
+                }}
                 placeholder="输入需要包含的字符，或粘贴文本后点击提取"
                 rows={3}
               />
