@@ -257,6 +257,20 @@ const PropertyEditor: React.FC = () => {
     [selectedId, component, updateComponent]
   );
 
+  const handleBatchPropsChange = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (updates: Record<string, any>) => {
+      if (!selectedId || !component) return;
+      updateComponent(selectedId, {
+        props: {
+          ...component.props,
+          ...updates,
+        },
+      });
+    },
+    [selectedId, component, updateComponent]
+  );
+
   if (!component) {
     return (
       <div className="property-editor">
@@ -1009,7 +1023,7 @@ const PropertyEditor: React.FC = () => {
         </div>
 
         {/* Component-specific props */}
-        {renderComponentProps(component, handlePropsChange)}
+        {renderComponentProps(component, handlePropsChange, handleBatchPropsChange)}
 
         {/* Flex/Grid child properties */}
         {parentLayout === 'flex' && (
@@ -1238,11 +1252,14 @@ function ComponentFontSelector({
   fontResource,
   fontSize,
   onChange,
+  onBatchChange,
 }: {
   fontResource?: string;
   fontSize?: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (key: string, value: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onBatchChange?: (updates: Record<string, any>) => void;
 }): React.ReactNode {
   const fonts = useResourceStore((s) => s.fonts);
 
@@ -1257,26 +1274,39 @@ function ComponentFontSelector({
   const handleFontChange = (value: string) => {
     if (!value) {
       // "默认" selected - clear fontResource and fontSize (inherit project default)
-      onChange('fontResource', undefined);
-      onChange('fontSize', undefined);
+      if (onBatchChange) {
+        onBatchChange({ fontResource: undefined, fontSize: undefined });
+      } else {
+        onChange('fontResource', undefined);
+        onChange('fontSize', undefined);
+      }
     } else {
       const customFont = fonts.find((f) => f.cFontName === value);
       if (customFont) {
-        onChange('fontResource', value);
         // If current fontSize is not in custom font's sizes, pick closest
         const curSize = fontSize || 16;
+        let newSize = curSize;
         if (!customFont.sizes.includes(curSize)) {
-          const closest = customFont.sizes.reduce((a, b) =>
+          newSize = customFont.sizes.reduce((a, b) =>
             Math.abs(b - curSize) < Math.abs(a - curSize) ? b : a
           );
-          onChange('fontSize', closest);
+        }
+        if (onBatchChange) {
+          onBatchChange({ fontResource: value, fontSize: newSize });
+        } else {
+          onChange('fontResource', value);
+          onChange('fontSize', newSize);
         }
       } else {
         // Built-in font selected - set fontResource to builtin name, extract size
         const match = value.match(/^montserrat_(\d+)$/);
         if (match) {
-          onChange('fontResource', value);
-          onChange('fontSize', parseInt(match[1]));
+          if (onBatchChange) {
+            onBatchChange({ fontResource: value, fontSize: parseInt(match[1]) });
+          } else {
+            onChange('fontResource', value);
+            onChange('fontSize', parseInt(match[1]));
+          }
         }
       }
     }
@@ -1332,7 +1362,9 @@ function ComponentFontSelector({
 function renderComponentProps(
   component: LvglComponent,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onChange: (key: string, value: any) => void
+  onChange: (key: string, value: any) => void,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onBatchChange?: (updates: Record<string, any>) => void
 ): React.ReactNode {
   const { type, props } = component;
 
@@ -1353,6 +1385,7 @@ function renderComponentProps(
             fontResource={props.fontResource}
             fontSize={props.fontSize}
             onChange={onChange}
+            onBatchChange={onBatchChange}
           />
           <div className="property-row">
             <label>对齐方式</label>
@@ -1384,6 +1417,7 @@ function renderComponentProps(
             fontResource={props.fontResource}
             fontSize={props.fontSize}
             onChange={onChange}
+            onBatchChange={onBatchChange}
           />
           <div className="property-row">
             <label>对齐方式</label>
@@ -1436,6 +1470,7 @@ function renderComponentProps(
             fontResource={props.fontResource}
             fontSize={props.fontSize}
             onChange={onChange}
+            onBatchChange={onBatchChange}
           />
           <div className="property-row">
             <label>最大长度</label>
@@ -1483,6 +1518,7 @@ function renderComponentProps(
             fontResource={props.fontResource}
             fontSize={props.fontSize}
             onChange={onChange}
+            onBatchChange={onBatchChange}
           />
           <div className="property-row">
             <label>选中</label>
@@ -1695,6 +1731,7 @@ function renderComponentProps(
             fontResource={props.fontResource}
             fontSize={props.fontSize}
             onChange={onChange}
+            onBatchChange={onBatchChange}
           />
           <div className="property-row">
             <label>展开方向</label>
