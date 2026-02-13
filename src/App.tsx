@@ -331,8 +331,54 @@ const EditorView: React.FC<EditorViewProps> = ({
         const currentCanvas = useEditorStore.getState().canvas;
 
         // Use tracked mouse position — immune to CSS transform issues with dnd-kit delta
-        let x = (lastMousePos.current.x - rect.left) / currentCanvas.zoom;
-        let y = (lastMousePos.current.y - rect.top) / currentCanvas.zoom;
+        const dropX = (lastMousePos.current.x - rect.left) / currentCanvas.zoom;
+        const dropY = (lastMousePos.current.y - rect.top) / currentCanvas.zoom;
+
+        // Find the deepest container component under the drop point
+        const state = useEditorStore.getState();
+        const currentPage = state.pages.find(p => p.id === state.currentPageId);
+        const components = currentPage?.components || [];
+
+        type HitResult = { comp: LvglComponent; absX: number; absY: number } | null;
+
+        const findDeepestContainer = (
+          comps: LvglComponent[],
+          offsetX: number,
+          offsetY: number,
+        ): HitResult => {
+          // Iterate in reverse so top-most (last rendered) components are checked first
+          for (let i = comps.length - 1; i >= 0; i--) {
+            const comp = comps[i];
+            const absX = comp.x + offsetX;
+            const absY = comp.y + offsetY;
+
+            if (
+              dropX >= absX && dropX <= absX + comp.width &&
+              dropY >= absY && dropY <= absY + comp.height
+            ) {
+              const def = getComponentDefinition(comp.type);
+              if (def?.isContainer) {
+                // Check children first for a deeper container
+                const deeper = findDeepestContainer(comp.children, absX, absY);
+                return deeper || { comp, absX, absY };
+              }
+            }
+          }
+          return null;
+        };
+
+        const container = findDeepestContainer(components, 0, 0);
+
+        // Calculate position relative to the container (or canvas root)
+        let x = dropX;
+        let y = dropY;
+        let parentId: string | null = null;
+
+        if (container) {
+          x = dropX - container.absX;
+          y = dropY - container.absY;
+          parentId = container.comp.id;
+        }
 
         // Center the component on the drop point
         const definition = getComponentDefinition(componentType);
@@ -341,10 +387,16 @@ const EditorView: React.FC<EditorViewProps> = ({
           y -= definition.defaultHeight / 2;
         }
 
-        x = Math.max(0, Math.min(x, currentCanvas.width - 50));
-        y = Math.max(0, Math.min(y, currentCanvas.height - 50));
+        // Clamp within bounds
+        if (container) {
+          x = Math.max(0, Math.min(x, container.comp.width - (definition?.defaultWidth || 50)));
+          y = Math.max(0, Math.min(y, container.comp.height - (definition?.defaultHeight || 50)));
+        } else {
+          x = Math.max(0, Math.min(x, currentCanvas.width - 50));
+          y = Math.max(0, Math.min(y, currentCanvas.height - 50));
+        }
 
-        addComponent(componentType, x, y);
+        addComponent(componentType, x, y, parentId);
       }
     }
   }, [addComponent]);
