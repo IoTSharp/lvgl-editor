@@ -1148,8 +1148,11 @@ function generateScreenInitFunc(
     const isBuiltin = defaultFont.match(/^montserrat_(\d+)$/);
     if (isBuiltin) {
       lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &lv_font_${defaultFont}, 0);`);
+    } else if (useBuiltinSymbols) {
+      // Use mutable font copy with symbol fallback
+      lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &ui_default_font_with_fallback, 0);`);
     } else {
-      // Custom font: use defaultFontSize parameter
+      // Custom font without symbol fallback
       const size = defaultFontSize || 16;
       lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &${defaultFont}_${size}, 0);`);
     }
@@ -1316,6 +1319,17 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
       lines.push(' */');
     }
     lines.push(`const lv_font_t *ui_symbol_font = &${symFontName};`);
+
+    // Generate mutable font wrapper for fallback support
+    // (const fonts in WASM are placed in read-only memory, so fallback pointer cannot be set at runtime)
+    if (defaultFont && !/^montserrat_\d+$/.test(defaultFont)) {
+      const defaultFontCName = `${defaultFont}_${defaultFontSize || 16}`;
+      lines.push('');
+      if (options.generateComments) {
+        lines.push(`${generateComment('Mutable copy of default font with symbol fallback (const fonts are read-only in WASM)', options)}`);
+      }
+      lines.push(`static lv_font_t ui_default_font_with_fallback;`);
+    }
   }
 
   // Collect used image resources and add extern declarations
@@ -1443,9 +1457,10 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
     const defaultFontCName = `${defaultFont}_${defaultFontSize || 16}`;
     lines.push('');
     if (options.generateComments) {
-      lines.push(`${indent}${generateComment('Set built-in symbol font as fallback for custom default font', options)}`);
+      lines.push(`${indent}${generateComment('Create mutable copy of default font and set symbol font as fallback', options)}`);
     }
-    lines.push(`${indent}((lv_font_t *)&${defaultFontCName})->fallback = &${symFontName};`);
+    lines.push(`${indent}lv_memcpy(&ui_default_font_with_fallback, &${defaultFontCName}, sizeof(lv_font_t));`);
+    lines.push(`${indent}ui_default_font_with_fallback.fallback = &${symFontName};`);
   }
 
   // Theme initialization
