@@ -307,6 +307,16 @@ const EditorView: React.FC<EditorViewProps> = ({
     }
   }, []);
 
+  // Track last mouse position for accurate drop placement
+  const lastMousePos = useRef({ x: 0, y: 0 });
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveDragType(null);
@@ -315,20 +325,21 @@ const EditorView: React.FC<EditorViewProps> = ({
     if (over?.id === 'canvas-drop-area' && active.data.current?.type === 'new-component') {
       const componentType = active.data.current.componentType;
 
-      // Get drop position relative to canvas
       const canvasElement = document.querySelector('.canvas');
       if (canvasElement) {
         const rect = canvasElement.getBoundingClientRect();
-        // Compute final mouse position: activator origin + drag delta
-        const activator = event.activatorEvent as MouseEvent;
-        const finalX = activator.clientX + (event.delta?.x || 0);
-        const finalY = activator.clientY + (event.delta?.y || 0);
-
-        // rect is already transformed (includes zoom + pan), so dividing
-        // the offset by the current zoom gives us logical canvas coordinates
         const currentCanvas = useEditorStore.getState().canvas;
-        let x = (finalX - rect.left) / currentCanvas.zoom;
-        let y = (finalY - rect.top) / currentCanvas.zoom;
+
+        // Use tracked mouse position — immune to CSS transform issues with dnd-kit delta
+        let x = (lastMousePos.current.x - rect.left) / currentCanvas.zoom;
+        let y = (lastMousePos.current.y - rect.top) / currentCanvas.zoom;
+
+        // Center the component on the drop point
+        const definition = getComponentDefinition(componentType);
+        if (definition) {
+          x -= definition.defaultWidth / 2;
+          y -= definition.defaultHeight / 2;
+        }
 
         x = Math.max(0, Math.min(x, currentCanvas.width - 50));
         y = Math.max(0, Math.min(y, currentCanvas.height - 50));
