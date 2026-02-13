@@ -407,6 +407,7 @@ function generatePropsCode(
       if (props.checked) {
         lines.push(`${indent}lv_obj_add_state(${varName}, LV_STATE_CHECKED);`);
       }
+      generateTextProps(varName);
       break;
       
     case 'switch':
@@ -431,6 +432,7 @@ function generatePropsCode(
       if (props.oneLine) {
         lines.push(`${indent}lv_textarea_set_one_line(${varName}, true);`);
       }
+      generateTextProps(varName);
       break;
       
     case 'dropdown':
@@ -450,6 +452,7 @@ function generatePropsCode(
         };
         lines.push(`${indent}lv_dropdown_set_dir(${varName}, ${dirMap[props.direction] || 'LV_DIR_BOTTOM'});`);
       }
+      generateTextProps(varName);
       break;
       
     case 'img':

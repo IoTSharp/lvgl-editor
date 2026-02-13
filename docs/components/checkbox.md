@@ -53,6 +53,19 @@ Checkbox 不是容器组件，不能包含子组件。
 |--------|------|--------|------|
 | `text` | `string` | `'Checkbox'` | 复选框旁边的文本标签 |
 | `checked` | `boolean` | `false` | 是否选中。选中时 marker 填充主题色并显示勾号 |
+| `fontSize` | `number` | `14` | 文本字号（可选，映射到内置 Montserrat 字体大小） |
+| `fontResource` | `string` | `undefined` | 自定义字体资源名称（可选，优先级高于 fontSize）。需要先在资源管理器中上传字体并配置 sizes |
+
+### 字体选择说明
+
+属性面板中提供字体选择下拉框，支持：
+- **默认**：使用 LVGL 默认字体
+- **内置字体**：montserrat_14 ~ montserrat_32 等内置 Montserrat 字体
+- **已上传字体**：用户在资源管理器中上传的自定义字体（TTF/OTF）
+
+选择自定义字体时，字体大小下拉框仅显示该字体已配置的 sizes（因为自定义字体按 size 编译）。选择内置字体时，显示所有可用的内置字体大小。
+
+当 `fontResource` 存在时，代码生成器输出 `lv_obj_set_style_text_font(obj, &{fontResource}_{fontSize}, 0)`；否则使用内置 `lv_font_montserrat_{fontSize}`。
 
 ### 属性定义（componentDefinitions.ts）
 

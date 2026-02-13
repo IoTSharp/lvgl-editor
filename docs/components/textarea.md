@@ -54,9 +54,22 @@ Textarea 不是容器组件，不能包含子组件。
 |--------|------|--------|------|
 | `text` | `string` | `''` | 文本框中的文本内容。为空时显示 placeholder |
 | `placeholder` | `string` | `'Enter text...'` | 占位符提示文字，当 text 为空时以灰色显示 |
+| `fontSize` | `number` | `14` | 文本字号（可选，映射到内置 Montserrat 字体大小） |
+| `fontResource` | `string` | `undefined` | 自定义字体资源名称（可选，优先级高于 fontSize）。需要先在资源管理器中上传字体并配置 sizes |
 | `maxLength` | `number` | `undefined` | 最大输入字符数限制，不设置则无限制 |
 | `password` | `boolean` | `false` | 是否为密码模式，开启后输入内容显示为圆点 |
 | `oneLine` | `boolean` | `false` | 是否为单行模式，开启后禁止换行 |
+
+### 字体选择说明
+
+属性面板中提供字体选择下拉框，支持：
+- **默认**：使用 LVGL 默认字体
+- **内置字体**：montserrat_14 ~ montserrat_32 等内置 Montserrat 字体
+- **已上传字体**：用户在资源管理器中上传的自定义字体（TTF/OTF）
+
+选择自定义字体时，字体大小下拉框仅显示该字体已配置的 sizes（因为自定义字体按 size 编译）。选择内置字体时，显示所有可用的内置字体大小。
+
+当 `fontResource` 存在时，代码生成器输出 `lv_obj_set_style_text_font(obj, &{fontResource}_{fontSize}, 0)`；否则使用内置 `lv_font_montserrat_{fontSize}`。
 
 ### 属性定义（componentDefinitions.ts）
 

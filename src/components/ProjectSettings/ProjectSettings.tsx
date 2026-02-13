@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/appStore';
 import { useProjectStore } from '../../store/projectStore';
 import type { ProjectConfig } from '../../store/projectStore';
 import { useEditorStore } from '../../store/editorStore';
+import { useResourceStore } from '../../resources/resourceStore';
 import { toast } from '../Toast';
 import './ProjectSettings.css';
 
@@ -19,6 +20,7 @@ const ProjectSettings: React.FC = () => {
   const { currentProjectId, setShowProjectSettings } = useAppStore();
   const { getProjectConfig, updateProjectConfig } = useProjectStore();
   const { setCanvasSize } = useEditorStore();
+  const fonts = useResourceStore((s) => s.fonts);
 
   const [config, setConfig] = useState<ProjectConfig | null>(null);
   const [name, setName] = useState('');
@@ -114,9 +116,18 @@ const ProjectSettings: React.FC = () => {
           <label className="npd-label">
             默认字体
             <select className="npd-select" value={defaultFont} onChange={e => setDefaultFont(e.target.value)}>
-              {FONT_OPTIONS.map(f => (
-                <option key={f} value={f}>{f}</option>
-              ))}
+              <optgroup label="内置字体">
+                {FONT_OPTIONS.map(f => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </optgroup>
+              {fonts.length > 0 && (
+                <optgroup label="已上传字体">
+                  {fonts.map(f => (
+                    <option key={f.id} value={f.cFontName}>{f.name} ({f.family})</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
 

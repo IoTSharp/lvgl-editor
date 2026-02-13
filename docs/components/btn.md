@@ -64,7 +64,18 @@ isContainer: true
 | `text` | `string` | `'Button'` | 按钮内部标签显示的文本内容 |
 | `fontSize` | `number` | `14` | 文本字号（可选，映射到内部 label 的字体大小） |
 | `textAlign` | `string` | `'center'` | 文本对齐方式：`'left'` / `'center'` / `'right'` |
-| `fontResource` | `string` | `undefined` | 自定义字体资源名称（可选，优先级高于 fontSize） |
+| `fontResource` | `string` | `undefined` | 自定义字体资源名称（可选，优先级高于 fontSize）。需要先在资源管理器中上传字体并配置 sizes |
+
+### 字体选择说明
+
+属性面板中提供字体选择下拉框，支持：
+- **默认**：使用 LVGL 默认字体
+- **内置字体**：montserrat_14 ~ montserrat_32 等内置 Montserrat 字体
+- **已上传字体**：用户在资源管理器中上传的自定义字体（TTF/OTF）
+
+选择自定义字体时，字体大小下拉框仅显示该字体已配置的 sizes（因为自定义字体按 size 编译）。选择内置字体时，显示所有可用的内置字体大小。
+
+当 `fontResource` 存在时，代码生成器输出 `lv_obj_set_style_text_font(label, &{fontResource}_{fontSize}, 0)`；否则使用内置 `lv_font_montserrat_{fontSize}`。
 
 ### props 类型定义
 
