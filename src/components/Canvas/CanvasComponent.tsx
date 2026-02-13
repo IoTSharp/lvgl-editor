@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { LvglComponent, ResizeHandle } from '../../types';
 import { useEditorStore } from '../../store/editorStore';
 import { useAppStore } from '../../store/appStore';
@@ -9,12 +9,10 @@ interface CanvasComponentProps {
   component: LvglComponent;
   offsetX?: number;
   offsetY?: number;
-  isSelected: boolean;
-  isHovered: boolean;
   onClick: (e: React.MouseEvent, id: string) => void;
   onDragStart: (e: React.MouseEvent, id: string) => void;
   onResizeStart: (e: React.MouseEvent, id: string, handle: ResizeHandle) => void;
-  onContextMenu?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent, id: string) => void;
   children?: React.ReactNode;
 }
 
@@ -26,14 +24,19 @@ const resizeHandles: ResizeHandle[] = [
 
 const CanvasComponent: React.FC<CanvasComponentProps> = ({
   component,
-  isSelected,
-  isHovered,
   onClick,
   onDragStart,
   onResizeStart,
   onContextMenu,
   children,
 }) => {
+  // Self-subscribe: only re-render when THIS component's selection/hover actually changes
+  const isSelected = useEditorStore(
+    useCallback((s) => s.selection.selectedIds.includes(component.id), [component.id])
+  );
+  const isHovered = useEditorStore(
+    useCallback((s) => s.selection.hoveredId === component.id, [component.id])
+  );
   const setHoveredComponent = useEditorStore(state => state.setHoveredComponent);
   const updateComponent = useEditorStore(state => state.updateComponent);
   const defaultFontSize = useAppStore(state => state.defaultFontSize);
@@ -693,7 +696,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       onMouseDown={(e) => onDragStart(e, component.id)}
       onMouseEnter={() => setHoveredComponent(component.id)}
       onMouseLeave={() => setHoveredComponent(null)}
-      onContextMenu={onContextMenu}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, component.id) : undefined}
     >
       {renderContent()}
       
@@ -729,7 +732,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 };
 
 // Separate component to subscribe to resource store only for img type
-const CanvasImageContent: React.FC<{ src?: string }> = ({ src }) => {
+const CanvasImageContent: React.FC<{ src?: string }> = React.memo(({ src }) => {
   const images = useResourceStore((s) => s.images);
   const matched = src
     ? images.find((img) => img.id === src || img.name === src)
@@ -766,6 +769,6 @@ const CanvasImageContent: React.FC<{ src?: string }> = ({ src }) => {
       🖼️
     </div>
   );
-};
+});
 
-export default CanvasComponent;
+export default React.memo(CanvasComponent);

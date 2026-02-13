@@ -41,6 +41,17 @@ const Canvas: React.FC = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [spacePressed, setSpacePressed] = useState(false);
+  const rafRef = useRef<number>(0);
+
+  // Use refs for values that handlers need but shouldn't trigger re-creation
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const spacePressedRef = useRef(false);
+
+  // Keep refs in sync
+  isPanningRef.current = isPanning;
+  panStartRef.current = panStart;
+  spacePressedRef.current = spacePressed;
   
   // Box selection state
   const [boxSelection, setBoxSelection] = useState<BoxSelection>({
@@ -50,34 +61,40 @@ const Canvas: React.FC = () => {
     currentX: 0,
     currentY: 0,
   });
+  const boxSelectionRef = useRef(boxSelection);
+  boxSelectionRef.current = boxSelection;
   
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetId: string | null } | null>(null);
 
-  const {
-    canvas,
-    selection,
-    drag,
-    alignmentGuides,
-    pages,
-    currentPageId,
-    setZoom,
-    setPan,
-    selectComponent,
-    selectComponents,
-    clearSelection,
-    moveComponent,
-    resizeComponent,
-    startDrag,
-    updateDrag,
-    endDrag,
-    saveToHistory,
-    deleteComponents,
-    bringToFront,
-    sendToBack,
-    bringForward,
-    sendBackward,
-  } = useEditorStore();
+  // === Fine-grained store subscriptions ===
+  // State that affects rendering
+  const canvas = useEditorStore(s => s.canvas);
+  const selectedIds = useEditorStore(s => s.selection.selectedIds);
+  const hoveredId = useEditorStore(s => s.selection.hoveredId);
+  const alignmentGuides = useEditorStore(s => s.alignmentGuides);
+  const pages = useEditorStore(s => s.pages);
+  const currentPageId = useEditorStore(s => s.currentPageId);
+
+  // DO NOT subscribe to drag — it changes every frame during drag.
+  // Read it via getState() inside event handlers.
+
+  // Actions — stable references from zustand
+  const setZoom = useEditorStore(s => s.setZoom);
+  const setPan = useEditorStore(s => s.setPan);
+  const selectComponent = useEditorStore(s => s.selectComponent);
+  const selectComponents = useEditorStore(s => s.selectComponents);
+  const clearSelection = useEditorStore(s => s.clearSelection);
+  const startDrag = useEditorStore(s => s.startDrag);
+  const endDrag = useEditorStore(s => s.endDrag);
+  const saveToHistory = useEditorStore(s => s.saveToHistory);
+  const deleteComponents = useEditorStore(s => s.deleteComponents);
+  const bringToFront = useEditorStore(s => s.bringToFront);
+  const sendToBack = useEditorStore(s => s.sendToBack);
+  const bringForward = useEditorStore(s => s.bringForward);
+  const sendBackward = useEditorStore(s => s.sendBackward);
+  const moveComponentAndUpdateDrag = useEditorStore(s => s.moveComponentAndUpdateDrag);
+  const resizeComponentAndUpdateDrag = useEditorStore(s => s.resizeComponentAndUpdateDrag);
 
   // Get current page and its components
   const currentPage = pages.find(p => p.id === currentPageId);
@@ -121,16 +138,17 @@ const Canvas: React.FC = () => {
     };
   }, []);
 
-  // Handle wheel zoom
+  // Handle wheel zoom — read canvas.zoom from getState to avoid dep
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
+        const { canvas: c } = useEditorStore.getState();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        setZoom(canvas.zoom + delta);
+        setZoom(c.zoom + delta);
       }
     },
-    [canvas.zoom, setZoom]
+    [setZoom]
   );
 
   // Handle mouse down for panning, selection, or box selection
@@ -139,10 +157,12 @@ const Canvas: React.FC = () => {
       // Close context menu
       setContextMenu(null);
       
+      const { canvas: c } = useEditorStore.getState();
+
       // Middle mouse button or space + left click for panning
-      if (e.button === 1 || (spacePressed && e.button === 0)) {
+      if (e.button === 1 || (spacePressedRef.current && e.button === 0)) {
         setIsPanning(true);
-        setPanStart({ x: e.clientX - canvas.panX, y: e.clientY - canvas.panY });
+        setPanStart({ x: e.clientX - c.panX, y: e.clientY - c.panY });
         e.preventDefault();
         return;
       }
@@ -151,8 +171,8 @@ const Canvas: React.FC = () => {
       if (e.button === 0 && e.target === canvasRef.current) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (rect) {
-          const x = (e.clientX - rect.left) / canvas.zoom;
-          const y = (e.clientY - rect.top) / canvas.zoom;
+          const x = (e.clientX - rect.left) / c.zoom;
+          const y = (e.clientY - rect.top) / c.zoom;
           
           // Start box selection
           setBoxSelection({
@@ -170,22 +190,24 @@ const Canvas: React.FC = () => {
         }
       }
     },
-    [spacePressed, canvas.panX, canvas.panY, canvas.zoom, clearSelection]
+    [clearSelection]
   );
 
   // Handle resize logic
   const handleResize = useCallback(
     (componentId: string, handle: ResizeHandle, mouseX: number, mouseY: number) => {
-      const comp = useEditorStore.getState().getComponentById(componentId);
+      const state = useEditorStore.getState();
+      const comp = state.getComponentById(componentId);
       if (!comp) return;
 
+      const currentDrag = state.drag;
       let newX = comp.x;
       let newY = comp.y;
       let newWidth = comp.width;
       let newHeight = comp.height;
 
-      const deltaX = mouseX - drag.startX;
-      const deltaY = mouseY - drag.startY;
+      const deltaX = mouseX - currentDrag.startX;
+      const deltaY = mouseY - currentDrag.startY;
 
       switch (handle) {
         case 'top-left':
@@ -234,30 +256,27 @@ const Canvas: React.FC = () => {
         if (handle.includes('top')) newY = comp.y + comp.height - 10;
       }
 
-      resizeComponent(componentId, newWidth, newHeight, newX, newY);
-      startDrag('resize', {
-        ...drag,
-        startX: mouseX,
-        startY: mouseY,
-      });
+      resizeComponentAndUpdateDrag(componentId, newWidth, newHeight, mouseX, mouseY, newX, newY);
     },
-    [drag, resizeComponent, startDrag]
+    [resizeComponentAndUpdateDrag]
   );
 
-  // Handle mouse move for panning, dragging, or box selection
+  // Handle mouse move — all state read via refs or getState(), zero reactive deps
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (isPanning) {
-        setPan(e.clientX - panStart.x, e.clientY - panStart.y);
+      if (isPanningRef.current) {
+        const ps = panStartRef.current;
+        setPan(e.clientX - ps.x, e.clientY - ps.y);
         return;
       }
 
       // Box selection
-      if (boxSelection.isSelecting) {
+      if (boxSelectionRef.current.isSelecting) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (rect) {
-          const x = (e.clientX - rect.left) / canvas.zoom;
-          const y = (e.clientY - rect.top) / canvas.zoom;
+          const { canvas: c } = useEditorStore.getState();
+          const x = (e.clientX - rect.left) / c.zoom;
+          const y = (e.clientY - rect.top) / c.zoom;
           setBoxSelection(prev => ({
             ...prev,
             currentX: x,
@@ -267,68 +286,83 @@ const Canvas: React.FC = () => {
         return;
       }
 
+      const drag = useEditorStore.getState().drag;
       if (drag.isDragging) {
         const rect = canvasRef.current?.getBoundingClientRect();
-        if (rect) {
-          const x = (e.clientX - rect.left) / canvas.zoom;
-          const y = (e.clientY - rect.top) / canvas.zoom;
-          updateDrag(x, y);
+        if (!rect) return;
+        
+        const { canvas: c } = useEditorStore.getState();
+        const x = (e.clientX - rect.left) / c.zoom;
+        const y = (e.clientY - rect.top) / c.zoom;
+
+        // Throttle with requestAnimationFrame
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          const currentDrag = useEditorStore.getState().drag;
+          if (!currentDrag.isDragging) return;
 
           // Handle component move
-          if (drag.dragType === 'move' && drag.draggedComponentId) {
-            const deltaX = x - drag.startX;
-            const deltaY = y - drag.startY;
-            const comp = useEditorStore.getState().getComponentById(drag.draggedComponentId);
+          if (currentDrag.dragType === 'move' && currentDrag.draggedComponentId) {
+            const deltaX = x - currentDrag.startX;
+            const deltaY = y - currentDrag.startY;
+            const comp = useEditorStore.getState().getComponentById(currentDrag.draggedComponentId);
             if (comp) {
-              moveComponent(
-                drag.draggedComponentId,
+              moveComponentAndUpdateDrag(
+                currentDrag.draggedComponentId,
                 comp.x + deltaX,
-                comp.y + deltaY
+                comp.y + deltaY,
+                x,
+                y
               );
-              startDrag('move', {
-                ...drag,
-                startX: x,
-                startY: y,
-              });
             }
           }
 
           // Handle resize
-          if (drag.dragType === 'resize' && drag.draggedComponentId && drag.resizeHandle) {
-            handleResize(drag.draggedComponentId, drag.resizeHandle, x, y);
+          if (currentDrag.dragType === 'resize' && currentDrag.draggedComponentId && currentDrag.resizeHandle) {
+            handleResize(currentDrag.draggedComponentId, currentDrag.resizeHandle, x, y);
           }
-        }
+        });
       }
     },
-    [isPanning, panStart, boxSelection.isSelecting, drag, canvas.zoom, setPan, updateDrag, moveComponent, startDrag, handleResize]
+    [setPan, moveComponentAndUpdateDrag, handleResize]
   );
 
-  // Handle mouse up
+  // Handle mouse up — read all transient state from refs/getState
   const handleMouseUp = useCallback(() => {
-    if (isPanning) {
+    // Clean up any pending RAF
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    
+    if (isPanningRef.current) {
       setIsPanning(false);
     }
     
     // Finish box selection
-    if (boxSelection.isSelecting) {
-      const minX = Math.min(boxSelection.startX, boxSelection.currentX);
-      const maxX = Math.max(boxSelection.startX, boxSelection.currentX);
-      const minY = Math.min(boxSelection.startY, boxSelection.currentY);
-      const maxY = Math.max(boxSelection.startY, boxSelection.currentY);
+    const bs = boxSelectionRef.current;
+    if (bs.isSelecting) {
+      const minX = Math.min(bs.startX, bs.currentX);
+      const maxX = Math.max(bs.startX, bs.currentX);
+      const minY = Math.min(bs.startY, bs.currentY);
+      const maxY = Math.max(bs.startY, bs.currentY);
       
       // Find components within the box
-      const flatComps = flattenComponents(components);
-      const selectedIds = flatComps
+      const { pages: p, currentPageId: cpId } = useEditorStore.getState();
+      const cp = p.find(pg => pg.id === cpId);
+      const comps = cp?.components || [];
+      const flatComps = flattenComponents(comps);
+      const ids = flatComps
         .filter(({ comp, absX, absY }) => {
           const compRight = absX + comp.width;
           const compBottom = absY + comp.height;
-          // Check if component intersects with selection box
           return absX < maxX && compRight > minX && absY < maxY && compBottom > minY;
         })
         .map(({ comp }) => comp.id);
       
-      if (selectedIds.length > 0) {
-        selectComponents(selectedIds);
+      if (ids.length > 0) {
+        selectComponents(ids);
       }
       
       setBoxSelection({
@@ -340,13 +374,14 @@ const Canvas: React.FC = () => {
       });
     }
     
+    const drag = useEditorStore.getState().drag;
     if (drag.isDragging) {
       if (drag.dragType === 'move' || drag.dragType === 'resize') {
         saveToHistory();
       }
       endDrag();
     }
-  }, [isPanning, boxSelection, drag, endDrag, saveToHistory, components, selectComponents]);
+  }, [selectComponents, saveToHistory, endDrag]);
 
   // Handle component selection
   const handleComponentClick = useCallback(
@@ -357,23 +392,25 @@ const Canvas: React.FC = () => {
     [selectComponent]
   );
 
-  // Handle component drag start
+  // Handle component drag start — read transient state from getState
   const handleComponentDragStart = useCallback(
     (e: React.MouseEvent, componentId: string) => {
       if (e.button !== 0) return;
       e.stopPropagation();
 
+      const state = useEditorStore.getState();
+
       // Don't allow dragging locked components
-      const comp = useEditorStore.getState().getComponentById(componentId);
+      const comp = state.getComponentById(componentId);
       if (comp?.locked) return;
 
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
-        const x = (e.clientX - rect.left) / canvas.zoom;
-        const y = (e.clientY - rect.top) / canvas.zoom;
+        const x = (e.clientX - rect.left) / state.canvas.zoom;
+        const y = (e.clientY - rect.top) / state.canvas.zoom;
 
         // Select if not already selected
-        if (!selection.selectedIds.includes(componentId)) {
+        if (!state.selection.selectedIds.includes(componentId)) {
           selectComponent(componentId);
         }
 
@@ -386,7 +423,7 @@ const Canvas: React.FC = () => {
         });
       }
     },
-    [canvas.zoom, selection.selectedIds, selectComponent, startDrag]
+    [selectComponent, startDrag]
   );
 
   // Handle resize handle drag start
@@ -395,14 +432,16 @@ const Canvas: React.FC = () => {
       e.stopPropagation();
       e.preventDefault();
 
+      const state = useEditorStore.getState();
+
       // Don't allow resizing locked components
-      const comp = useEditorStore.getState().getComponentById(componentId);
+      const comp = state.getComponentById(componentId);
       if (comp?.locked) return;
 
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
-        const x = (e.clientX - rect.left) / canvas.zoom;
-        const y = (e.clientY - rect.top) / canvas.zoom;
+        const x = (e.clientX - rect.left) / state.canvas.zoom;
+        const y = (e.clientY - rect.top) / state.canvas.zoom;
 
         startDrag('resize', {
           draggedComponentId: componentId,
@@ -414,16 +453,17 @@ const Canvas: React.FC = () => {
         });
       }
     },
-    [canvas.zoom, startDrag]
+    [startDrag]
   );
 
-  // Handle context menu
+  // Handle context menu — read selection from getState
   const handleContextMenu = useCallback((e: React.MouseEvent, componentId?: string) => {
     e.preventDefault();
     e.stopPropagation();
     
+    const state = useEditorStore.getState();
     // If right-clicking on a component that's not selected, select it
-    if (componentId && !selection.selectedIds.includes(componentId)) {
+    if (componentId && !state.selection.selectedIds.includes(componentId)) {
       selectComponent(componentId);
     }
     
@@ -432,12 +472,14 @@ const Canvas: React.FC = () => {
       y: e.clientY,
       targetId: componentId || null,
     });
-  }, [selection.selectedIds, selectComponent]);
+  }, [selectComponent]);
 
-  // Context menu items
+  // Context menu items — read selection from getState inside onClick handlers
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
-    const hasSelection = selection.selectedIds.length > 0;
-    const hasMultiple = selection.selectedIds.length > 1;
+    const state = useEditorStore.getState();
+    const sIds = state.selection.selectedIds;
+    const hasSelection = sIds.length > 0;
+    const hasMultiple = sIds.length > 1;
     
     const items: ContextMenuItem[] = [
       {
@@ -488,8 +530,9 @@ const Canvas: React.FC = () => {
         shortcut: 'Delete',
         disabled: !hasSelection,
         onClick: () => {
+          const s = useEditorStore.getState();
           saveToHistory();
-          deleteComponents(selection.selectedIds);
+          deleteComponents(s.selection.selectedIds);
         },
       },
       { id: 'divider2', label: '', divider: true },
@@ -499,8 +542,9 @@ const Canvas: React.FC = () => {
         icon: '⬆️',
         disabled: !hasSelection || hasMultiple,
         onClick: () => {
-          if (selection.selectedIds.length === 1) {
-            bringToFront(selection.selectedIds[0]);
+          const s = useEditorStore.getState();
+          if (s.selection.selectedIds.length === 1) {
+            bringToFront(s.selection.selectedIds[0]);
           }
         },
       },
@@ -510,8 +554,9 @@ const Canvas: React.FC = () => {
         icon: '↑',
         disabled: !hasSelection || hasMultiple,
         onClick: () => {
-          if (selection.selectedIds.length === 1) {
-            bringForward(selection.selectedIds[0]);
+          const s = useEditorStore.getState();
+          if (s.selection.selectedIds.length === 1) {
+            bringForward(s.selection.selectedIds[0]);
           }
         },
       },
@@ -521,8 +566,9 @@ const Canvas: React.FC = () => {
         icon: '↓',
         disabled: !hasSelection || hasMultiple,
         onClick: () => {
-          if (selection.selectedIds.length === 1) {
-            sendBackward(selection.selectedIds[0]);
+          const s = useEditorStore.getState();
+          if (s.selection.selectedIds.length === 1) {
+            sendBackward(s.selection.selectedIds[0]);
           }
         },
       },
@@ -532,8 +578,9 @@ const Canvas: React.FC = () => {
         icon: '⬇️',
         disabled: !hasSelection || hasMultiple,
         onClick: () => {
-          if (selection.selectedIds.length === 1) {
-            sendToBack(selection.selectedIds[0]);
+          const s = useEditorStore.getState();
+          if (s.selection.selectedIds.length === 1) {
+            sendToBack(s.selection.selectedIds[0]);
           }
         },
       },
@@ -550,7 +597,7 @@ const Canvas: React.FC = () => {
     ];
     
     return items;
-  }, [selection.selectedIds, saveToHistory, deleteComponents, bringToFront, bringForward, sendBackward, sendToBack]);
+  }, [saveToHistory, deleteComponents, bringToFront, bringForward, sendBackward, sendToBack]);
 
   // Render grid
   const renderGrid = () => {
@@ -598,6 +645,12 @@ const Canvas: React.FC = () => {
     );
   };
 
+  // Stable callback ref for context menu per-component
+  const handleComponentContextMenu = useCallback(
+    (e: React.MouseEvent, compId: string) => handleContextMenu(e, compId),
+    [handleContextMenu]
+  );
+
   // Render components recursively
   const renderComponents = (comps: LvglComponent[], offsetX = 0, offsetY = 0, parentComp?: LvglComponent) => {
     // Filter children for tabview/tileview based on active tab/tile
@@ -625,12 +678,10 @@ const Canvas: React.FC = () => {
         component={comp}
         offsetX={offsetX}
         offsetY={offsetY}
-        isSelected={selection.selectedIds.includes(comp.id)}
-        isHovered={selection.hoveredId === comp.id}
         onClick={handleComponentClick}
         onDragStart={handleComponentDragStart}
         onResizeStart={handleResizeStart}
-        onContextMenu={(e) => handleContextMenu(e, comp.id)}
+        onContextMenu={handleComponentContextMenu}
       >
         {comp.children.length > 0 &&
           renderComponents(comp.children, offsetX + comp.x, offsetY + comp.y, comp)}

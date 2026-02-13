@@ -90,6 +90,10 @@ interface EditorState {
   updateDrag: (x: number, y: number) => void;
   endDrag: () => void;
   
+  // Combined move/resize + drag update (single set call for performance)
+  moveComponentAndUpdateDrag: (id: string, x: number, y: number, dragStartX: number, dragStartY: number) => void;
+  resizeComponentAndUpdateDrag: (id: string, width: number, height: number, dragStartX: number, dragStartY: number, x?: number, y?: number) => void;
+  
   // Actions - History
   undo: () => void;
   redo: () => void;
@@ -127,24 +131,28 @@ function flattenComponents(components: LvglComponent[]): LvglComponent[] {
   return result;
 }
 
-// Helper to update component in tree
+// Helper to update component in tree (reference-stable: unchanged subtrees keep original references)
 function updateComponentInTree(
   components: LvglComponent[],
   id: string,
   updates: Partial<LvglComponent>
 ): LvglComponent[] {
-  return components.map(comp => {
+  let changed = false;
+  const result = components.map(comp => {
     if (comp.id === id) {
+      changed = true;
       return { ...comp, ...updates };
     }
     if (comp.children.length > 0) {
-      return {
-        ...comp,
-        children: updateComponentInTree(comp.children, id, updates),
-      };
+      const newChildren = updateComponentInTree(comp.children, id, updates);
+      if (newChildren !== comp.children) {
+        changed = true;
+        return { ...comp, children: newChildren };
+      }
     }
     return comp;
   });
+  return changed ? result : components;
 }
 
 // Helper to delete component from tree
@@ -863,6 +871,72 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         startY: 0,
         currentX: 0,
         currentY: 0,
+      },
+    }));
+  },
+  
+  // Combined move + drag update in a single set call
+  moveComponentAndUpdateDrag: (id, x, y, dragStartX, dragStartY) => {
+    const { canvas, currentPageId } = get();
+    let finalX = x;
+    let finalY = y;
+    
+    if (canvas.snapToGrid) {
+      finalX = Math.round(x / canvas.gridSize) * canvas.gridSize;
+      finalY = Math.round(y / canvas.gridSize) * canvas.gridSize;
+    }
+    
+    set(state => ({
+      pages: state.pages.map(page => {
+        if (page.id === currentPageId) {
+          const newComponents = updateComponentInTree(page.components, id, { x: finalX, y: finalY });
+          if (newComponents === page.components) return page;
+          return { ...page, components: newComponents };
+        }
+        return page;
+      }),
+      drag: {
+        ...state.drag,
+        startX: dragStartX,
+        startY: dragStartY,
+      },
+    }));
+  },
+  
+  // Combined resize + drag update in a single set call
+  resizeComponentAndUpdateDrag: (id, width, height, dragStartX, dragStartY, x, y) => {
+    const { canvas, currentPageId } = get();
+    let finalWidth = Math.max(10, width);
+    let finalHeight = Math.max(10, height);
+    
+    if (canvas.snapToGrid) {
+      finalWidth = Math.round(width / canvas.gridSize) * canvas.gridSize;
+      finalHeight = Math.round(height / canvas.gridSize) * canvas.gridSize;
+      finalWidth = Math.max(canvas.gridSize, finalWidth);
+      finalHeight = Math.max(canvas.gridSize, finalHeight);
+    }
+    
+    const updates: Partial<LvglComponent> = { width: finalWidth, height: finalHeight };
+    if (x !== undefined) {
+      updates.x = canvas.snapToGrid ? Math.round(x / canvas.gridSize) * canvas.gridSize : x;
+    }
+    if (y !== undefined) {
+      updates.y = canvas.snapToGrid ? Math.round(y / canvas.gridSize) * canvas.gridSize : y;
+    }
+    
+    set(state => ({
+      pages: state.pages.map(page => {
+        if (page.id === currentPageId) {
+          const newComponents = updateComponentInTree(page.components, id, updates);
+          if (newComponents === page.components) return page;
+          return { ...page, components: newComponents };
+        }
+        return page;
+      }),
+      drag: {
+        ...state.drag,
+        startX: dragStartX,
+        startY: dragStartY,
       },
     }));
   },
