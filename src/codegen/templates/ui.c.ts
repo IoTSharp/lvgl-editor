@@ -1169,7 +1169,7 @@ function collectUsedImages(pages: Page[], imageResources: ImageResource[]): Imag
 /**
  * Generate ui.c source file
  */
-export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string): string {
+export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, fontResources: import('../../resources/types').FontResource[] = []): string {
   const lines: string[] = [];
   
   // Includes
@@ -1289,8 +1289,10 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
     if (isBuiltin) {
       lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &lv_font_${defaultFont}, 0);`);
     } else {
-      // Custom font — assume first available size; variable name is cFontName_size
-      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &${defaultFont}, 0);`);
+      // Custom font — find the resource to get the first available size
+      const fontRes = fontResources.find(f => f.cFontName === defaultFont);
+      const size = fontRes?.sizes?.[0] || 16;
+      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &${defaultFont}_${size}, 0);`);
     }
     lines.push('');
   }

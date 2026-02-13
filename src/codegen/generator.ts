@@ -33,7 +33,7 @@ export function generateCode(
   
   return {
     'ui.h': generateUiHeader(pages, opts, fontResources),
-    'ui.c': generateUiSource(pages, opts, theme, imageResources, defaultFont),
+    'ui.c': generateUiSource(pages, opts, theme, imageResources, defaultFont, fontResources),
     'ui_events.h': generateEventsHeader(pages, opts),
     'ui_events.c': generateEventsSource(pages, opts),
     'ui_logic.h': generateLogicHeader(opts, logicGraphs),
@@ -60,7 +60,7 @@ export function generateSingleFile(
     case 'ui.h':
       return generateUiHeader(pages, opts, fontResources);
     case 'ui.c':
-      return generateUiSource(pages, opts, theme, imageResources, defaultFont);
+      return generateUiSource(pages, opts, theme, imageResources, defaultFont, fontResources);
     case 'ui_events.h':
       return generateEventsHeader(pages, opts);
     case 'ui_events.c':
