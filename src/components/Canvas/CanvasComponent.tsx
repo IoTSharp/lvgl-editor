@@ -9,6 +9,8 @@ interface CanvasComponentProps {
   component: LvglComponent;
   offsetX?: number;
   offsetY?: number;
+  parentWidth?: number;
+  parentHeight?: number;
   onClick: (e: React.MouseEvent, id: string) => void;
   onDragStart: (e: React.MouseEvent, id: string) => void;
   onResizeStart: (e: React.MouseEvent, id: string, handle: ResizeHandle) => void;
@@ -24,6 +26,8 @@ const resizeHandles: ResizeHandle[] = [
 
 const CanvasComponent: React.FC<CanvasComponentProps> = ({
   component,
+  parentWidth,
+  parentHeight,
   onClick,
   onDragStart,
   onResizeStart,
@@ -241,11 +245,55 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     return bg;
   })();
 
+  // Calculate visual position based on align property
+  // When align is set, the component's position is relative to the alignment anchor point
+  // within the parent. x/y become offsets from that anchor (like LVGL's lv_obj_align).
+  const computeAlignedPosition = (): { left: number; top: number } => {
+    const align = component.align;
+    if (!align || align === 'default') {
+      return { left: component.x, top: component.y };
+    }
+
+    const pw = parentWidth ?? 0;
+    const ph = parentHeight ?? 0;
+    const cw = component.width;
+    const ch = component.height;
+    // In LVGL, after lv_obj_align, x/y are offsets from the align point.
+    // alignOffsetX/Y are additional offsets on top of that.
+    const offX = (component.alignOffsetX || 0) + component.x;
+    const offY = (component.alignOffsetY || 0) + component.y;
+
+    switch (align) {
+      case 'center':
+        return { left: (pw - cw) / 2 + offX, top: (ph - ch) / 2 + offY };
+      case 'top_left':
+        return { left: offX, top: offY };
+      case 'top_mid':
+        return { left: (pw - cw) / 2 + offX, top: offY };
+      case 'top_right':
+        return { left: pw - cw + offX, top: offY };
+      case 'bottom_left':
+        return { left: offX, top: ph - ch + offY };
+      case 'bottom_mid':
+        return { left: (pw - cw) / 2 + offX, top: ph - ch + offY };
+      case 'bottom_right':
+        return { left: pw - cw + offX, top: ph - ch + offY };
+      case 'left_mid':
+        return { left: offX, top: (ph - ch) / 2 + offY };
+      case 'right_mid':
+        return { left: pw - cw + offX, top: (ph - ch) / 2 + offY };
+      default:
+        return { left: component.x, top: component.y };
+    }
+  };
+
+  const alignedPos = computeAlignedPosition();
+
   // Build inline styles from component styles
   const componentStyle: React.CSSProperties = {
     position: 'absolute',
-    left: component.x,
-    top: component.y,
+    left: alignedPos.left,
+    top: alignedPos.top,
     width: buildDimension(component.width, (component as unknown as Record<string, unknown>).widthMode as string | undefined),
     height: buildDimension(component.height, (component as unknown as Record<string, unknown>).heightMode as string | undefined),
     backgroundColor: background ? undefined : resolvedBgColor,

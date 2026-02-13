@@ -672,12 +672,18 @@ const Canvas: React.FC = () => {
       }
     }
 
+    // Parent dimensions: use parent component size, or canvas (screen) size for top-level
+    const pw = parentComp ? parentComp.width : canvas.width;
+    const ph = parentComp ? parentComp.height : canvas.height;
+
     return visibleComps.map(comp => (
       <CanvasComponent
         key={comp.id}
         component={comp}
         offsetX={offsetX}
         offsetY={offsetY}
+        parentWidth={pw}
+        parentHeight={ph}
         onClick={handleComponentClick}
         onDragStart={handleComponentDragStart}
         onResizeStart={handleResizeStart}
