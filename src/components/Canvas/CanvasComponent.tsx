@@ -353,7 +353,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             color: defaultStyle.textColor || '#ffffff',
             fontSize: props.fontSize || defaultFontSize,
           }}>
-            {props.text || 'Button'}
+            {children}
+            {(!children || React.Children.count(children) === 0) && (props.text || 'Button')}
           </div>
         );
       

@@ -1403,6 +1403,166 @@ function ComponentFontSelector({
   );
 }
 
+// Container layout properties editor
+function ContainerLayoutEditor({
+  props,
+  onChange,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  props: Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onChange: (key: string, value: any) => void;
+}): React.ReactNode {
+  return (
+    <div className="property-section">
+      <div className="section-header">容器布局</div>
+      <div className="property-row">
+        <label>滚动方向</label>
+        <select
+          value={props.scrollDir || 'none'}
+          onChange={(e) => onChange('scrollDir', e.target.value)}
+        >
+          <option value="none">不滚动</option>
+          <option value="hor">水平</option>
+          <option value="ver">垂直</option>
+          <option value="all">全方向</option>
+        </select>
+      </div>
+      <div className="property-row">
+        <label>布局模式</label>
+        <select
+          value={props.layout || 'none'}
+          onChange={(e) => onChange('layout', e.target.value)}
+        >
+          <option value="none">无</option>
+          <option value="flex">Flex</option>
+          <option value="grid">Grid</option>
+        </select>
+      </div>
+      {props.layout === 'flex' && (
+        <>
+          <div className="property-row">
+            <label>方向</label>
+            <select
+              value={props.flexDirection || 'row'}
+              onChange={(e) => onChange('flexDirection', e.target.value)}
+            >
+              <option value="row">水平</option>
+              <option value="column">垂直</option>
+            </select>
+          </div>
+          <div className="property-row">
+            <label>间距</label>
+            <input
+              type="number"
+              value={props.gap || 0}
+              min={0}
+              onChange={(e) => onChange('gap', parseInt(e.target.value) || 0)}
+            />
+          </div>
+          <div className="property-row">
+            <label>换行</label>
+            <select
+              value={props.flexWrap || 'nowrap'}
+              onChange={(e) => onChange('flexWrap', e.target.value)}
+            >
+              <option value="nowrap">不换行</option>
+              <option value="wrap">换行</option>
+              <option value="wrap-reverse">反向换行</option>
+            </select>
+          </div>
+          <div className="property-row">
+            <label>主轴对齐</label>
+            <select
+              value={props.justifyContent || 'flex-start'}
+              onChange={(e) => onChange('justifyContent', e.target.value)}
+            >
+              <option value="flex-start">起始</option>
+              <option value="flex-end">末尾</option>
+              <option value="center">居中</option>
+              <option value="space-between">两端对齐</option>
+              <option value="space-around">等距环绕</option>
+              <option value="space-evenly">等距分布</option>
+            </select>
+          </div>
+          <div className="property-row">
+            <label>交叉对齐</label>
+            <select
+              value={props.alignItems || 'flex-start'}
+              onChange={(e) => onChange('alignItems', e.target.value)}
+            >
+              <option value="flex-start">起始</option>
+              <option value="flex-end">末尾</option>
+              <option value="center">居中</option>
+              <option value="stretch">拉伸</option>
+            </select>
+          </div>
+          <div className="property-row">
+            <label>多行对齐</label>
+            <select
+              value={props.alignContent || 'flex-start'}
+              onChange={(e) => onChange('alignContent', e.target.value)}
+            >
+              <option value="flex-start">起始</option>
+              <option value="flex-end">末尾</option>
+              <option value="center">居中</option>
+              <option value="stretch">拉伸</option>
+              <option value="space-between">两端对齐</option>
+              <option value="space-around">等距环绕</option>
+            </select>
+          </div>
+        </>
+      )}
+      {props.layout === 'grid' && (
+        <>
+          <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+            <label>列定义</label>
+            <input
+              type="text"
+              value={props.gridColumns || '1fr 1fr 1fr'}
+              onChange={(e) => onChange('gridColumns', e.target.value)}
+              placeholder="如: 1fr 2fr 1fr"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            />
+            <GridTemplatePreview value={props.gridColumns || '1fr 1fr 1fr'} />
+          </div>
+          <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+            <label>行定义</label>
+            <input
+              type="text"
+              value={props.gridRows || '1fr 1fr'}
+              onChange={(e) => onChange('gridRows', e.target.value)}
+              placeholder="如: 1fr 2fr"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            />
+            <GridTemplatePreview value={props.gridRows || '1fr 1fr'} />
+          </div>
+          <div className="property-row two-col">
+            <div className="property-field">
+              <label>列间距</label>
+              <input
+                type="number"
+                value={props.gridColumnGap || 0}
+                min={0}
+                onChange={(e) => onChange('gridColumnGap', parseInt(e.target.value) || 0)}
+              />
+            </div>
+            <div className="property-field">
+              <label>行间距</label>
+              <input
+                type="number"
+                value={props.gridRowGap || 0}
+                min={0}
+                onChange={(e) => onChange('gridRowGap', parseInt(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Render component-specific properties
 function renderComponentProps(
   component: LvglComponent,
@@ -1416,34 +1576,37 @@ function renderComponentProps(
   switch (type) {
     case 'btn':
       return (
-        <div className="property-section">
-          <div className="section-header">按钮</div>
-          <div className="property-row">
-            <label>文本</label>
-            <input
-              type="text"
-              value={props.text || ''}
-              onChange={(e) => onChange('text', e.target.value)}
+        <>
+          <div className="property-section">
+            <div className="section-header">按钮</div>
+            <div className="property-row">
+              <label>文本</label>
+              <input
+                type="text"
+                value={props.text || ''}
+                onChange={(e) => onChange('text', e.target.value)}
+              />
+            </div>
+            <ComponentFontSelector
+              fontResource={props.fontResource}
+              fontSize={props.fontSize}
+              onChange={onChange}
+              onBatchChange={onBatchChange}
             />
+            <div className="property-row">
+              <label>对齐方式</label>
+              <select
+                value={props.textAlign || 'center'}
+                onChange={(e) => onChange('textAlign', e.target.value)}
+              >
+                <option value="left">左对齐</option>
+                <option value="center">居中</option>
+                <option value="right">右对齐</option>
+              </select>
+            </div>
           </div>
-          <ComponentFontSelector
-            fontResource={props.fontResource}
-            fontSize={props.fontSize}
-            onChange={onChange}
-            onBatchChange={onBatchChange}
-          />
-          <div className="property-row">
-            <label>对齐方式</label>
-            <select
-              value={props.textAlign || 'center'}
-              onChange={(e) => onChange('textAlign', e.target.value)}
-            >
-              <option value="left">左对齐</option>
-              <option value="center">居中</option>
-              <option value="right">右对齐</option>
-            </select>
-          </div>
-        </div>
+          <ContainerLayoutEditor props={props} onChange={onChange} />
+        </>
       );
 
     case 'label':
@@ -1908,154 +2071,7 @@ function renderComponentProps(
       return <TileGridEditor props={props} onChange={onChange} />;
 
     case 'obj':
-      return (
-        <div className="property-section">
-          <div className="section-header">容器</div>
-          <div className="property-row">
-            <label>滚动方向</label>
-            <select
-              value={props.scrollDir || 'none'}
-              onChange={(e) => onChange('scrollDir', e.target.value)}
-            >
-              <option value="none">不滚动</option>
-              <option value="hor">水平</option>
-              <option value="ver">垂直</option>
-              <option value="all">全方向</option>
-            </select>
-          </div>
-          <div className="property-row">
-            <label>布局模式</label>
-            <select
-              value={props.layout || 'none'}
-              onChange={(e) => onChange('layout', e.target.value)}
-            >
-              <option value="none">无</option>
-              <option value="flex">Flex</option>
-              <option value="grid">Grid</option>
-            </select>
-          </div>
-          {props.layout === 'flex' && (
-            <>
-              <div className="property-row">
-                <label>方向</label>
-                <select
-                  value={props.flexDirection || 'row'}
-                  onChange={(e) => onChange('flexDirection', e.target.value)}
-                >
-                  <option value="row">水平</option>
-                  <option value="column">垂直</option>
-                </select>
-              </div>
-              <div className="property-row">
-                <label>间距</label>
-                <input
-                  type="number"
-                  value={props.gap || 0}
-                  min={0}
-                  onChange={(e) => onChange('gap', parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="property-row">
-                <label>换行</label>
-                <select
-                  value={props.flexWrap || 'nowrap'}
-                  onChange={(e) => onChange('flexWrap', e.target.value)}
-                >
-                  <option value="nowrap">不换行</option>
-                  <option value="wrap">换行</option>
-                  <option value="wrap-reverse">反向换行</option>
-                </select>
-              </div>
-              <div className="property-row">
-                <label>主轴对齐</label>
-                <select
-                  value={props.justifyContent || 'flex-start'}
-                  onChange={(e) => onChange('justifyContent', e.target.value)}
-                >
-                  <option value="flex-start">起始</option>
-                  <option value="flex-end">末尾</option>
-                  <option value="center">居中</option>
-                  <option value="space-between">两端对齐</option>
-                  <option value="space-around">等距环绕</option>
-                  <option value="space-evenly">等距分布</option>
-                </select>
-              </div>
-              <div className="property-row">
-                <label>交叉对齐</label>
-                <select
-                  value={props.alignItems || 'flex-start'}
-                  onChange={(e) => onChange('alignItems', e.target.value)}
-                >
-                  <option value="flex-start">起始</option>
-                  <option value="flex-end">末尾</option>
-                  <option value="center">居中</option>
-                  <option value="stretch">拉伸</option>
-                </select>
-              </div>
-              <div className="property-row">
-                <label>多行对齐</label>
-                <select
-                  value={props.alignContent || 'flex-start'}
-                  onChange={(e) => onChange('alignContent', e.target.value)}
-                >
-                  <option value="flex-start">起始</option>
-                  <option value="flex-end">末尾</option>
-                  <option value="center">居中</option>
-                  <option value="stretch">拉伸</option>
-                  <option value="space-between">两端对齐</option>
-                  <option value="space-around">等距环绕</option>
-                </select>
-              </div>
-            </>
-          )}
-          {props.layout === 'grid' && (
-            <>
-              <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                <label>列定义</label>
-                <input
-                  type="text"
-                  value={props.gridColumns || '1fr 1fr 1fr'}
-                  onChange={(e) => onChange('gridColumns', e.target.value)}
-                  placeholder="如: 1fr 2fr 1fr"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-                <GridTemplatePreview value={props.gridColumns || '1fr 1fr 1fr'} />
-              </div>
-              <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                <label>行定义</label>
-                <input
-                  type="text"
-                  value={props.gridRows || '1fr 1fr'}
-                  onChange={(e) => onChange('gridRows', e.target.value)}
-                  placeholder="如: 1fr 2fr"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-                <GridTemplatePreview value={props.gridRows || '1fr 1fr'} />
-              </div>
-              <div className="property-row two-col">
-                <div className="property-field">
-                  <label>列间距</label>
-                  <input
-                    type="number"
-                    value={props.gridColumnGap || 0}
-                    min={0}
-                    onChange={(e) => onChange('gridColumnGap', parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="property-field">
-                  <label>行间距</label>
-                  <input
-                    type="number"
-                    value={props.gridRowGap || 0}
-                    min={0}
-                    onChange={(e) => onChange('gridRowGap', parseInt(e.target.value) || 0)}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      );
+      return <ContainerLayoutEditor props={props} onChange={onChange} />;
 
     default:
       return null;
