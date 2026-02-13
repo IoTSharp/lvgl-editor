@@ -76,6 +76,7 @@ const Canvas: React.FC = () => {
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const spacePressedRef = useRef(false);
+  const potentialDragRef = useRef<{ id: string, startX: number, startY: number, originalX: number, originalY: number, initialSelectionState: boolean } | null>(null);
 
   // Keep refs in sync
   isPanningRef.current = isPanning;
@@ -316,16 +317,50 @@ const Canvas: React.FC = () => {
         }
         return;
       }
+      
+      const { canvas: c } = useEditorStore.getState();
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = (e.clientX - rect.left) / c.zoom;
+      const y = (e.clientY - rect.top) / c.zoom;
+
+      // Check if we should START a drag (Deferred logic)
+      if (potentialDragRef.current && !useEditorStore.getState().drag.isDragging) {
+         const pd = potentialDragRef.current;
+         // Calculate distance
+         const dx = (x - pd.startX) * c.zoom; // Screen pixels
+         const dy = (y - pd.startY) * c.zoom;
+         const dist = Math.sqrt(dx*dx + dy*dy);
+         
+         if (dist > 5) {
+            // Threshold passed, START DRAG
+            startDrag('move', {
+              draggedComponentId: pd.id,
+              startX: pd.startX,
+              startY: pd.startY,
+              currentX: x,
+              currentY: y,
+            });
+            canvasRef.current?.classList.add('dragging-move');
+            
+            // Hoist immediately if needed
+            const state = useEditorStore.getState();
+            let comp = state.getComponentById(pd.id);
+            if (comp && comp.parentId) {
+               reparentComponent(comp.id, null);
+               moveComponent(comp.id, pd.originalX, pd.originalY);
+               // Refresh comp
+               comp = state.getComponentById(comp.id);
+            }
+            
+            // Clear potential drag ref so we don't trigger again
+            // But we keep it null? No, drag system takes over.
+            potentialDragRef.current = null;
+         }
+      }
 
       const drag = useEditorStore.getState().drag;
       if (drag.isDragging) {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        
-        const { canvas: c } = useEditorStore.getState();
-        const x = (e.clientX - rect.left) / c.zoom;
-        const y = (e.clientY - rect.top) / c.zoom;
-
         // Throttle with requestAnimationFrame
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
         rafRef.current = requestAnimationFrame(() => {
@@ -335,58 +370,35 @@ const Canvas: React.FC = () => {
 
           // Handle component move
           if (currentDrag.dragType === 'move' && currentDrag.draggedComponentId) {
-            const state = useEditorStore.getState();
-            let comp = state.getComponentById(currentDrag.draggedComponentId);
-            
-            // If dragging a nested component, hoist it to root to avoid clipping
-            // and ensure smooth dragging across the canvas
-            if (comp && comp.parentId) {
-              // 1. Reparent to root
-              reparentComponent(comp.id, null);
-              
-              // 2. Update position to be absolute based on captured DOM position
-              // Use the position captured at drag start which accounts for complex layouts (flex/grid)
-              moveComponent(comp.id, dragStartCompPos.current.x, dragStartCompPos.current.y);
-              
-              // Refresh component reference after updates so downstream logic uses absolute coords
-              comp = state.getComponentById(comp.id);
-            }
+             // For move, we rely on dragStartCompPos which was set in mouseDown
+             // Recalculate component position based on delta from START
+             const totalDeltaX = x - dragStartMousePos.current.x;
+             const totalDeltaY = y - dragStartMousePos.current.y;
+             
+             const newX = dragStartCompPos.current.x + totalDeltaX;
+             const newY = dragStartCompPos.current.y + totalDeltaY;
 
-            if (comp) {
-              // Calculate absolute movement based on initial drag position to avoid accumulated errors
-              // and ensure consistent tracking with mouse
-              const totalDeltaX = x - dragStartMousePos.current.x;
-              const totalDeltaY = y - dragStartMousePos.current.y;
-              
-              const newX = dragStartCompPos.current.x + totalDeltaX;
-              const newY = dragStartCompPos.current.y + totalDeltaY;
-
-              moveComponentAndUpdateDrag(
+             moveComponentAndUpdateDrag(
                 currentDrag.draggedComponentId,
                 newX,
                 newY,
-                // Pass current mouse pos as "start" to keep drag state updated, 
-                // though we don't rely on it for delta calculation anymore.
                 x, 
                 y
               );
-            }
           }
 
           // Handle resize
           if (currentDrag.dragType === 'resize' && currentDrag.draggedComponentId && currentDrag.resizeHandle) {
-             // For resize, we can also use absolute calculation if needed, but resize logic is complex per-handle.
-             // Currently kept as is, but ensuring we use the right mouse pos.
             handleResize(currentDrag.draggedComponentId, currentDrag.resizeHandle, x, y);
           }
         });
       }
     },
-    [setPan, moveComponentAndUpdateDrag, handleResize]
+    [setPan, moveComponentAndUpdateDrag, handleResize, reparentComponent, moveComponent, startDrag]
   );
 
   // Handle mouse up — read all transient state from refs/getState
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
     // Clean up any pending RAF
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -395,6 +407,26 @@ const Canvas: React.FC = () => {
     
     if (isPanningRef.current) {
       setIsPanning(false);
+    }
+    
+    // Handle deferred click selection logic if NO drag happened
+    if (potentialDragRef.current && !useEditorStore.getState().drag.isDragging) {
+       const pd = potentialDragRef.current;
+       const isCtrl = e.ctrlKey || e.metaKey;
+       
+       // If it was already selected, now we process the click action
+       if (pd.initialSelectionState) {
+          if (isCtrl) {
+             // Toggle off
+             selectComponent(pd.id, true);
+          } else {
+             // Select ONLY this (clear others)
+             selectComponent(pd.id, false);
+          }
+       }
+       // If it wasn't selected, we already selected it in MouseDown.
+       
+       potentialDragRef.current = null;
     }
     
     // Finish box selection
@@ -548,7 +580,8 @@ const Canvas: React.FC = () => {
   );
 
   // Handle component drag start — read transient state from getState
-  const handleComponentDragStart = useCallback(
+  // Renamed to handleMouseDownOnComponent to reflect deferred logic
+  const handleMouseDownOnComponent = useCallback(
     (e: React.MouseEvent, componentId: string) => {
       if (e.button !== 0) return;
       e.stopPropagation();
@@ -564,51 +597,52 @@ const Canvas: React.FC = () => {
         const x = (e.clientX - rect.left) / state.canvas.zoom;
         const y = (e.clientY - rect.top) / state.canvas.zoom;
 
-        // Handle selection on mousedown (Ctrl/Cmd multi-select lives here)
-        if (e.ctrlKey || e.metaKey) {
-          const wasSelected = state.selection.selectedIds.includes(componentId);
-          // Toggle: add if not selected, remove if already selected
-          selectComponent(componentId, true);
-          // Don't start drag if we just deselected the component
-          if (wasSelected) return;
-        } else if (!state.selection.selectedIds.includes(componentId)) {
-          // Single select only if not already selected (avoid clearing multi-select before drag)
-          selectComponent(componentId, false);
-        }
+        const isSelected = state.selection.selectedIds.includes(componentId);
+        const isCtrl = e.ctrlKey || e.metaKey;
 
-        startDrag('move', {
-          draggedComponentId: componentId,
-          startX: x,
-          startY: y,
-          currentX: x,
-          currentY: y,
-        });
+        // Immediate selection logic for unselected items
+        if (!isSelected) {
+          if (isCtrl) {
+            selectComponent(componentId, true);
+          } else {
+            selectComponent(componentId, false);
+          }
+        }
+        // If already selected, we defer selection logic to MouseUp (to handle toggle/single-select)
+        // so that a drag start doesn't accidentally deselect others or toggle off.
+
+        // Capture initial position for potential drag
         dragStartMousePos.current = { x, y };
-        
         if (comp) {
-          // If component has a parent, we want to capture its VISUAL absolute position
-          // because we will hoist it to root on first move.
-          // We use DOM rects to be robust against complex parent layouts (flex/grid).
+          // Calculate visual absolute position for potential hoist
           if (comp.parentId && e.currentTarget) {
-            const domRect = (e.currentTarget as Element).getBoundingClientRect();
-            const canvasRect = canvasRef.current?.getBoundingClientRect();
-            if (canvasRect) {
-              dragStartCompPos.current = {
-                x: (domRect.left - canvasRect.left) / state.canvas.zoom,
-                y: (domRect.top - canvasRect.top) / state.canvas.zoom
-              };
-            } else {
-              dragStartCompPos.current = { x: comp.x, y: comp.y };
-            }
+             const domRect = (e.currentTarget as Element).getBoundingClientRect();
+             const canvasRect = canvasRef.current?.getBoundingClientRect();
+             if (canvasRect) {
+               dragStartCompPos.current = {
+                 x: (domRect.left - canvasRect.left) / state.canvas.zoom,
+                 y: (domRect.top - canvasRect.top) / state.canvas.zoom
+               };
+             } else {
+               dragStartCompPos.current = { x: comp.x, y: comp.y };
+             }
           } else {
             dragStartCompPos.current = { x: comp.x, y: comp.y };
           }
+          
+          // Set potential drag state
+          potentialDragRef.current = {
+            id: componentId,
+            startX: x,
+            startY: y,
+            originalX: dragStartCompPos.current.x,
+            originalY: dragStartCompPos.current.y,
+            initialSelectionState: isSelected
+          };
         }
-        
-        canvasRef.current?.classList.add('dragging-move');
       }
     },
-    [selectComponent, startDrag]
+    [selectComponent]
   );
 
   // Handle resize handle drag start
@@ -887,7 +921,7 @@ const Canvas: React.FC = () => {
         parentLayout={parentComp?.props?.layout || undefined}
         parentFlexDirection={parentComp?.props?.flexDirection || undefined}
         onClick={handleComponentClick}
-        onDragStart={handleComponentDragStart}
+        onDragStart={handleMouseDownOnComponent}
         onResizeStart={handleResizeStart}
         onContextMenu={handleComponentContextMenu}
       >
