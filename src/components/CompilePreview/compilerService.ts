@@ -146,11 +146,21 @@ async function loadEmscriptenModule(
   if (!jsResp.ok) throw new Error('Failed to load output.js');
   const jsCode = await jsResp.text();
 
-  // Evaluate the module factory — Emscripten MODULARIZE creates a global factory
-  // We use Function constructor to avoid polluting global scope
-  const factory = new Function(jsCode + '\nreturn LvglModule;')() as (
-    opts: Record<string, unknown>,
-  ) => Promise<EmscriptenModule>;
+  // Evaluate the module factory — Emscripten MODULARIZE creates a global factory.
+  // Temporarily hide the global AMD `define` so the Emscripten UMD wrapper
+  // doesn't try to register via define(), which causes
+  // "Can only have one anonymous define call per script file" errors
+  // when Monaco Editor (or another AMD loader) is present on the page.
+  const prevDefine = (globalThis as Record<string, unknown>).define;
+  (globalThis as Record<string, unknown>).define = undefined;
+  let factory: (opts: Record<string, unknown>) => Promise<EmscriptenModule>;
+  try {
+    factory = new Function(jsCode + '\nreturn LvglModule;')() as (
+      opts: Record<string, unknown>,
+    ) => Promise<EmscriptenModule>;
+  } finally {
+    (globalThis as Record<string, unknown>).define = prevDefine;
+  }
 
   // Initialize the module
   const module = await factory({
