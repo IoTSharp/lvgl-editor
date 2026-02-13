@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { openDB, type IDBPDatabase } from 'idb';
+import { v4 as uuidv4 } from 'uuid';
 import type { ProjectFile, CodeGenOptions, ImageResource, FontResource } from '../resources/types';
 import type { Page } from '../types';
 import type { LogicGraph } from '../components/LogicEditor/types';
@@ -120,7 +121,7 @@ async function dbCreateProject(config: ProjectConfig): Promise<void> {
   await db.put('projects', config);
   await db.put('projectData', {
     projectId: config.id,
-    pages: [{ id: crypto.randomUUID(), name: 'Page 1', components: [], backgroundColor: '#F5F5F5' }],
+    pages: [{ id: uuidv4(), name: 'Page 1', components: [], backgroundColor: '#F5F5F5' }],
     logicGraphs: [],
     variables: [],
   } satisfies ProjectData);
@@ -239,7 +240,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   },
 
   createProject: async (name, display, lvglConfig) => {
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     const now = Date.now();
     const config: ProjectConfig = {
       id,
@@ -348,7 +349,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   },
 
   importProject: async (file, name) => {
-    const id = crypto.randomUUID();
+    const id = uuidv4();
     const now = Date.now();
     // Extract display config from file if available
     const display: DisplayConfig = (file as ProjectFile & { display?: DisplayConfig }).display ?? {
