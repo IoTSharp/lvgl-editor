@@ -91,7 +91,9 @@ function generateStyleCode(
   varName: string,
   styles: StyleProps,
   options: CodeGenOptions,
-  selector: string = '0'
+  selector: string = '0',
+  defaultFont?: string,
+  defaultFontSize?: number
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -245,11 +247,17 @@ function generateStyleCode(
   if (styles.textFont) {
     const builtinMatch = styles.textFont.match(/^montserrat_(\d+)$/);
     if (builtinMatch) {
-      lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &lv_font_montserrat_${builtinMatch[1]}, ${selector});`);
+      // Skip if same as project default font
+      if (styles.textFont !== defaultFont) {
+        lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &lv_font_montserrat_${builtinMatch[1]}, ${selector});`);
+      }
     } else {
       // Custom font resource: variable name is cFontName_size (e.g. ui_font_noto_16)
       const fontSize = styles.textFontSize || 16;
-      lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &${styles.textFont}_${fontSize}, ${selector});`);
+      // Skip if same font and same size as project default
+      if (styles.textFont !== defaultFont || fontSize !== (defaultFontSize || 16)) {
+        lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &${styles.textFont}_${fontSize}, ${selector});`);
+      }
     }
   }
   if (styles.textFontSize !== undefined && styles.textFontSize !== 14) {
@@ -299,7 +307,9 @@ function generatePropsCode(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props: Record<string, any>,
   options: CodeGenOptions,
-  imageResources: ImageResource[] = []
+  imageResources: ImageResource[] = [],
+  defaultFont?: string,
+  defaultFontSize?: number
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -311,15 +321,26 @@ function generatePropsCode(
       const fontName = props.fontResource as string;
       const builtinMatch = fontName.match(/^montserrat_(\d+)$/);
       if (builtinMatch) {
-        // Built-in font — use lv_font_montserrat_XX
-        lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &lv_font_${fontName}, 0);`);
+        // Built-in font — skip if same as project default
+        if (fontName !== defaultFont) {
+          lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &lv_font_${fontName}, 0);`);
+        }
       } else {
         // Custom font — append fontSize suffix
         const fontSize = props.fontSize || 16;
-        lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${fontName}_${fontSize}, 0);`);
+        // Skip if same font and same size as project default
+        if (fontName !== defaultFont || fontSize !== (defaultFontSize || 16)) {
+          lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${fontName}_${fontSize}, 0);`);
+        }
+      }
+    } else if (props.fontSize !== undefined && defaultFont && !/^montserrat_\d+$/.test(defaultFont)) {
+      // No fontResource set (inheriting default), but fontSize differs from default
+      const fontSize = props.fontSize as number;
+      if (fontSize !== (defaultFontSize || 16)) {
+        lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${defaultFont}_${fontSize}, 0);`);
       }
     }
-    // If no fontResource is set, the component inherits the project default font — no code needed
+    // If no fontResource is set and no fontSize override, the component inherits the project default font — no code needed
     if (props.textAlign) {
       const alignMap: Record<string, string> = {
         'left': 'LV_TEXT_ALIGN_LEFT',
@@ -870,7 +891,9 @@ function generateComponentCode(
   options: CodeGenOptions,
   pageName: string,
   needsPagePrefix: Set<string>,
-  imageResources: ImageResource[] = []
+  imageResources: ImageResource[] = [],
+  defaultFont?: string,
+  defaultFontSize?: number
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -993,29 +1016,29 @@ function generateComponentCode(
   }
 
   // Styles
-  const styleLines = generateStyleCode(varName, component.styles.default, options);
+  const styleLines = generateStyleCode(varName, component.styles.default, options, '0', defaultFont, defaultFontSize);
   lines.push(...styleLines);
 
   // Pressed state styles
   if (component.styles.pressed) {
-    const pressedLines = generateStyleCode(varName, component.styles.pressed, options, 'LV_STATE_PRESSED');
+    const pressedLines = generateStyleCode(varName, component.styles.pressed, options, 'LV_STATE_PRESSED', defaultFont, defaultFontSize);
     lines.push(...pressedLines);
   }
 
   // Focused state styles
   if (component.styles.focused) {
-    const focusedLines = generateStyleCode(varName, component.styles.focused, options, 'LV_STATE_FOCUSED');
+    const focusedLines = generateStyleCode(varName, component.styles.focused, options, 'LV_STATE_FOCUSED', defaultFont, defaultFontSize);
     lines.push(...focusedLines);
   }
 
   // Disabled state styles
   if (component.styles.disabled) {
-    const disabledLines = generateStyleCode(varName, component.styles.disabled, options, 'LV_STATE_DISABLED');
+    const disabledLines = generateStyleCode(varName, component.styles.disabled, options, 'LV_STATE_DISABLED', defaultFont, defaultFontSize);
     lines.push(...disabledLines);
   }
 
   // Component-specific properties
-  const propLines = generatePropsCode(varName, component.type, component.props, options, imageResources);
+  const propLines = generatePropsCode(varName, component.type, component.props, options, imageResources, defaultFont, defaultFontSize);
   lines.push(...propLines);
 
   // Event bindings
@@ -1050,7 +1073,7 @@ function generateComponentCode(
     const defaultTab = `${varName}_tab_${component.props.activeTab || 0}`;
     for (const child of component.children) {
       const tabParent = childToTab[child.id] || defaultTab;
-      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources));
+      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
     }
   } else if (component.type === 'tileview' && component.props?.rows !== undefined && component.props?.cols !== undefined) {
     const tileChildMap: Record<string, string[]> = component.props.tileChildMap || {};
@@ -1067,19 +1090,19 @@ function generateComponentCode(
     const defaultTile = `${varName}_tile_0_0`;
     for (const child of component.children) {
       const tileParent = childToTile[child.id] || defaultTile;
-      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources));
+      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
     }
   } else if (component.type === 'win') {
     // Win children go into the content area
     if (component.children.length > 0) {
       lines.push(`${indent}lv_obj_t * ${varName}_content = lv_win_get_content(${varName});`);
       for (const child of component.children) {
-        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources));
+        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
       }
     }
   } else {
     for (const child of component.children) {
-      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources));
+      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
     }
   }
 
@@ -1095,6 +1118,7 @@ function generateScreenInitFunc(
   needsPagePrefix: Set<string>,
   imageResources: ImageResource[] = [],
   defaultFont?: string,
+  defaultFontSize?: number,
   fontResources: FontResource[] = []
 ): string {
   const lines: string[] = [];
@@ -1121,8 +1145,8 @@ function generateScreenInitFunc(
     if (isBuiltin) {
       lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &lv_font_${defaultFont}, 0);`);
     } else {
-      const fontRes = fontResources.find(f => f.cFontName === defaultFont);
-      const size = fontRes?.sizes?.[0] || 16;
+      // Custom font: use defaultFontSize parameter
+      const size = defaultFontSize || 16;
       lines.push(`${indent}lv_obj_set_style_text_font(${screenVar}, &${defaultFont}_${size}, 0);`);
     }
   }
@@ -1130,7 +1154,7 @@ function generateScreenInitFunc(
   
   // Generate components
   for (const component of page.components) {
-    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources));
+    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources, defaultFont, defaultFontSize));
   }
   
   // User code section
@@ -1186,9 +1210,82 @@ function collectUsedImages(pages: Page[], imageResources: ImageResource[]): Imag
 }
 
 /**
+ * Collect all custom font + size combinations used by components.
+ * Returns a Map of cFontName -> Set of sizes.
+ */
+function collectUsedCustomFonts(
+  pages: Page[],
+  fontResources: FontResource[],
+  defaultFont?: string,
+  defaultFontSize?: number
+): Map<string, Set<number>> {
+  const usedFonts = new Map<string, Set<number>>();
+  const isBuiltin = (name: string) => /^montserrat_\d+$/.test(name);
+  const customFontNames = new Set(fontResources.map(f => f.cFontName));
+
+  const addFont = (fontName: string, size: number) => {
+    if (!usedFonts.has(fontName)) {
+      usedFonts.set(fontName, new Set());
+    }
+    usedFonts.get(fontName)!.add(size);
+  };
+
+  const walkComponents = (components: LvglComponent[]) => {
+    for (const comp of components) {
+      // Check props.fontResource
+      if (comp.props.fontResource) {
+        const fontName = comp.props.fontResource as string;
+        if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+          const fontSize = (comp.props.fontSize as number) || 16;
+          addFont(fontName, fontSize);
+        }
+      } else if (comp.props.fontSize !== undefined && defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+        // No fontResource but has fontSize override — uses default font with different size
+        const fontSize = comp.props.fontSize as number;
+        if (fontSize !== (defaultFontSize || 16)) {
+          addFont(defaultFont, fontSize);
+        }
+      }
+      // Check styles.default.textFont
+      if (comp.styles.default.textFont) {
+        const fontName = comp.styles.default.textFont;
+        if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+          const fontSize = comp.styles.default.textFontSize || 16;
+          addFont(fontName, fontSize);
+        }
+      }
+      // Check other style states
+      for (const state of ['pressed', 'focused', 'disabled'] as const) {
+        const stateStyles = comp.styles[state];
+        if (stateStyles?.textFont) {
+          const fontName = stateStyles.textFont;
+          if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+            const fontSize = stateStyles.textFontSize || 16;
+            addFont(fontName, fontSize);
+          }
+        }
+      }
+      walkComponents(comp.children);
+    }
+  };
+
+  for (const page of pages) {
+    walkComponents(page.components);
+  }
+
+  // Also include the project default font if it's a custom font
+  if (defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+    // Always include the default font at its default size
+    addFont(defaultFont, defaultFontSize || 16);
+  }
+
+  return usedFonts;
+}
+
+/**
  * Generate ui.c source file
  */
-export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, fontResources: FontResource[] = []): string {
+export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, defaultFontSize?: number, fontResources: FontResource[] = []): string {
   const lines: string[] = [];
   
   // Includes
@@ -1204,6 +1301,21 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
     }
     for (const img of usedImageResources) {
       lines.push(`${options.lvglVersion === '9' ? 'LV_IMAGE_DECLARE' : 'LV_IMG_DECLARE'}(${img.cArrayName});`);
+    }
+  }
+
+  // Collect used custom font + size combinations and add LV_FONT_DECLARE
+  const usedCustomFonts = collectUsedCustomFonts(pages, fontResources, defaultFont, defaultFontSize);
+  if (usedCustomFonts.size > 0) {
+    lines.push('');
+    if (options.generateComments) {
+      lines.push(generateSectionHeader('Font Declarations', options));
+    }
+    for (const [fontName, sizes] of usedCustomFonts) {
+      const sortedSizes = [...sizes].sort((a, b) => a - b);
+      for (const size of sortedSizes) {
+        lines.push(`LV_FONT_DECLARE(${fontName}_${size});`);
+      }
     }
   }
   lines.push('');
@@ -1275,7 +1387,7 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   }
   
   for (const page of pages) {
-    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources, defaultFont, fontResources));
+    lines.push(generateScreenInitFunc(page, options, needsPagePrefix, imageResources, defaultFont, defaultFontSize, fontResources));
     lines.push('');
   }
   

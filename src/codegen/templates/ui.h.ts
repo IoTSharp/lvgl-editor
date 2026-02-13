@@ -39,26 +39,83 @@ function getAllComponents(pages: Page[]): { component: LvglComponent; pageName: 
 /**
  * Generate ui.h header file
  */
-export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: FontResource[] = []): string {
+export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: FontResource[] = [], defaultFont?: string, defaultFontSize?: number): string {
   const lines: string[] = [];
   
   // Includes
   lines.push(generateInclude('lvgl.h'));
   lines.push('');
 
-  // Font declarations
+  // Font declarations — only declare custom font+size combos actually used
   if (fonts.length > 0) {
-    if (options.generateComments) {
-      lines.push(generateSectionHeader('Font Declarations', options));
-      lines.push('');
+    const isBuiltin = (name: string) => /^montserrat_\d+$/.test(name);
+    const customFontNames = new Set(fonts.map(f => f.cFontName));
+    const usedFonts = new Map<string, Set<number>>();
+
+    const addFont = (fontName: string, size: number) => {
+      if (!usedFonts.has(fontName)) {
+        usedFonts.set(fontName, new Set());
+      }
+      usedFonts.get(fontName)!.add(size);
+    };
+
+    const walkComponents = (components: LvglComponent[]) => {
+      for (const comp of components) {
+        if (comp.props.fontResource) {
+          const fontName = comp.props.fontResource as string;
+          if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+            addFont(fontName, (comp.props.fontSize as number) || 16);
+          }
+        } else if (comp.props.fontSize !== undefined && defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+          // No fontResource but has fontSize override — uses default font with different size
+          const fontSize = comp.props.fontSize as number;
+          if (fontSize !== (defaultFontSize || 16)) {
+            addFont(defaultFont, fontSize);
+          }
+        }
+        if (comp.styles.default.textFont) {
+          const fontName = comp.styles.default.textFont;
+          if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+            addFont(fontName, comp.styles.default.textFontSize || 16);
+          }
+        }
+        for (const state of ['pressed', 'focused', 'disabled'] as const) {
+          const stateStyles = comp.styles[state];
+          if (stateStyles?.textFont) {
+            const fontName = stateStyles.textFont;
+            if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+              addFont(fontName, stateStyles.textFontSize || 16);
+            }
+          }
+        }
+        walkComponents(comp.children);
+      }
+    };
+
+    for (const page of pages) {
+      walkComponents(page.components);
     }
 
-    for (const font of fonts) {
-      for (const size of font.sizes) {
-        lines.push(`LV_FONT_DECLARE(${font.cFontName}_${size});`);
-      }
+    // Include project default font if custom
+    if (defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+      // Always include the default font at its default size
+      addFont(defaultFont, defaultFontSize || 16);
     }
-    lines.push('');
+
+    if (usedFonts.size > 0) {
+      if (options.generateComments) {
+        lines.push(generateSectionHeader('Font Declarations', options));
+        lines.push('');
+      }
+
+      for (const [fontName, sizes] of usedFonts) {
+        const sortedSizes = [...sizes].sort((a, b) => a - b);
+        for (const size of sortedSizes) {
+          lines.push(`LV_FONT_DECLARE(${fontName}_${size});`);
+        }
+      }
+      lines.push('');
+    }
   }
   
   // Screen declarations

@@ -65,7 +65,7 @@ const App: React.FC = () => {
             }
             // Set default font size from project config
             const fontRes = fonts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
-            setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes));
+            setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes, cfg.lvglConfig.defaultFontSize));
             openProject(lastId);
           }).catch(() => {
             // Failed to load, show project list
@@ -245,7 +245,7 @@ const EditorView: React.FC<EditorViewProps> = ({
           useLogicEditorStore.getState().setGraphs(data.logicGraphs);
         }
         const fontRes = fnts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
-        setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes));
+        setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes, cfg.lvglConfig.defaultFontSize));
         openProject(id);
         setProjectName(cfg.name);
       }

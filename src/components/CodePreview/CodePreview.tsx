@@ -23,11 +23,15 @@ const CodePreview: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('9');
   const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
+  const [projectDefaultFontSize, setProjectDefaultFontSize] = useState<number | undefined>();
 
   useEffect(() => {
     if (!currentProjectId) return;
     getProjectConfig(currentProjectId).then(cfg => {
-      if (cfg) setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+      if (cfg) {
+        setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+        setProjectDefaultFontSize(cfg.lvglConfig.defaultFontSize);
+      }
     });
   }, [currentProjectId, getProjectConfig]);
 
@@ -39,12 +43,12 @@ const CodePreview: React.FC = () => {
 
   const generatedCode = useMemo(() => {
     try {
-      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont);
+      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize);
     } catch {
       console.error('Code generation error');
       return null;
     }
-  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont]);
+  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize]);
 
   const currentCode = generatedCode?.[selectedFile] || '// 代码生成失败';
 

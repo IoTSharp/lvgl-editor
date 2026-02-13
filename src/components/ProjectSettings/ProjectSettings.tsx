@@ -16,6 +16,8 @@ const FONT_OPTIONS = [
   'montserrat_32',
 ];
 
+const FONT_SIZE_OPTIONS = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48];
+
 const ProjectSettings: React.FC = () => {
   const { currentProjectId, setShowProjectSettings, setDefaultFontSize } = useAppStore();
   const { getProjectConfig, updateProjectConfig } = useProjectStore();
@@ -29,6 +31,7 @@ const ProjectSettings: React.FC = () => {
   const [colorDepth, setColorDepth] = useState<16 | 24 | 32>(32);
   const [fontLarge, setFontLarge] = useState(true);
   const [defaultFont, setDefaultFont] = useState('montserrat_14');
+  const [defaultFontSize, setDefaultFontSizeLocal] = useState<number>(16);
   const [memSize, setMemSize] = useState(64);
 
   useEffect(() => {
@@ -42,6 +45,7 @@ const ProjectSettings: React.FC = () => {
       setColorDepth(cfg.display.colorDepth);
       setFontLarge(cfg.lvglConfig.fontLarge);
       setDefaultFont(cfg.lvglConfig.defaultFont);
+      setDefaultFontSizeLocal(cfg.lvglConfig.defaultFontSize || 16);
       setMemSize(cfg.lvglConfig.memSize);
     });
   }, [currentProjectId, getProjectConfig]);
@@ -49,23 +53,32 @@ const ProjectSettings: React.FC = () => {
   const handleSave = async () => {
     if (!config) return;
     const colorFormat = colorDepth === 16 ? 'RGB565' as const : colorDepth === 24 ? 'RGB888' as const : 'ARGB8888' as const;
+    const isCustomFont = !/^montserrat_\d+$/.test(defaultFont);
     const lvglChanged =
       config.lvglConfig.colorFormat !== colorFormat ||
       config.lvglConfig.fontLarge !== fontLarge ||
       config.lvglConfig.defaultFont !== defaultFont ||
+      config.lvglConfig.defaultFontSize !== (isCustomFont ? defaultFontSize : undefined) ||
       config.lvglConfig.memSize !== memSize;
 
     const updated: ProjectConfig = {
       ...config,
       name: name.trim() || config.name,
       display: { ...config.display, width, height, colorDepth },
-      lvglConfig: { ...config.lvglConfig, colorFormat, fontLarge, defaultFont, memSize },
+      lvglConfig: {
+        ...config.lvglConfig,
+        colorFormat,
+        fontLarge,
+        defaultFont,
+        defaultFontSize: isCustomFont ? defaultFontSize : undefined,
+        memSize,
+      },
     };
     await updateProjectConfig(updated);
     setCanvasSize(width, height);
     // Update canvas default font size
     const fontRes = fonts.find(f => f.cFontName === defaultFont);
-    setDefaultFontSize(parseFontSize(defaultFont, fontRes?.sizes));
+    setDefaultFontSize(parseFontSize(defaultFont, fontRes?.sizes, isCustomFont ? defaultFontSize : undefined));
     setShowProjectSettings(false);
     toast.success('项目设置已保存');
     if (lvglChanged) {
@@ -133,6 +146,17 @@ const ProjectSettings: React.FC = () => {
               )}
             </select>
           </label>
+
+          {!/^montserrat_\d+$/.test(defaultFont) && (
+            <label className="npd-label">
+              默认字体大小
+              <select className="npd-select" value={defaultFontSize} onChange={e => setDefaultFontSizeLocal(Number(e.target.value))}>
+                {FONT_SIZE_OPTIONS.map(s => (
+                  <option key={s} value={s}>{s}px</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="npd-label">
             内存大小 (KB)

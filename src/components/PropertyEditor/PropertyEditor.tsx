@@ -1,6 +1,8 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useResourceStore } from '../../resources/resourceStore';
+import { useAppStore } from '../../store/appStore';
+import { useProjectStore } from '../../store/projectStore';
 import type { LvglComponent, StyleProps, LvglAlign, LvglFlags } from '../../types';
 import { getComponentDefinition } from '../../utils/componentDefinitions';
 import './PropertyEditor.css';
@@ -1262,32 +1264,70 @@ function ComponentFontSelector({
   onBatchChange?: (updates: Record<string, any>) => void;
 }): React.ReactNode {
   const fonts = useResourceStore((s) => s.fonts);
+  const currentProjectId = useAppStore((s) => s.currentProjectId);
+  const getProjectConfig = useProjectStore((s) => s.getProjectConfig);
+  const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
+  const [projectDefaultFontSize, setProjectDefaultFontSize] = useState<number | undefined>();
+
+  useEffect(() => {
+    if (!currentProjectId) return;
+    getProjectConfig(currentProjectId).then(cfg => {
+      if (cfg) {
+        setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+        setProjectDefaultFontSize(cfg.lvglConfig.defaultFontSize);
+      }
+    });
+  }, [currentProjectId, getProjectConfig]);
 
   // Determine current selection value
   const currentValue = fontResource || '';
 
-  // Get available sizes based on selected font
-  const selectedCustomFont = fontResource ? fonts.find((f) => f.cFontName === fontResource) : undefined;
-  const availableSizes = selectedCustomFont ? selectedCustomFont.sizes : BUILTIN_FONT_SIZES;
+  // Determine if the effective font is a builtin font (size selector should be hidden)
+  const isBuiltinFont = (name: string) => /^montserrat_\d+$/.test(name);
+
+  // Resolve the effective font: explicit selection or project default
+  const effectiveFont = fontResource || projectDefaultFont || '';
+  const effectiveIsBuiltin = isBuiltinFont(effectiveFont);
+
+  // For custom fonts, show the full BUILTIN_FONT_SIZES list instead of FontResource.sizes
+  const selectedCustomFont = fontResource
+    ? fonts.find((f) => f.cFontName === fontResource)
+    : undefined;
+  const defaultCustomFont = !fontResource && projectDefaultFont
+    ? fonts.find((f) => f.cFontName === projectDefaultFont)
+    : undefined;
+  const activeCustomFont = selectedCustomFont || defaultCustomFont;
+  const availableSizes = activeCustomFont ? BUILTIN_FONT_SIZES : [];
 
   // When font changes, adjust fontSize if needed
   const handleFontChange = (value: string) => {
     if (!value) {
-      // "默认" selected - clear fontResource and fontSize (inherit project default)
-      if (onBatchChange) {
-        onBatchChange({ fontResource: undefined, fontSize: undefined });
+      // "默认" selected - clear fontResource; keep fontSize only if default is custom and size differs
+      const defaultIsCustom = projectDefaultFont && !isBuiltinFont(projectDefaultFont);
+      if (defaultIsCustom && fontSize !== undefined && fontSize !== (projectDefaultFontSize || 16)) {
+        // Keep fontSize to indicate this component uses default font but at a different size
+        if (onBatchChange) {
+          onBatchChange({ fontResource: undefined, fontSize });
+        } else {
+          onChange('fontResource', undefined);
+        }
       } else {
-        onChange('fontResource', undefined);
-        onChange('fontSize', undefined);
+        // Clear both
+        if (onBatchChange) {
+          onBatchChange({ fontResource: undefined, fontSize: undefined });
+        } else {
+          onChange('fontResource', undefined);
+          onChange('fontSize', undefined);
+        }
       }
     } else {
       const customFont = fonts.find((f) => f.cFontName === value);
       if (customFont) {
-        // If current fontSize is not in custom font's sizes, pick closest
+        // Custom font: keep current fontSize if it's in BUILTIN_FONT_SIZES, otherwise pick closest
         const curSize = fontSize || 16;
         let newSize = curSize;
-        if (!customFont.sizes.includes(curSize)) {
-          newSize = customFont.sizes.reduce((a, b) =>
+        if (!BUILTIN_FONT_SIZES.includes(curSize)) {
+          newSize = BUILTIN_FONT_SIZES.reduce((a, b) =>
             Math.abs(b - curSize) < Math.abs(a - curSize) ? b : a
           );
         }
@@ -1311,6 +1351,9 @@ function ComponentFontSelector({
       }
     }
   };
+
+  // Show size selector only when the effective font is a custom font
+  const showSizeSelector = !effectiveIsBuiltin && availableSizes.length > 0;
 
   return (
     <>
@@ -1336,24 +1379,26 @@ function ComponentFontSelector({
           )}
         </select>
       </div>
-      <div className="property-row">
-        <label>字体大小</label>
-        <select
-          value={availableSizes.includes(fontSize || 14) ? (fontSize || 14) : 'custom'}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v !== 'custom') onChange('fontSize', parseInt(v));
-          }}
-          style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
-        >
-          {availableSizes.map((s) => (
-            <option key={s} value={s}>{s}px</option>
-          ))}
-          {!availableSizes.includes(fontSize || 14) && (
-            <option value="custom">{fontSize || 14}px (自定义)</option>
-          )}
-        </select>
-      </div>
+      {showSizeSelector && (
+        <div className="property-row">
+          <label>字体大小</label>
+          <select
+            value={availableSizes.includes(fontSize || 14) ? (fontSize || 14) : 'custom'}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v !== 'custom') onChange('fontSize', parseInt(v));
+            }}
+            style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
+          >
+            {availableSizes.map((s) => (
+              <option key={s} value={s}>{s}px</option>
+            ))}
+            {!availableSizes.includes(fontSize || 14) && (
+              <option value="custom">{fontSize || 14}px (自定义)</option>
+            )}
+          </select>
+        </div>
+      )}
     </>
   );
 }

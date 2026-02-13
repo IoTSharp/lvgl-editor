@@ -7,7 +7,75 @@ import { useProjectStore } from '../../store/projectStore';
 import { generateCode } from '../../codegen';
 import { compileCode, type CompileStatus, type WasmRuntime, type FontCompileRequest } from './compilerService';
 import { getCharsetRanges } from '../../resources/converters/fontConverter';
+import type { LvglComponent } from '../../types';
+import type { FontResource } from '../../resources/types';
 import './CompilePreview.css';
+
+/**
+ * Collect all custom font + size combinations used by components.
+ * Returns a Map of cFontName -> Set of sizes.
+ */
+function collectUsedCustomFontSizes(
+  pages: { components: LvglComponent[] }[],
+  fontResources: FontResource[],
+  defaultFont?: string,
+  defaultFontSize?: number
+): Map<string, Set<number>> {
+  const usedFonts = new Map<string, Set<number>>();
+  const isBuiltin = (name: string) => /^montserrat_\d+$/.test(name);
+  const customFontNames = new Set(fontResources.map(f => f.cFontName));
+
+  const addFont = (fontName: string, size: number) => {
+    if (!usedFonts.has(fontName)) {
+      usedFonts.set(fontName, new Set());
+    }
+    usedFonts.get(fontName)!.add(size);
+  };
+
+  const walkComponents = (components: LvglComponent[]) => {
+    for (const comp of components) {
+      if (comp.props.fontResource) {
+        const fontName = comp.props.fontResource as string;
+        if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+          addFont(fontName, (comp.props.fontSize as number) || 16);
+        }
+      } else if (comp.props.fontSize !== undefined && defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+        // No fontResource but has fontSize override — uses default font with different size
+        const fontSize = comp.props.fontSize as number;
+        if (fontSize !== (defaultFontSize || 16)) {
+          addFont(defaultFont, fontSize);
+        }
+      }
+      if (comp.styles.default.textFont) {
+        const fontName = comp.styles.default.textFont;
+        if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+          addFont(fontName, comp.styles.default.textFontSize || 16);
+        }
+      }
+      for (const state of ['pressed', 'focused', 'disabled'] as const) {
+        const stateStyles = comp.styles[state];
+        if (stateStyles?.textFont) {
+          const fontName = stateStyles.textFont;
+          if (!isBuiltin(fontName) && customFontNames.has(fontName)) {
+            addFont(fontName, stateStyles.textFontSize || 16);
+          }
+        }
+      }
+      walkComponents(comp.children);
+    }
+  };
+
+  for (const page of pages) {
+    walkComponents(page.components);
+  }
+
+  // Include the project default font if it's a custom font (with its default size)
+  if (defaultFont && !isBuiltin(defaultFont) && customFontNames.has(defaultFont)) {
+    addFont(defaultFont, defaultFontSize || 16);
+  }
+
+  return usedFonts;
+}
 
 /** Map JS keyboard event.key to LVGL key codes */
 const LV_KEY_MAP: Record<string, number> = {
@@ -45,19 +113,23 @@ const CompilePreview: React.FC = () => {
   const getProjectConfig = useProjectStore((s) => s.getProjectConfig);
 
   const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
+  const [projectDefaultFontSize, setProjectDefaultFontSize] = useState<number | undefined>();
 
   // Load project default font
   useEffect(() => {
     if (!currentProjectId) return;
     getProjectConfig(currentProjectId).then(cfg => {
-      if (cfg) setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+      if (cfg) {
+        setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+        setProjectDefaultFontSize(cfg.lvglConfig.defaultFontSize);
+      }
     });
   }, [currentProjectId, getProjectConfig]);
 
   // Generate C code from current editor state
   const generateCCode = useCallback(() => {
-    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont);
-  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont]);
+    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize);
+  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize]);
 
   // Render framebuffer to canvas
   const renderFramebuffer = useCallback((fbData: Uint8Array, width: number, height: number) => {
@@ -139,20 +211,24 @@ const CompilePreview: React.FC = () => {
       userFiles[fileName] = content;
     }
 
-    // Build font compile requests from font resources
-    const fontRequests: FontCompileRequest[] = fontResources.map((font) => {
-      const ranges = getCharsetRanges(font.charset, font.customChars);
-      const rangeStr = ranges.length > 0
-        ? ranges.map(([start, end]) => `0x${start.toString(16)}-0x${end.toString(16)}`).join(',')
-        : '0x20-0x7E'; // fallback to basic ASCII
-      return {
-        data: font.data,
-        cFontName: font.cFontName,
-        sizes: font.sizes,
-        ranges: rangeStr,
-        bpp: font.bpp,
-      };
-    });
+    // Build font compile requests by dynamically collecting used font+size combos
+    const usedFontSizes = collectUsedCustomFontSizes(pages, fontResources, projectDefaultFont, projectDefaultFontSize);
+    const fontRequests: FontCompileRequest[] = fontResources
+      .filter((font) => usedFontSizes.has(font.cFontName))
+      .map((font) => {
+        const ranges = getCharsetRanges(font.charset, font.customChars);
+        const rangeStr = ranges.length > 0
+          ? ranges.map(([start, end]) => `0x${start.toString(16)}-0x${end.toString(16)}`).join(',')
+          : '0x20-0x7E'; // fallback to basic ASCII
+        const sizes = [...usedFontSizes.get(font.cFontName)!].sort((a, b) => a - b);
+        return {
+          data: font.data,
+          cFontName: font.cFontName,
+          sizes,
+          ranges: rangeStr,
+          bpp: font.bpp,
+        };
+      });
 
     const result = await compileCode(
       userFiles,
@@ -191,7 +267,7 @@ const CompilePreview: React.FC = () => {
       setStatus('done');
       setStatusMessage('编译成功（无运行时）');
     }
-  }, [status, generateCCode, canvas.width, canvas.height, renderFramebuffer, stopRuntime, startEventLoop]);
+  }, [status, generateCCode, canvas.width, canvas.height, renderFramebuffer, stopRuntime, startEventLoop, pages, fontResources, projectDefaultFont, projectDefaultFontSize]);
 
   // Handle stop button
   const handleStop = useCallback(() => {

@@ -7,12 +7,13 @@ export type AppView = 'projectList' | 'editor';
 /**
  * Extract pixel font size from a defaultFont identifier.
  * Built-in: "montserrat_14" → 14
- * Custom font: uses first size from FontResource.sizes, caller should provide it.
+ * Custom font: uses explicit defaultFontSize if provided, else first size from FontResource.sizes.
  * Fallback: 14
  */
-export function parseFontSize(defaultFont: string, customFontSizes?: number[]): number {
+export function parseFontSize(defaultFont: string, customFontSizes?: number[], defaultFontSize?: number): number {
   const builtinMatch = defaultFont.match(/^montserrat_(\d+)$/);
   if (builtinMatch) return parseInt(builtinMatch[1], 10);
+  if (defaultFontSize !== undefined) return defaultFontSize;
   if (customFontSizes && customFontSizes.length > 0) return customFontSizes[0];
   return 14;
 }

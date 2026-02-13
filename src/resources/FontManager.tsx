@@ -6,7 +6,6 @@ import type { FontResource, CharsetType } from './types';
 import { toast } from '../components/Toast';
 import { modal } from '../components/Modal';
 import { 
-  COMMON_FONT_SIZES, 
   FONT_PREVIEW_TEXT,
   FONT_PREVIEW_TEXT_CJK,
   generateFontConvCommand,
@@ -117,16 +116,6 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
     }
   };
   
-  const handleSizeToggle = (font: FontResource, size: number) => {
-    const newSizes = font.sizes.includes(size)
-      ? font.sizes.filter(s => s !== size)
-      : [...font.sizes, size].sort((a, b) => a - b);
-    
-    if (newSizes.length > 0) {
-      updateFont(font.id, { sizes: newSizes });
-    }
-  };
-
   const buildConvOptions = useCallback((font: FontResource) => ({
     sizes: font.sizes,
     charset: font.charset,
@@ -237,7 +226,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
                 <span className="font-name" title={font.name}>{font.name}</span>
                 <span className="font-family">{font.family} {font.style}</span>
                 <span className="font-sizes">
-                  {font.sizes.join(', ')}px · {getFormatLabel(font)} · {formatFileSize(font.size)}
+                  {getFormatLabel(font)} · {formatFileSize(font.size)}
                 </span>
               </div>
               <button
@@ -304,21 +293,6 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
           </div>
           
           <div className="detail-section">
-            <label>字号选择:</label>
-            <div className="size-grid">
-              {COMMON_FONT_SIZES.map(size => (
-                <button
-                  key={size}
-                  className={`size-btn ${selectedFont.sizes.includes(size) ? 'active' : ''}`}
-                  onClick={() => handleSizeToggle(selectedFont, size)}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="detail-section">
             <label>字符集:</label>
             <select
               value={selectedFont.charset}
@@ -376,13 +350,13 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
               className="preview-box"
               style={{ fontFamily: fontFaceMap[selectedFont.id] || selectedFont.family }}
             >
-              {selectedFont.sizes.slice(0, 4).map(sz => (
+              {[16, 24].map(sz => (
                 <p key={sz} style={{ fontSize: sz }}>
                   <span className="preview-size-tag">{sz}px</span> {FONT_PREVIEW_TEXT}
                 </p>
               ))}
               {(selectedFont.charset === 'cjk-basic' || selectedFont.charset === 'custom') && (
-                <p style={{ fontSize: selectedFont.sizes[0] || 16 }}>
+                <p style={{ fontSize: 16 }}>
                   {FONT_PREVIEW_TEXT_CJK}
                 </p>
               )}

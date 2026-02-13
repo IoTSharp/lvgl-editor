@@ -114,6 +114,7 @@ export interface ProjectFile {
     colorFormat: 'RGB565' | 'RGB888' | 'ARGB8888';
     fontLarge: boolean;
     defaultFont: string;
+    defaultFontSize?: number;
     memSize: number;
   };
 }

@@ -23,6 +23,7 @@ export interface LvglConfig {
   colorFormat: 'RGB565' | 'RGB888' | 'ARGB8888';
   fontLarge: boolean;
   defaultFont: string;
+  defaultFontSize?: number; // Only used when defaultFont is a custom font
   memSize: number; // KB
 }
 
