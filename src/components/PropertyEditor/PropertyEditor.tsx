@@ -1256,7 +1256,7 @@ function ComponentFontSelector({
   // When font changes, adjust fontSize if needed
   const handleFontChange = (value: string) => {
     if (!value) {
-      // "默认" selected — clear fontResource and fontSize (inherit project default)
+      // "默认" selected - clear fontResource and fontSize (inherit project default)
       onChange('fontResource', undefined);
       onChange('fontSize', undefined);
     } else {
@@ -1272,7 +1272,7 @@ function ComponentFontSelector({
           onChange('fontSize', closest);
         }
       } else {
-        // Built-in font selected — set fontResource to builtin name, extract size
+        // Built-in font selected - set fontResource to builtin name, extract size
         const match = value.match(/^montserrat_(\d+)$/);
         if (match) {
           onChange('fontResource', value);

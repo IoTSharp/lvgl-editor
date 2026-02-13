@@ -2,7 +2,7 @@
 
 import type { Page, LvglComponent, StyleProps, Theme, Animation, AnimationEasing } from '../../types';
 import type { CodeGenOptions } from '../types';
-import type { ImageResource } from '../../resources/types';
+import type { ImageResource, FontResource } from '../../resources/types';
 import {
   getScreenVarName,
   getComponentVarName,
@@ -1174,7 +1174,7 @@ function collectUsedImages(pages: Page[], imageResources: ImageResource[]): Imag
 /**
  * Generate ui.c source file
  */
-export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, fontResources: import('../../resources/types').FontResource[] = []): string {
+export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string, fontResources: FontResource[] = []): string {
   const lines: string[] = [];
   
   // Includes
