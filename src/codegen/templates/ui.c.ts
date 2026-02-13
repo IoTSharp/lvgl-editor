@@ -307,15 +307,15 @@ function generatePropsCode(
   
   // Common text properties for components with text
   const generateTextProps = (labelVar: string) => {
-    // Custom font resource takes priority
     if (props.fontResource) {
       const fontName = props.fontResource as string;
-      const fontSize = props.fontSize || 16;
-      // Check if it's a builtin font reference (montserrat_XX)
       const builtinMatch = fontName.match(/^montserrat_(\d+)$/);
       if (builtinMatch) {
+        // Built-in font — use lv_font_montserrat_XX
         lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &lv_font_${fontName}, 0);`);
       } else {
+        // Custom font — append fontSize suffix
+        const fontSize = props.fontSize || 16;
         lines.push(`${indent}lv_obj_set_style_text_font(${labelVar}, &${fontName}_${fontSize}, 0);`);
       }
     }

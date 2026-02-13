@@ -1256,14 +1256,15 @@ function ComponentFontSelector({
   // When font changes, adjust fontSize if needed
   const handleFontChange = (value: string) => {
     if (!value) {
-      // "默认" selected — clear fontResource
+      // "默认" selected — clear fontResource and fontSize (inherit project default)
       onChange('fontResource', undefined);
+      onChange('fontSize', undefined);
     } else {
       const customFont = fonts.find((f) => f.cFontName === value);
       if (customFont) {
         onChange('fontResource', value);
         // If current fontSize is not in custom font's sizes, pick closest
-        const curSize = fontSize || 14;
+        const curSize = fontSize || 16;
         if (!customFont.sizes.includes(curSize)) {
           const closest = customFont.sizes.reduce((a, b) =>
             Math.abs(b - curSize) < Math.abs(a - curSize) ? b : a
@@ -1271,10 +1272,10 @@ function ComponentFontSelector({
           onChange('fontSize', closest);
         }
       } else {
-        // Built-in font selected — clear fontResource, extract size
+        // Built-in font selected — set fontResource to builtin name, extract size
         const match = value.match(/^montserrat_(\d+)$/);
         if (match) {
-          onChange('fontResource', undefined);
+          onChange('fontResource', value);
           onChange('fontSize', parseInt(match[1]));
         }
       }
