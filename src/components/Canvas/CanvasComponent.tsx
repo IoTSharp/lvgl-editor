@@ -11,6 +11,8 @@ interface CanvasComponentProps {
   offsetY?: number;
   parentWidth?: number;
   parentHeight?: number;
+  parentLayout?: string; // 'flex' | 'grid' | 'none' — parent container's layout mode
+  parentFlexDirection?: string; // parent's flexDirection when parentLayout='flex'
   onClick: (e: React.MouseEvent, id: string) => void;
   onDragStart: (e: React.MouseEvent, id: string) => void;
   onResizeStart: (e: React.MouseEvent, id: string, handle: ResizeHandle) => void;
@@ -28,6 +30,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   component,
   parentWidth,
   parentHeight,
+  parentLayout,
+  parentFlexDirection,
   onClick,
   onDragStart,
   onResizeStart,
@@ -289,11 +293,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 
   const alignedPos = computeAlignedPosition();
 
+  // Determine if this component is inside a layout container (flex/grid)
+  const isInLayout = parentLayout === 'flex' || parentLayout === 'grid';
+
   // Build inline styles from component styles
   const componentStyle: React.CSSProperties = {
-    position: 'absolute',
-    left: alignedPos.left,
-    top: alignedPos.top,
+    position: isInLayout ? 'relative' : 'absolute',
+    ...(isInLayout ? {} : { left: alignedPos.left, top: alignedPos.top }),
     width: buildDimension(component.width, (component as unknown as Record<string, unknown>).widthMode as string | undefined),
     height: buildDimension(component.height, (component as unknown as Record<string, unknown>).heightMode as string | undefined),
     backgroundColor: background ? undefined : resolvedBgColor,
@@ -317,6 +323,21 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     mixBlendMode: buildMixBlendMode(),
     // Text decoration
     textDecoration: buildTextDecoration(),
+    // Flex child properties when inside a flex container
+    ...(parentLayout === 'flex' ? {
+      flexGrow: component.props.flexGrow ?? undefined,
+      flexShrink: component.props.flexShrink ?? undefined,
+      alignSelf: component.props.alignSelf && component.props.alignSelf !== 'auto' ? component.props.alignSelf : undefined,
+    } : {}),
+    // Grid child properties when inside a grid container
+    ...(parentLayout === 'grid' ? {
+      gridColumn: component.props.gridColumnSpan && component.props.gridColumnSpan > 1
+        ? `${(component.props.gridColumn ?? 0) + 1} / span ${component.props.gridColumnSpan}`
+        : (component.props.gridColumn !== undefined ? `${component.props.gridColumn + 1}` : undefined),
+      gridRow: component.props.gridRowSpan && component.props.gridRowSpan > 1
+        ? `${(component.props.gridRow ?? 0) + 1} / span ${component.props.gridRowSpan}`
+        : (component.props.gridRow !== undefined ? `${component.props.gridRow + 1}` : undefined),
+    } : {}),
   };
 
   // Render component content based on type
@@ -482,16 +503,45 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           </div>
         );
       
-      case 'obj':
+      case 'obj': {
+        // Build layout styles for the container based on props.layout
+        const layoutStyle: React.CSSProperties = {};
+        if (props.layout === 'flex') {
+          layoutStyle.display = 'flex';
+          layoutStyle.flexDirection = (props.flexDirection === 'column' ? 'column' : 'row') as React.CSSProperties['flexDirection'];
+          if (props.flexWrap === 'wrap' || props.flexWrap === true) {
+            layoutStyle.flexWrap = 'wrap';
+          } else if (props.flexWrap === 'wrap-reverse') {
+            layoutStyle.flexWrap = 'wrap-reverse';
+          }
+          if (props.justifyContent) layoutStyle.justifyContent = props.justifyContent;
+          if (props.alignItems) layoutStyle.alignItems = props.alignItems;
+          if (props.alignContent) layoutStyle.alignContent = props.alignContent;
+          // gap maps to lv_obj_set_style_pad_row/pad_column in codegen
+          if (props.gap !== undefined && props.gap > 0) {
+            layoutStyle.gap = `${props.gap}px`;
+          }
+        } else if (props.layout === 'grid') {
+          layoutStyle.display = 'grid';
+          // Parse grid template: "1fr 2fr 1fr" → CSS grid-template-columns
+          if (props.gridColumns) layoutStyle.gridTemplateColumns = props.gridColumns;
+          if (props.gridRows) layoutStyle.gridTemplateRows = props.gridRows;
+          if (props.gridColumnGap || props.gridRowGap) {
+            layoutStyle.gap = `${props.gridRowGap || 0}px ${props.gridColumnGap || 0}px`;
+          }
+        }
         return (
           <div className="lvgl-obj" style={{
             width: '100%',
             height: '100%',
             border: !defaultStyle.borderWidth ? '1px solid #e0e0e0' : undefined,
+            position: 'relative',
+            ...layoutStyle,
           }}>
             {children}
           </div>
         );
+      }
       
       case 'tabview':
         return (

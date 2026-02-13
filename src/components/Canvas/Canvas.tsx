@@ -387,7 +387,10 @@ const Canvas: React.FC = () => {
   const handleComponentClick = useCallback(
     (e: React.MouseEvent, componentId: string) => {
       e.stopPropagation();
-      selectComponent(componentId, e.ctrlKey || e.metaKey);
+      // Ctrl/Cmd+click multi-select is handled in mousedown (handleComponentDragStart).
+      // If we handle it again here, the toggle fires twice and cancels itself out.
+      if (e.ctrlKey || e.metaKey) return;
+      selectComponent(componentId, false);
     },
     [selectComponent]
   );
@@ -409,9 +412,16 @@ const Canvas: React.FC = () => {
         const x = (e.clientX - rect.left) / state.canvas.zoom;
         const y = (e.clientY - rect.top) / state.canvas.zoom;
 
-        // Select if not already selected
-        if (!state.selection.selectedIds.includes(componentId)) {
-          selectComponent(componentId);
+        // Handle selection on mousedown (Ctrl/Cmd multi-select lives here)
+        if (e.ctrlKey || e.metaKey) {
+          const wasSelected = state.selection.selectedIds.includes(componentId);
+          // Toggle: add if not selected, remove if already selected
+          selectComponent(componentId, true);
+          // Don't start drag if we just deselected the component
+          if (wasSelected) return;
+        } else if (!state.selection.selectedIds.includes(componentId)) {
+          // Single select only if not already selected (avoid clearing multi-select before drag)
+          selectComponent(componentId, false);
         }
 
         startDrag('move', {
@@ -684,6 +694,8 @@ const Canvas: React.FC = () => {
         offsetY={offsetY}
         parentWidth={pw}
         parentHeight={ph}
+        parentLayout={parentComp?.props?.layout || undefined}
+        parentFlexDirection={parentComp?.props?.flexDirection || undefined}
         onClick={handleComponentClick}
         onDragStart={handleComponentDragStart}
         onResizeStart={handleResizeStart}

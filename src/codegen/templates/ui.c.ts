@@ -735,10 +735,11 @@ function generatePropsCode(
           const track = crossMap[props.alignContent] || 'LV_FLEX_ALIGN_START';
           lines.push(`${indent}lv_obj_set_flex_align(${varName}, ${main}, ${cross}, ${track});`);
         }
-        if (props.gap) {
-          lines.push(`${indent}lv_obj_set_style_pad_row(${varName}, ${props.gap}, 0);`);
-          lines.push(`${indent}lv_obj_set_style_pad_column(${varName}, ${props.gap}, 0);`);
-        }
+        // Always explicitly set pad_row/pad_column for flex layout.
+        // Without this, LVGL falls back to pad_all which causes unexpected spacing.
+        const gapVal = props.gap || 0;
+        lines.push(`${indent}lv_obj_set_style_pad_row(${varName}, ${gapVal}, 0);`);
+        lines.push(`${indent}lv_obj_set_style_pad_column(${varName}, ${gapVal}, 0);`);
       } else if (props.layout === 'grid') {
         lines.push(`${indent}lv_obj_set_layout(${varName}, LV_LAYOUT_GRID);`);
         // Parse grid columns/rows descriptors
@@ -772,12 +773,10 @@ function generatePropsCode(
           const rowRef = props.gridRows ? `${varName}_row_dsc` : 'NULL';
           lines.push(`${indent}lv_obj_set_grid_dsc_array(${varName}, ${colRef}, ${rowRef});`);
         }
-        if (props.gridColumnGap) {
-          lines.push(`${indent}lv_obj_set_style_pad_column(${varName}, ${props.gridColumnGap}, 0);`);
-        }
-        if (props.gridRowGap) {
-          lines.push(`${indent}lv_obj_set_style_pad_row(${varName}, ${props.gridRowGap}, 0);`);
-        }
+        // Always explicitly set pad_column/pad_row for grid layout.
+        // Without this, LVGL falls back to pad_all which causes unexpected spacing.
+        lines.push(`${indent}lv_obj_set_style_pad_column(${varName}, ${props.gridColumnGap || 0}, 0);`);
+        lines.push(`${indent}lv_obj_set_style_pad_row(${varName}, ${props.gridRowGap || 0}, 0);`);
       }
       break;
   }
