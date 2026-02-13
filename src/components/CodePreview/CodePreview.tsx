@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditorStore } from '../../store/editorStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources/resourceStore';
+import { useAppStore } from '../../store/appStore';
+import { useProjectStore } from '../../store/projectStore';
 import { generateCode, getGeneratedFileNames } from '../../codegen/generator';
 import type { CodeGenOptions, GeneratedCode } from '../../codegen/types';
 import { toast } from '../Toast';
@@ -15,9 +17,19 @@ const CodePreview: React.FC = () => {
   const { currentTheme } = useThemeStore();
   const imageResources = useResourceStore((s) => s.images);
   const fontResources = useResourceStore((s) => s.fonts);
+  const currentProjectId = useAppStore((s) => s.currentProjectId);
+  const getProjectConfig = useProjectStore((s) => s.getProjectConfig);
   const [selectedFile, setSelectedFile] = useState<keyof GeneratedCode>('ui.c');
   const [isLoading, setIsLoading] = useState(true);
   const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('9');
+  const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!currentProjectId) return;
+    getProjectConfig(currentProjectId).then(cfg => {
+      if (cfg) setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+    });
+  }, [currentProjectId, getProjectConfig]);
 
   const fileNames = getGeneratedFileNames();
 
@@ -27,12 +39,12 @@ const CodePreview: React.FC = () => {
 
   const generatedCode = useMemo(() => {
     try {
-      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources);
+      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont);
     } catch {
       console.error('Code generation error');
       return null;
     }
-  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources]);
+  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont]);
 
   const currentCode = generatedCode?.[selectedFile] || '// 代码生成失败';
 

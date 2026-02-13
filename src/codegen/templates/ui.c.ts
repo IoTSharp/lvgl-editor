@@ -1169,7 +1169,7 @@ function collectUsedImages(pages: Page[], imageResources: ImageResource[]): Imag
 /**
  * Generate ui.c source file
  */
-export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = []): string {
+export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?: Theme, imageResources: ImageResource[] = [], defaultFont?: string): string {
   const lines: string[] = [];
   
   // Includes
@@ -1280,6 +1280,21 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
   const indent = getIndent(options);
   lines.push('void ui_init(void) {');
   
+  // Set default font if configured (non-builtin default)
+  if (defaultFont && defaultFont !== 'montserrat_14') {
+    if (options.generateComments) {
+      lines.push(`${indent}${generateComment('Set default font', options)}`);
+    }
+    const isBuiltin = defaultFont.match(/^montserrat_(\d+)$/);
+    if (isBuiltin) {
+      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &lv_font_${defaultFont}, 0);`);
+    } else {
+      // Custom font — assume first available size; variable name is cFontName_size
+      lines.push(`${indent}lv_obj_set_style_text_font(lv_screen_active(), &${defaultFont}, 0);`);
+    }
+    lines.push('');
+  }
+
   // Theme initialization
   if (theme) {
     if (options.generateComments) {

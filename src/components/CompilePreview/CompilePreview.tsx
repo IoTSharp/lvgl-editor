@@ -2,6 +2,8 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources';
+import { useAppStore } from '../../store/appStore';
+import { useProjectStore } from '../../store/projectStore';
 import { generateCode } from '../../codegen';
 import { compileCode, type CompileStatus, type WasmRuntime, type FontCompileRequest } from './compilerService';
 import { getCharsetRanges } from '../../resources/converters/fontConverter';
@@ -39,11 +41,23 @@ const CompilePreview: React.FC = () => {
   const canvas = useEditorStore((s) => s.canvas);
   const logicGraphs = useLogicEditorStore((s) => s.graphs);
   const { images: imageResources, fonts: fontResources } = useResourceStore();
+  const currentProjectId = useAppStore((s) => s.currentProjectId);
+  const getProjectConfig = useProjectStore((s) => s.getProjectConfig);
+
+  const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
+
+  // Load project default font
+  useEffect(() => {
+    if (!currentProjectId) return;
+    getProjectConfig(currentProjectId).then(cfg => {
+      if (cfg) setProjectDefaultFont(cfg.lvglConfig.defaultFont);
+    });
+  }, [currentProjectId, getProjectConfig]);
 
   // Generate C code from current editor state
   const generateCCode = useCallback(() => {
-    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources);
-  }, [pages, logicGraphs, imageResources, fontResources]);
+    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont);
+  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont]);
 
   // Render framebuffer to canvas
   const renderFramebuffer = useCallback((fbData: Uint8Array, width: number, height: number) => {

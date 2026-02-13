@@ -26,13 +26,14 @@ export function generateCode(
   logicGraphs: LogicGraph[] = [],
   theme?: Theme,
   imageResources: ImageResource[] = [],
-  fontResources: FontResource[] = []
+  fontResources: FontResource[] = [],
+  defaultFont?: string
 ): GeneratedCode {
   const opts: CodeGenOptions = { ...DEFAULT_CODEGEN_OPTIONS, ...options };
   
   return {
     'ui.h': generateUiHeader(pages, opts, fontResources),
-    'ui.c': generateUiSource(pages, opts, theme, imageResources),
+    'ui.c': generateUiSource(pages, opts, theme, imageResources, defaultFont),
     'ui_events.h': generateEventsHeader(pages, opts),
     'ui_events.c': generateEventsSource(pages, opts),
     'ui_logic.h': generateLogicHeader(opts, logicGraphs),
@@ -50,7 +51,8 @@ export function generateSingleFile(
   logicGraphs: LogicGraph[] = [],
   theme?: Theme,
   imageResources: ImageResource[] = [],
-  fontResources: FontResource[] = []
+  fontResources: FontResource[] = [],
+  defaultFont?: string
 ): string {
   const opts: CodeGenOptions = { ...DEFAULT_CODEGEN_OPTIONS, ...options };
   
@@ -58,7 +60,7 @@ export function generateSingleFile(
     case 'ui.h':
       return generateUiHeader(pages, opts, fontResources);
     case 'ui.c':
-      return generateUiSource(pages, opts, theme, imageResources);
+      return generateUiSource(pages, opts, theme, imageResources, defaultFont);
     case 'ui_events.h':
       return generateEventsHeader(pages, opts);
     case 'ui_events.c':
