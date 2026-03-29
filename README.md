@@ -105,6 +105,20 @@ npm run build
 npm run preview  # 预览构建结果
 ```
 
+如果需要单独编译一个**不包含**“🔨 编译运行”在线 WASM 编译预览功能的版本，可以在构建时关闭开关：
+
+```bash
+VITE_ENABLE_COMPILE_PREVIEW=false npm run build:web
+```
+
+部署到 GitHub Pages 时，可以额外指定仓库子路径：
+
+```bash
+VITE_BASE_PATH=/lvgl-editor/ VITE_ENABLE_COMPILE_PREVIEW=false npm run build:web
+```
+
+仓库内已提供 `.github/workflows/deploy-pages.yml`，默认会在推送到 `main` 时构建并发布到 GitHub Pages，同时关闭在线编译预览功能。
+
 ## ⌨️ 快捷键
 
 ### 基本操作
