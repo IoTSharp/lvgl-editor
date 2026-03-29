@@ -23,7 +23,7 @@ import CodePreview from './components/CodePreview';
 import { LogicEditor } from './components/LogicEditor';
 import PreviewPanel from './components/Preview';
 import WasmPreview from './components/WasmPreview';
-import CompilePreview from './components/CompilePreview';
+import CompilePreview from 'virtual:compile-preview';
 import { HierarchyPanel } from './components/HierarchyPanel';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ResourcePanel, useResourceStore } from './resources';
@@ -37,12 +37,13 @@ import {
 import { useEditorStore } from './store/editorStore';
 import { useAppStore, parseFontSize } from './store/appStore';
 import { useProjectStore } from './store/projectStore';
-import type { Page } from './types';
+import type { LvglComponent, Page } from './types';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { getComponentDefinition } from './utils/componentDefinitions';
 import './App.css';
 
 type TabType = 'design' | 'logic' | 'code' | 'preview';
+const isCompilePreviewEnabled = import.meta.env.VITE_ENABLE_COMPILE_PREVIEW !== 'false';
 
 const App: React.FC = () => {
   const { currentView, currentProjectId, showProjectSettings, openProject, goToProjectList, setShowProjectSettings, setLastSaveTime, setDefaultFontSize } = useAppStore();
@@ -472,33 +473,45 @@ const EditorView: React.FC<EditorViewProps> = ({
         );
 
       case 'preview':
+        {
+          const resolvedPreviewMode = !isCompilePreviewEnabled && previewMode === 'compile'
+            ? 'simple'
+            : previewMode;
+
         return (
           <div className="app-body full-panel">
             <div className="preview-sub-tabs">
               <button
-                className={`preview-sub-tab ${previewMode === 'simple' ? 'active' : ''}`}
+                className={`preview-sub-tab ${resolvedPreviewMode === 'simple' ? 'active' : ''}`}
                 onClick={() => setPreviewMode('simple')}
               >
                 📱 简易预览
               </button>
               <button
-                className={`preview-sub-tab ${previewMode === 'wasm' ? 'active' : ''}`}
+                className={`preview-sub-tab ${resolvedPreviewMode === 'wasm' ? 'active' : ''}`}
                 onClick={() => setPreviewMode('wasm')}
               >
                 🖥️ LVGL 预览
               </button>
-              <button
-                className={`preview-sub-tab ${previewMode === 'compile' ? 'active' : ''}`}
-                onClick={() => setPreviewMode('compile')}
-              >
-                🔨 编译运行
-              </button>
+              {isCompilePreviewEnabled && (
+                <button
+                  className={`preview-sub-tab ${resolvedPreviewMode === 'compile' ? 'active' : ''}`}
+                  onClick={() => setPreviewMode('compile')}
+                >
+                  🔨 编译运行
+                </button>
+              )}
             </div>
             <div className="preview-sub-content">
-              {previewMode === 'simple' ? <PreviewPanel /> : previewMode === 'wasm' ? <WasmPreview /> : <CompilePreview />}
+              {resolvedPreviewMode === 'simple'
+                ? <PreviewPanel />
+                : resolvedPreviewMode === 'wasm'
+                  ? <WasmPreview />
+                  : <CompilePreview />}
             </div>
           </div>
         );
+        }
 
       default:
         return null;
