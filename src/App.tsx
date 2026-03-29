@@ -148,6 +148,9 @@ const EditorView: React.FC<EditorViewProps> = ({
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('design');
   const [previewMode, setPreviewMode] = useState<'simple' | 'wasm' | 'compile'>('simple');
+  const resolvedPreviewMode = !isCompilePreviewEnabled && previewMode === 'compile'
+    ? 'simple'
+    : previewMode;
   const [projectName, setProjectName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -473,11 +476,6 @@ const EditorView: React.FC<EditorViewProps> = ({
         );
 
       case 'preview':
-        {
-          const resolvedPreviewMode = !isCompilePreviewEnabled && previewMode === 'compile'
-            ? 'simple'
-            : previewMode;
-
         return (
           <div className="app-body full-panel">
             <div className="preview-sub-tabs">
@@ -511,7 +509,6 @@ const EditorView: React.FC<EditorViewProps> = ({
             </div>
           </div>
         );
-        }
 
       default:
         return null;
