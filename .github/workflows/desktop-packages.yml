@@ -8,10 +8,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   package:
     name: Package (${{ matrix.os_name }})
-    if: ${{ secrets.OMNIHOST_PACKAGES_TOKEN != '' }}
     runs-on: ${{ matrix.runner }}
     env:
       OMNIHOST_PACKAGES_USERNAME: ${{ github.actor }}
@@ -34,30 +36,52 @@ jobs:
             archive_name: lvgl-editor-desktop-macos
 
     steps:
+      - name: Check package feed credentials
+        id: package-feed
+        shell: bash
+        run: |
+          if [ -z "${OMNIHOST_PACKAGES_TOKEN}" ]; then
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Explain skipped packaging
+        if: steps.package-feed.outputs.enabled != 'true'
+        run: echo "desktop packaging skipped: set OMNIHOST_PACKAGES_TOKEN to enable OmniHost package restore."
+
       - name: Checkout
+        if: steps.package-feed.outputs.enabled == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node.js
+        if: steps.package-feed.outputs.enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Setup .NET
+        if: steps.package-feed.outputs.enabled == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
       - name: Install web dependencies
+        if: steps.package-feed.outputs.enabled == 'true'
         run: npm ci
 
       - name: Build desktop web assets
+        if: steps.package-feed.outputs.enabled == 'true'
         run: npm run build:desktop-web
 
       - name: Publish desktop host
+        if: steps.package-feed.outputs.enabled == 'true'
         run: dotnet publish ./desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj -c Release -f ${{ matrix.framework }} -o ./artifacts/${{ matrix.archive_name }}
 
       - name: Create zip artifact
+        if: steps.package-feed.outputs.enabled == 'true'
         uses: thedoctor0/zip-release@0.7.6
         with:
           type: zip
@@ -66,17 +90,8 @@ jobs:
           path: ${{ matrix.archive_name }}
 
       - name: Upload packaged artifact
+        if: steps.package-feed.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.archive_name }}
           path: ./artifacts/${{ matrix.archive_name }}.zip
-
-  package-requirements:
-    name: Package prerequisites
-    if: ${{ secrets.OMNIHOST_PACKAGES_TOKEN == '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Explain skipped packaging
-        run: |
-          echo "desktop packaging skipped"
-          echo "Set the OMNIHOST_PACKAGES_TOKEN secret with read access to the maikebing GitHub Packages feed."
