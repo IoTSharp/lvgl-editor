@@ -20,6 +20,7 @@ import HelpPanel from './components/HelpPanel';
 import Toast, { useToast } from './components/Toast';
 import Modal, { modal } from './components/Modal';
 import CodePreview from './components/CodePreview';
+import DesktopMenuBar from './components/DesktopMenuBar/DesktopMenuBar';
 import { LogicEditor } from './components/LogicEditor';
 import PreviewPanel from './components/Preview';
 import WasmPreview from './components/WasmPreview';
@@ -518,70 +519,89 @@ const EditorView: React.FC<EditorViewProps> = ({
   return (
     <div className="app">
       <div className="app-header">
-        <div className="app-logo">
-          <button className="back-to-list-btn" onClick={handleBackToList} title="返回项目列表">
-            ◀
-          </button>
-          <span className="logo-icon">📐</span>
-          <span className="logo-text project-name-display">{projectName || 'LVGL UI Editor'}</span>
-        </div>
+        <DesktopMenuBar
+          projectName={projectName}
+          activeTab={activeTab}
+          showResourcePanel={showResourcePanel}
+          onNewProject={handleNewProjectClick}
+          onOpenProject={handleImportProject}
+          onSaveProject={handleSaveProject}
+          onExportProject={handleExportProject}
+          onImportProject={handleImportProject}
+          onUndo={() => useEditorStore.getState().undo()}
+          onRedo={() => useEditorStore.getState().redo()}
+          onSelectTab={setActiveTab}
+          onToggleResources={() => setShowResourcePanel(prev => !prev)}
+          onOpenSettings={() => setShowProjectSettings(true)}
+          onOpenHelp={() => setShowHelpPanel(true)}
+        />
 
-        {/* Main tabs */}
-        <div className="app-tabs">
-          <button
-            className={`tab-btn ${activeTab === 'design' ? 'active' : ''}`}
-            onClick={() => setActiveTab('design')}
-          >
-            🎨 设计
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'logic' ? 'active' : ''}`}
-            onClick={() => setActiveTab('logic')}
-          >
-            🔗 逻辑
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'code' ? 'active' : ''}`}
-            onClick={() => setActiveTab('code')}
-          >
-            💻 代码
-          </button>
-          <button
-            className={`tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('preview')}
-          >
-            📱 预览
-          </button>
-        </div>
+        <div className="app-command-bar">
+          <div className="app-logo">
+            <button className="back-to-list-btn" onClick={handleBackToList} title="返回项目列表">
+              ◀
+            </button>
+            <span className="logo-icon">📐</span>
+            <span className="logo-text project-name-display">{projectName || 'LVGL UI Editor'}</span>
+          </div>
 
-        <div className="app-toolbar">
-          <ToolbarButton icon="💾" label="保存" onClick={handleSaveProject} shortcut="Ctrl+S" />
-          <ToolbarButton icon="📤" label="导出" onClick={handleExportProject} />
-          <ToolbarButton icon="📥" label="导入" onClick={handleImportProject} />
-          <div className="toolbar-divider" />
-          <ToolbarButton icon="↩️" label="撤销" onClick={() => useEditorStore.getState().undo()} shortcut="Ctrl+Z" />
-          <ToolbarButton icon="↪️" label="重做" onClick={() => useEditorStore.getState().redo()} shortcut="Ctrl+Y" />
-          <div className="toolbar-divider" />
-          <ToolbarButton
-            icon="📦"
-            label="资源"
-            onClick={() => setShowResourcePanel(!showResourcePanel)}
-            active={showResourcePanel}
-          />
-          <ToolbarButton
-            icon="⚙️"
-            label="设置"
-            onClick={() => setShowProjectSettings(true)}
-          />
-          <div className="toolbar-divider" />
-          <ThemeSelector />
-          <div className="toolbar-divider" />
-          <ToolbarButton
-            icon="❓"
-            label="帮助"
-            onClick={() => setShowHelpPanel(true)}
-            shortcut="F1"
-          />
+          {/* Main tabs */}
+          <div className="app-tabs">
+            <button
+              className={`tab-btn ${activeTab === 'design' ? 'active' : ''}`}
+              onClick={() => setActiveTab('design')}
+            >
+              🎨 设计
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'logic' ? 'active' : ''}`}
+              onClick={() => setActiveTab('logic')}
+            >
+              🔗 逻辑
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'code' ? 'active' : ''}`}
+              onClick={() => setActiveTab('code')}
+            >
+              💻 代码
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preview')}
+            >
+              📱 预览
+            </button>
+          </div>
+
+          <div className="app-toolbar">
+            <ToolbarButton icon="💾" label="保存" onClick={handleSaveProject} shortcut="Ctrl+S" />
+            <ToolbarButton icon="📤" label="导出" onClick={handleExportProject} />
+            <ToolbarButton icon="📥" label="导入" onClick={handleImportProject} />
+            <div className="toolbar-divider" />
+            <ToolbarButton icon="↩️" label="撤销" onClick={() => useEditorStore.getState().undo()} shortcut="Ctrl+Z" />
+            <ToolbarButton icon="↪️" label="重做" onClick={() => useEditorStore.getState().redo()} shortcut="Ctrl+Y" />
+            <div className="toolbar-divider" />
+            <ToolbarButton
+              icon="📦"
+              label="资源"
+              onClick={() => setShowResourcePanel(!showResourcePanel)}
+              active={showResourcePanel}
+            />
+            <ToolbarButton
+              icon="⚙️"
+              label="设置"
+              onClick={() => setShowProjectSettings(true)}
+            />
+            <div className="toolbar-divider" />
+            <ThemeSelector />
+            <div className="toolbar-divider" />
+            <ToolbarButton
+              icon="❓"
+              label="帮助"
+              onClick={() => setShowHelpPanel(true)}
+              shortcut="F1"
+            />
+          </div>
         </div>
         <input
           ref={fileInputRef}

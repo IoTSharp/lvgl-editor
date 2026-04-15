@@ -1,0 +1,113 @@
+.desktop-menu-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+  padding: 0 12px;
+  background: #181818;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.desktop-menu-list {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.desktop-menu-group {
+  position: relative;
+}
+
+.desktop-menu-trigger {
+  border: none;
+  background: transparent;
+  color: #cccccc;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.desktop-menu-trigger:hover,
+.desktop-menu-trigger.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.desktop-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  padding: 6px;
+  background: #252526;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+}
+
+.desktop-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: none;
+  background: transparent;
+  color: #cccccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.desktop-menu-item:hover {
+  background: rgba(55, 148, 255, 0.18);
+  color: #ffffff;
+}
+
+.desktop-menu-item.active .desktop-menu-item-label {
+  color: #6bb3ff;
+}
+
+.desktop-menu-item-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-menu-shortcut {
+  color: #8f8f8f;
+  font-size: 11px;
+}
+
+.desktop-menu-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.desktop-menu-project {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #999999;
+  font-size: 12px;
+}
+
+.desktop-menu-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(55, 148, 255, 0.18);
+  color: #6bb3ff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

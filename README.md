@@ -119,6 +119,31 @@ VITE_BASE_PATH=/lvgl-editor/ VITE_ENABLE_COMPILE_PREVIEW=false npm run build:web
 
 仓库内已提供 `.github/workflows/deploy-pages.yml`，默认会在推送到 `main` 时构建并发布到 GitHub Pages，同时关闭在线编译预览功能。
 
+### 桌面版（OmniHost）
+
+项目现已增加 `desktop/LvglEditor.Desktop`，使用 [OmniHost](https://github.com/maikebing/OmniHost) 将现有 Vite 前端包装为桌面应用。
+
+```bash
+# 先构建前端静态资源
+npm ci
+npm run build:desktop-web
+
+# Linux
+dotnet publish ./desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj -c Release -f net8.0
+
+# Windows
+dotnet publish ./desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj -c Release -f net8.0-windows
+```
+
+桌面壳默认启用 OmniHost 的 VSCode 风格内置标题栏，提供最大化、最小化和关闭按钮；编辑器内部额外增加了 VSCode 风格菜单栏（文件 / 编辑 / 视图 / 帮助）。
+
+OmniHost 依赖当前通过 `maikebing` 的 GitHub Packages 分发，因此在本地或 CI 中构建桌面版前，需要设置：
+
+- `OMNIHOST_PACKAGES_USERNAME`
+- `OMNIHOST_PACKAGES_TOKEN`（需要具备读取 `maikebing/OmniHost` GitHub Packages 的权限）
+
+仓库内已新增 `.github/workflows/desktop-packages.yml`，在配置好 `OMNIHOST_PACKAGES_TOKEN` secret 后，会在 Linux、macOS、Windows 三个平台分别构建并上传压缩包产物。由于 OmniHost 当前公开版本尚未提供 macOS 原生运行时，macOS 产物目前用于保持统一的构建与分发流程，运行时会给出平台限制提示。
+
 ## ⌨️ 快捷键
 
 ### 基本操作

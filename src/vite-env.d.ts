@@ -6,3 +6,19 @@ declare module 'virtual:compile-preview' {
   const CompilePreview: FC;
   export default CompilePreview;
 }
+
+interface OmniHostWindowApi {
+  minimize: () => void;
+  maximize: () => void;
+  close: () => void;
+}
+
+interface OmniHostBridge {
+  window: OmniHostWindowApi;
+  invoke?: (handler: string, payload?: unknown) => Promise<unknown>;
+  on?: (event: string, handler: (payload: unknown) => void) => void;
+}
+
+interface Window {
+  omni?: OmniHostBridge;
+}

@@ -25,13 +25,21 @@ body {
 
 /* Header */
 .app-header {
-  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
   background: #1a1a2e;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.app-command-bar {
+  min-height: 48px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   gap: 16px;
-  flex-shrink: 0;
 }
 
 .app-logo {

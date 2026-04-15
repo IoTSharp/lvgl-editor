@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "dgSpecHash": "66fO9ALc1ms=",
+  "success": false,
+  "projectFilePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+  "expectedPackageFiles": [
+    "/home/runner/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.25/microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.25/microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "warningLevel": 1,
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    },
+    {
+      "code": "NU1301",
+      "level": "Error",
+      "message": "Failed to retrieve information about 'OmniHost' from remote source 'https://nuget.pkg.github.com/maikebing/download/omnihost/index.json'.\n  Response status code does not indicate success: 403 (Forbidden).",
+      "projectPath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "filePath": "/home/runner/work/lvgl-editor/lvgl-editor/desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj",
+      "targetGraphs": []
+    }
+  ]
+}
