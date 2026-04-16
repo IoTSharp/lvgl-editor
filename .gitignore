@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 wasm/build/
+bin/
+obj/
+/.vs
+/desktop/.vs/LvglEditor.Desktop
