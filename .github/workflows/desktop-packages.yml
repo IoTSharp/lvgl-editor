@@ -78,7 +78,7 @@ jobs:
 
       - name: Publish desktop host
         if: steps.package-feed.outputs.enabled == 'true'
-        run: dotnet publish ./desktop/LvglEditor.Desktop/LvglEditor.Desktop.csproj -c Release -f ${{ matrix.framework }} -o ./artifacts/${{ matrix.archive_name }}
+        run: dotnet publish ./desktop/LvglEditor.Desktop.csproj -c Release -f ${{ matrix.framework }} -o ./artifacts/${{ matrix.archive_name }}
 
       - name: Create zip artifact
         if: steps.package-feed.outputs.enabled == 'true'
