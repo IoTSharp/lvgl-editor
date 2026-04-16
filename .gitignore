@@ -25,3 +25,5 @@ dist-ssr
 wasm/build/
 bin/
 obj/
+/.vs
+/desktop/.vs/LvglEditor.Desktop
