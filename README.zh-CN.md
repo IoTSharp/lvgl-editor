@@ -2,7 +2,7 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [Русский](README.ru.md)
 
-<!-- docs-sync: family=readme revision=2026-10-11.5 -->
+<!-- docs-sync: family=readme revision=2026-10-11.6 -->
 <!-- output-status: c-lvgl=partial;lispbm-vesc=partial;basic-iotembedded=partial;device=unverified -->
 
 可视化 LVGL 界面编辑器，共用工程模型，维护 **C/LVGL**、**LispBM/VESC**、**BASIC/IoTEmbedded** 三种输出。编辑器负责设计、生成、资源转换、目标校验和导出打包；HmiCraft 等宿主选择目标/设备/API profile 并消费产物。
@@ -45,6 +45,6 @@ C/LVGL 的 GEN-13 已确认集成 profile：`cIntegrationProfile` 默认 `generi
 
 ### 2026-10-11 本地验证快照
 
-Vitest **509项通过/48项C编译测试跳过**；实际 `npm run build`（TypeScript `tsc -b` 加 Vite）退出 **0**。含两控件、内置事件和各语言独立代码slot的小样例，C/LispBM/BASIC三目标ZIP与工程JSON导出通过；英中俄无reload切换、BASIC保存/reload恢复通过。九个ZIP的路径、字节长度和SHA256独立检查均通过。PR #3 于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）正式合并；修订head为 `a397fa8389c481b44df47ebef37c6c555b1ef56f`，merge提交为 `9e458f8b7b7eda8898c4633535b68f73679af02e`，已fetch的origin/main与已审查树一致。GEN-11为done-remote，仅记录远端合并回执。首次合并后的Pages CI run `38076733467` 失败：506通过、3个包哈希案例失败、48项C编译跳过，原因是Node20跨realm ArrayBuffer处理；修复及CI/部署复核待完成，本地509通过回执仍保留。GEN-09和GEN-12保留partial，小样例源码包不替代资源广样例、完整UI覆盖、目标runtime与硬件证明。
+Vitest **509项通过/48项C编译测试跳过**；实际 `npm run build`（TypeScript `tsc -b` 加 Vite）退出 **0**。含两控件、内置事件和各语言独立代码slot的小样例，C/LispBM/BASIC三目标ZIP与工程JSON导出通过；英中俄无reload切换、BASIC保存/reload恢复通过。九个ZIP的路径、字节长度和SHA256独立检查均通过。PR #3 于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）正式合并；修订head为 `a397fa8389c481b44df47ebef37c6c555b1ef56f`，merge提交为 `9e458f8b7b7eda8898c4633535b68f73679af02e`，已fetch的origin/main与已审查树一致。GEN-11为done-remote，仅记录远端合并回执。首次合并后的Pages CI run `38076733467` 失败：506通过、3个包哈希案例失败、48项C编译跳过，原因是Node20跨realm ArrayBuffer处理；包哈希补修已推送为 `d325fce517a0fd3a4939ebe8e1b325125054f139`；Node20.20.2 Pages run `38077281534` 已completed/success：509通过/48项C编译跳过、revision .5文档同步、TypeScript/Vite构建及Pages部署均成功。部署完成于 `2026-10-10T18:49:42Z`（北京时间2026-10-11 02:49:42）。该CI回执对应此SHA，后续纯文档提交另行验证；首轮失败及本地回执保留。GEN-09和GEN-12保留partial，小样例源码包不替代资源广样例、完整UI覆盖、目标runtime与硬件证明。
 
 见[验证报告](docs/verification-pr3-2026-10-11.md)和[共同样例](samples/three-targets.lvgl.json)。固定LVGL/.ioc/BSP构建、LispBM桥接/脚本执行、IoTEmbedded BASIC消费、设备传输与工业验收仍未完成；历史失败保留。

@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) · [简体中文](ROADMAP.zh-CN.md)
 
-<!-- docs-sync: family=roadmap revision=2026-10-11.5 -->
+<!-- docs-sync: family=roadmap revision=2026-10-11.6 -->
 
 更新：2026-10-11。用户已确认：LvglEditor 同时负责可视化设计和 C/LVGL、LispBM/VESC、BASIC/IoTEmbedded 三种输出。宿主应用（例如 HmiCraft）在初始化编辑器时指定输出目标，消费编辑器生成的产物。PR #3 已修订并正式合并，保留 C/LVGL 并增加 BASIC。首批实施基础 BASIC 布局/事件生成、包合同和新建/设置目标切换；实现、验证与远端合并结果分别记录。后续设备链路尚未验收。
 
@@ -68,7 +68,7 @@ const editorOptions = {
 | GEN-08 | LvglEditor 预览适配 | 目标对应的预览合同 | planned | Canvas视觉、C/WASM运行、脚本runtime和实板区分；缺目标runtime时只报告已验证层；事件/资源使用目标相符的产物；GEN-03/04/05 |
 | GEN-09 | LvglEditor 验证 | 三目标共同样例与能力矩阵 | partial | 509通过/48 C编译跳过；两控件/内置事件/各语言slot样例三目标ZIP/JSON、三语切换/BASIC恢复及九ZIP元数据检查通过；资源广样例、目标runtime/事件轨迹和实板未验，见verification-pr3-2026-10-11；GEN-03/04/05/08 |
 | GEN-10 | LvglEditor 宿主接口 | 可嵌入入口与 HmiCraft 初始化合同 | partial | 模拟宿主可配置任一已实现目标并取得产物/诊断；HmiCraft 提供 BASIC profile 和接收回执；编辑器独立运行无需导入 HmiCraft 源码；GEN-01/02/06 |
-| GEN-11 | LvglEditor 合并维护 | PR #3 修订、来源和正式合并回执 | done-remote | 修订head `a397fa8389c481b44df47ebef37c6c555b1ef56f`；GitHub于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）merged/closed，merge `9e458f8b7b7eda8898c4633535b68f73679af02e`；fetch的origin/main与审查树一致。仅完成合并回执；首轮Pages CI失败待修复/复核；GEN-00/01/03/04/05 |
+| GEN-11 | LvglEditor 合并维护 | PR #3 修订、来源和正式合并回执 | done-remote | 修订head `a397fa8389c481b44df47ebef37c6c555b1ef56f`；GitHub于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）merged/closed，merge `9e458f8b7b7eda8898c4633535b68f73679af02e`；fetch的origin/main与审查树一致。仅完成合并回执；首轮Pages CI失败保留；补修d325fce与Node20.20.2 run38077281534源码测试/构建/Pages部署成功；GEN-00/01/03/04/05 |
 | GEN-12 | LvglEditor 文档/UI | 三语门面、双语路线与三语界面 | partial | README 英/中/俄、ROADMAP 英/中共享 revision 和能力边界；脚本检查 ID/状态/链接；UI 默认英文，中文/俄语切换、持久化、目标新建/设置/诊断/导出文案另行验证；文档通过不代表 UI 全覆盖 |
 | GEN-13 | C 后端/profile | STM32CubeMX/CubeIDE HAL 与 RT-Thread BSP/SCons profile | partial | 统一 C backend，保存/重开/导出 `cIntegrationProfile`：默认 `generic`、`stm32cube-hal`、`rt-thread-scons`；STM32 Core/Src/hmi/Core/Inc/hmi、RT applications/hmi+SConscript 和 integration-contract.json。profile持久化/目录/导出合同已实现，本地检查及三个Cprofile浏览器ZIP下载通过；具体 .ioc/BSP/工具链构建与板卡未验；GEN-01/02/03/06/09 |
 
@@ -94,6 +94,6 @@ const editorOptions = {
 
 ## 2026-10-11 本地验证快照
 
-Vitest **509项通过/48项C编译测试跳过**；实际 `npm run build`（TypeScript `tsc -b` 加 Vite）退出 **0**。含两控件、内置事件和各语言独立代码slot的小样例，C/LispBM/BASIC三目标ZIP与工程JSON导出通过；英中俄无reload切换、BASIC保存/reload恢复通过。九个ZIP的路径、字节长度和SHA256独立检查均通过。PR #3 于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）正式合并；修订head为 `a397fa8389c481b44df47ebef37c6c555b1ef56f`，merge提交为 `9e458f8b7b7eda8898c4633535b68f73679af02e`，已fetch的origin/main与已审查树一致。GEN-11为done-remote，仅记录远端合并回执。首次合并后的Pages CI run `38076733467` 失败：506通过、3个包哈希案例失败、48项C编译跳过，原因是Node20跨realm ArrayBuffer处理；修复及CI/部署复核待完成，本地509通过回执仍保留。GEN-09和GEN-12保留partial，小样例源码包不替代资源广样例、完整UI覆盖、目标runtime与硬件证明。
+Vitest **509项通过/48项C编译测试跳过**；实际 `npm run build`（TypeScript `tsc -b` 加 Vite）退出 **0**。含两控件、内置事件和各语言独立代码slot的小样例，C/LispBM/BASIC三目标ZIP与工程JSON导出通过；英中俄无reload切换、BASIC保存/reload恢复通过。九个ZIP的路径、字节长度和SHA256独立检查均通过。PR #3 于 `2026-10-10T18:40:28Z`（北京时间2026-10-11 02:40:28）正式合并；修订head为 `a397fa8389c481b44df47ebef37c6c555b1ef56f`，merge提交为 `9e458f8b7b7eda8898c4633535b68f73679af02e`，已fetch的origin/main与已审查树一致。GEN-11为done-remote，仅记录远端合并回执。首次合并后的Pages CI run `38076733467` 失败：506通过、3个包哈希案例失败、48项C编译跳过，原因是Node20跨realm ArrayBuffer处理；包哈希补修已推送为 `d325fce517a0fd3a4939ebe8e1b325125054f139`；Node20.20.2 Pages run `38077281534` 已completed/success：509通过/48项C编译跳过、revision .5文档同步、TypeScript/Vite构建及Pages部署均成功。部署完成于 `2026-10-10T18:49:42Z`（北京时间2026-10-11 02:49:42）。该CI回执对应此SHA，后续纯文档提交另行验证；首轮失败及本地回执保留。GEN-09和GEN-12保留partial，小样例源码包不替代资源广样例、完整UI覆盖、目标runtime与硬件证明。
 
 见[验证报告](docs/verification-pr3-2026-10-11.md)和[共同样例](samples/three-targets.lvgl.json)。固定LVGL/.ioc/BSP构建、LispBM桥接/脚本执行、IoTEmbedded BASIC消费、设备传输与工业验收仍未完成；历史失败保留。
