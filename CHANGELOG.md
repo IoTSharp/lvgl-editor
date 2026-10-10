@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Started the reviewed PR #3 LispBM/VESC integration while retaining the main C generator, tests and compiler services. Other canvas changes remain outside this increment; local integration and the authorized formal GitHub merge have separate receipts.
 - Added initial shared output/target source, basic BASIC layout/events and a draft package/API/source-map contract. All target bundles report `deployable=false`; HmiCraft runtime, target compilation/interpreter/bridge and hardware acceptance are separate remaining gates.
-- Defined standalone C default, HmiCraft device BASIC default, create/settings target selection and per-language user-code preservation. Unsupported capabilities block export with diagnostics. Local tests/types/build and small-sample browser Lisp/BASIC/locale checks passed; remote merge receipt remains pending.
-- Replaced the facade with English and added Chinese/Russian README plus English/Chinese roadmaps and AGENTS constraints; revision `2026-10-11.4`, GEN-11/12 and the bounded documentation check. Removed unverified production/license badges and corrected outdated “no tests”/LVGL-only assertions. Original changelog history remains below.
+- Defined standalone C default, HmiCraft device BASIC default, create/settings target selection and per-language user-code preservation. Unsupported capabilities block export with diagnostics. Local tests/types/build and small-sample browser Lisp/BASIC/locale checks passed; the revised PR was formally merged; the first merged Pages CI failed and its recheck remains pending.
+- Replaced the facade with English and added Chinese/Russian README plus English/Chinese roadmaps and AGENTS constraints; revision `2026-10-11.5`, GEN-11/12 and the bounded documentation check. Removed unverified production/license badges and corrected outdated “no tests”/LVGL-only assertions. Original changelog history remains below.
 - Required English-default UI and Chinese/Russian switching; translation source/coverage and browser acceptance are checked independently of README translation. Retained the historical 2026-10-10 type/font failures and static-bundle result.
 
 ### Added
@@ -164,7 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 2026-10-11 C integration profiles
 
-The original C generator is normalized behind the common backend. GEN-13 tracks `generic`, `stm32cube-hal` (STM32CubeMX/CubeIDE HAL) and `rt-thread-scons` (standard BSP/SCons), persistence/export directories and `integration-contract.json`. Concrete .ioc/BSP builds and boards remain unverified; BASIC source maps have initial locations while C/Lisp maps are empty. Documentation revision is `2026-10-11.4`, with GEN-00 through GEN-13.
+The original C generator is normalized behind the common backend. GEN-13 tracks `generic`, `stm32cube-hal` (STM32CubeMX/CubeIDE HAL) and `rt-thread-scons` (standard BSP/SCons), persistence/export directories and `integration-contract.json`. Concrete .ioc/BSP builds and boards remain unverified; BASIC source maps have initial locations while C/Lisp maps are empty. Documentation revision is `2026-10-11.5`, with GEN-00 through GEN-13.
 
 ### Intermediate local validation — 2026-10-11
 
@@ -172,8 +172,10 @@ The original C generator is normalized behind the common backend. GEN-13 tracks 
 - C generic/STM32 HAL/RT-Thread real-browser ZIP downloads passed. Unified C backend and profile persistence/directory contracts are implemented. Lisp/BASIC and three-locale browser journeys remain under verification; remote PR merge pending.
 - Fixed LVGL/.ioc/BSP compilation, interpreters/bridges, runtime consumption and hardware are still separate gates; all generated bundles remain deployable=false. Original failures are retained.
 
-### Final local validation — 2026-10-11
+### Final local validation and remote merge — 2026-10-11
 
 - 509 Vitest cases passed; 48 C compilation cases skipped. Actual npm run build (tsc -b + Vite) exited 0.
-- Three-target ZIP/JSON exports passed for the shared two-control/event/three-language-slot sample; language switching without reload and BASIC save/reload recovery passed. Six ZIPs independently passed path/bytes/SHA256 checks.
-- See [verification](docs/verification-pr3-2026-10-11.md) and [sample](samples/three-targets.lvgl.json). GEN-09 remains partial for broader resources/runtimes/boards; GEN-11 remains partial pending GitHub merge readback. Historical/intermediate failures and 495-case receipts remain retained.
+- Three-target ZIP/JSON exports passed for the shared two-control/event/three-language-slot sample; language switching without reload and BASIC save/reload recovery passed. Nine ZIPs independently passed path/bytes/SHA256 checks.
+- See [verification](docs/verification-pr3-2026-10-11.md) and [sample](samples/three-targets.lvgl.json). GEN-09 remains partial for broader resources/runtimes/boards; GEN-11 is done-remote for the verified GitHub merge receipt; GEN-12 remains partial. Historical/intermediate failures and 495-case receipts remain retained.
+
+- PR #3 was merged at `2026-10-10T18:40:28Z` (2026-10-11 02:40:28 Asia/Shanghai): revised head `a397fa8389c481b44df47ebef37c6c555b1ef56f`, merge commit `9e458f8b7b7eda8898c4633535b68f73679af02e`; fetched origin/main matched the reviewed tree. GEN-11 is done-remote for the merge receipt only. The first merged Pages CI run `38076733467` failed: 506 passed, 3 package-hash cases failed and 48 C compilation cases skipped, due to Node 20 cross-realm ArrayBuffer handling. The fix and CI/deployment recheck are pending; this failure does not change the recorded local 509-pass result.

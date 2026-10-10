@@ -2,12 +2,12 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [Русский](README.ru.md)
 
-<!-- docs-sync: family=readme revision=2026-10-11.4 -->
+<!-- docs-sync: family=readme revision=2026-10-11.5 -->
 <!-- output-status: c-lvgl=partial;lispbm-vesc=partial;basic-iotembedded=partial;device=unverified -->
 
 A visual LVGL interface editor with one project model and three output targets: **C/LVGL**, **LispBM/VESC**, and **BASIC/IoTEmbedded**. The editor owns design, generation, resource conversion, target validation and export packaging. Hosts such as HmiCraft choose a target/device/API profile and consume the result.
 
-PR [#3](https://github.com/IoTSharp/lvgl-editor/pull/3) contributes the LispBM/VESC route. Its integration preserves the C workflow and tests and adds BASIC. Work is in progress; source integration, generation, compilation, script execution and real devices have separate acceptance criteria. See the [English roadmap](ROADMAP.md), [Chinese roadmap](ROADMAP.zh-CN.md) and [project constraints](AGENTS.md).
+PR [#3](https://github.com/IoTSharp/lvgl-editor/pull/3) contributes the LispBM/VESC route. Its integration preserves the C workflow and tests and adds BASIC. The revised PR was formally merged on 2026-10-11 (Asia/Shanghai); source integration, generation, compilation, script execution and real devices retain separate acceptance criteria. See the [English roadmap](ROADMAP.md), [Chinese roadmap](ROADMAP.zh-CN.md) and [project constraints](AGENTS.md).
 
 ## Output targets
 
@@ -45,6 +45,6 @@ C/LVGL now has confirmed integration profiles under GEN-13: `cIntegrationProfile
 
 ### Local verification snapshot — 2026-10-11
 
-Vitest: **509 passed / 48 C compilation tests skipped**. The actual `npm run build` (TypeScript `tsc -b` plus Vite) exited **0**. Browser ZIP and project JSON exports passed for C, LispBM and BASIC on a two-control sample with a built-in event and independent language code slots. English/Chinese/Russian switching without reload and BASIC save/reload recovery passed. All six ZIPs passed independent path, byte-length and SHA256 checks. Formal remote PR merge is still pending; GEN-09 remains partial because this is small-sample source-package evidence, not broad resources, target runtime or hardware acceptance.
+Vitest: **509 passed / 48 C compilation tests skipped**. The actual `npm run build` (TypeScript `tsc -b` plus Vite) exited **0**. Browser ZIP and project JSON exports passed for C, LispBM and BASIC on a two-control sample with a built-in event and independent language code slots. English/Chinese/Russian switching without reload and BASIC save/reload recovery passed. All nine ZIPs passed independent path, byte-length and SHA256 checks. PR #3 was merged at `2026-10-10T18:40:28Z` (2026-10-11 02:40:28 Asia/Shanghai): revised head `a397fa8389c481b44df47ebef37c6c555b1ef56f`, merge commit `9e458f8b7b7eda8898c4633535b68f73679af02e`; fetched origin/main matched the reviewed tree. GEN-11 is done-remote for the merge receipt only. The first merged Pages CI run `38076733467` failed: 506 passed, 3 package-hash cases failed and 48 C compilation cases skipped, due to Node 20 cross-realm ArrayBuffer handling. The fix and CI/deployment recheck are pending; this failure does not change the recorded local 509-pass result. GEN-09 and GEN-12 remain partial; these checks cover a small source-package sample, with broad resources, complete UI coverage, target runtime and hardware still unverified.
 
 See the [verification report](docs/verification-pr3-2026-10-11.md) and [shared sample](samples/three-targets.lvgl.json). Pinned LVGL/.ioc/BSP compilation, LispBM bridge/script execution, IoTEmbedded BASIC consumption, device transfer and industrial acceptance remain unverified. Historical failures are retained.

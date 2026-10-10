@@ -217,7 +217,9 @@ export async function generateTargetProject(input: OutputInput): Promise<OutputB
   for (const [path, content] of Object.entries(bundle.files)) {
     if (!/^[\w./-]+$/.test(path) || path.startsWith('/') || path.split('/').includes('..')) throw new Error(`Unsafe artifact path: ${path}`);
     const bytes = typeof content === 'string' ? new TextEncoder().encode(content) : content;
-    const hash = await crypto.subtle.digest('SHA-256', Uint8Array.from(bytes).buffer);
+    // Pass a copied view: Node 20 WebCrypto accepts cross-realm typed arrays,
+    // while a bare ArrayBuffer from the DOM realm can fail its brand check.
+    const hash = await crypto.subtle.digest('SHA-256', Uint8Array.from(bytes));
     bundle.manifest.files.push({ path, bytes: bytes.length, sha256: Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join(''), owner: path.startsWith('user/') ? 'user' : /(^|\/)(assets|font)\//.test(path) ? 'resource' : 'generated' });
   }
   bundle.files['manifest.json'] = JSON.stringify(bundle.manifest, null, 2) + '\n';

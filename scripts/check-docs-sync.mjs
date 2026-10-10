@@ -39,7 +39,7 @@ function taskStates(text, name) {
     const id = columns[1];
     const state = columns[4];
     if (tasks.has(id)) throw new Error(`${name}: duplicate ${id}`);
-    if (!['planned', 'partial', 'done-doc', 'done-local'].includes(state)) {
+    if (!['planned', 'partial', 'done-doc', 'done-local', 'done-remote'].includes(state)) {
       throw new Error(`${name}: invalid state ${state} for ${id}`);
     }
     tasks.set(id, state);

@@ -1,6 +1,14 @@
 # PR #3 revision verification — 2026-10-11
 
-The reviewed implementation keeps the main C/LVGL generator and original tests, adopts PR #3's LispBM backend and required dependencies, and introduces BASIC layout/events and source packages. Original PR head: `3647ce025bc65cd14c968c1d329dc40d593f7e51`; main baseline: `0d0d62f655442dd5624a00390b7652222a7b3fc8`. Unreviewed canvas/resource rewrites were deferred. Formal remote merge is recorded separately after GitHub readback.
+The reviewed implementation keeps the main C/LVGL generator and original tests, adopts PR #3's LispBM backend and required dependencies, and introduces BASIC layout/events and source packages. Original PR head: `3647ce025bc65cd14c968c1d329dc40d593f7e51`; main baseline: `0d0d62f655442dd5624a00390b7652222a7b3fc8`. Unreviewed canvas/resource rewrites were deferred.
+
+## Remote merge receipt
+
+GitHub [PR #3](https://github.com/IoTSharp/lvgl-editor/pull/3) was revised and formally merged. API readback reports `merged=true`, `state=closed`, reviewed head `a397fa8389c481b44df47ebef37c6c555b1ef56f` and merge commit `9e458f8b7b7eda8898c4633535b68f73679af02e`. Merge time: 2026-10-10 18:40:28 UTC / 2026-10-11 02:40:28 Asia/Shanghai.
+
+The revised branch was pushed normally to the original contributor branch with maintainer edits enabled; no force push was used. The original PR head remains in ancestry, while a lineage reconciliation merge retains the independently reviewed implementation tree. A subsequent fetch confirmed `origin/main` at the merge commit and its tree identical to the reviewed tree. Receipts: `pr3-push-revised-head-20261011`, `pr3-formal-merge-readback-20261011`, and `pr3-fetch-merged-main-20261011` under the integration host's process evidence directory. GitHub Pages CI and the parent repository's final pinned revision are recorded separately in HmiCraft's integration report. This receipt establishes source integration, not a device-ready release.
+
+The first merge-triggered Pages run `38076733467` failed three hash/package tests under GitHub's Linux/Node 20 environment (506 passed, 3 failed, 48 skipped), before build/deployment. A follow-up passes a copied `Uint8Array` view into WebCrypto instead of its cross-realm bare `ArrayBuffer`; real SHA256, byte counts and test assertions remain intact. The 35 existing output/profile contracts and TypeScript passed locally after this fix. The original CI failure/log is retained; the final Node 20 run is recorded in HmiCraft's integration report after readback.
 
 ## Final local checks
 
