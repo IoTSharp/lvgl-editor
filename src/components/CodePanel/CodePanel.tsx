@@ -1,23 +1,29 @@
 // Code Preview Panel Component
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditorStore } from '../../store/editorStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources/resourceStore';
-import { generateCode, getGeneratedFileNames, downloadAsZip } from '../../codegen';
-import type { CodeGenOptions, GeneratedCode } from '../../codegen/types';
+import { TARGETS, generateTargetSource, generateTargetProject, type OutputInput, type OutputBundle } from '../../output';
+import type { CodeGenOptions } from '../../codegen/types';
+import { useAppStore } from '../../store/appStore';
+import { describeOutputError, downloadOutputZip } from '../../utils/outputDownload';
+import { t } from '../../i18n';
 import { DEFAULT_CODEGEN_OPTIONS } from '../../codegen/types';
 import { toast } from '../Toast';
 import './CodePanel.css';
 
-type FileName = keyof GeneratedCode;
+type FileName = string;
 
 const CodePanel: React.FC = () => {
   const { pages } = useEditorStore();
   const { graphs: logicGraphs } = useLogicEditorStore();
   const imageResources = useResourceStore((s) => s.images);
   const fontResources = useResourceStore((s) => s.fonts);
+  const outputTarget = useAppStore(s => s.outputTarget);
+  const cIntegrationProfile = useAppStore(s => s.cIntegrationProfile);
+  const target = TARGETS.find(candidate => candidate.id === outputTarget)!;
   
   // Selected file
   const [selectedFile, setSelectedFile] = useState<FileName>('ui.h');
@@ -30,17 +36,32 @@ const CodePanel: React.FC = () => {
   
   // Exporting state
   const [isExporting, setIsExporting] = useState(false);
+  const [prepared, setPrepared] = useState<{ input: OutputInput; bundle: OutputBundle | null; error: string }>();
+  const input = useMemo<OutputInput>(() => ({ target: outputTarget, cIntegrationProfile, pages, options, logicGraphs, images: imageResources, fonts: fontResources }), [outputTarget, cIntegrationProfile, pages, options, logicGraphs, imageResources, fontResources]);
   
   // Generate code
-  const generatedCode = useMemo(() => {
-    return generateCode(pages, options, logicGraphs, undefined, imageResources, fontResources);
-  }, [pages, options, logicGraphs, imageResources, fontResources]);
+  const source = useMemo(() => {
+    try {
+      return { bundle: generateTargetSource(input), error: '' };
+    } catch (error) { return { bundle: null, error: describeOutputError(error) }; }
+  }, [input]);
+  useEffect(() => {
+    let cancelled = false;
+    generateTargetProject(input)
+      .then(bundle => { if (!cancelled) setPrepared({ input, bundle, error: '' }); })
+      .catch(error => { if (!cancelled) setPrepared({ input, bundle: null, error: describeOutputError(error) }); });
+    return () => { cancelled = true; };
+  }, [input]);
+  const generatedCode = prepared?.input === input ? prepared : source;
+  const preparing = prepared?.input !== input;
   
   // Current file content
-  const currentContent = generatedCode[selectedFile];
+  const files = generatedCode.bundle?.files ?? {};
   
   // File names
-  const fileNames = getGeneratedFileNames();
+  const fileNames = Object.keys(files).filter(name => typeof files[name] === 'string');
+  const activeFile = fileNames.includes(selectedFile) ? selectedFile : fileNames[0] ?? '';
+  const currentContent = activeFile ? String(files[activeFile]) : '';
   
   // Handle option change
   const handleOptionChange = useCallback(<K extends keyof CodeGenOptions>(
@@ -52,25 +73,27 @@ const CodePanel: React.FC = () => {
   
   // Handle export
   const handleExport = useCallback(async () => {
+    if (preparing || !generatedCode.bundle) return;
     setIsExporting(true);
     try {
-      await downloadAsZip(pages, options, logicGraphs, 'lvgl_ui.zip', undefined, imageResources);
+      await downloadOutputZip(generatedCode.bundle, `lvgl_ui-${outputTarget}.zip`);
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('导出失败，请重试');
+      toast.error(describeOutputError(error));
     } finally {
       setIsExporting(false);
     }
-  }, [pages, options, logicGraphs, imageResources]);
+  }, [outputTarget, generatedCode, preparing]);
   
   // Handle copy
   const handleCopy = useCallback(() => {
+    if (preparing || !generatedCode.bundle) return;
     navigator.clipboard.writeText(currentContent).then(() => {
       // Could show a toast notification here
     }).catch(err => {
       console.error('Copy failed:', err);
     });
-  }, [currentContent]);
+  }, [currentContent, preparing, generatedCode]);
   
   return (
     <div className="code-panel">
@@ -79,7 +102,7 @@ const CodePanel: React.FC = () => {
         <div className="toolbar-left">
           {/* File selector */}
           <select 
-            value={selectedFile}
+            value={activeFile}
             onChange={(e) => setSelectedFile(e.target.value as FileName)}
             className="file-selector"
           >
@@ -93,24 +116,23 @@ const CodePanel: React.FC = () => {
           <button 
             className="toolbar-btn"
             onClick={handleCopy}
-            title="复制代码"
+            disabled={!activeFile || preparing}
+            title={t("复制代码")}
           >
-            📋 复制
-          </button>
+            {t("📋 复制")}</button>
           
           <button 
             className="toolbar-btn"
             onClick={() => setShowOptions(!showOptions)}
-            title="代码生成选项"
+            title={t("代码生成选项")}
           >
-            ⚙️ 选项
-          </button>
+            {t("⚙️ 选项")}</button>
           
           <button 
             className="toolbar-btn export-btn"
             onClick={handleExport}
-            disabled={isExporting}
-            title="导出为 ZIP"
+            disabled={isExporting || !generatedCode.bundle || preparing}
+            title={t("导出为 ZIP")}
           >
             {isExporting ? '导出中...' : '📦 导出 ZIP'}
           </button>
@@ -118,11 +140,11 @@ const CodePanel: React.FC = () => {
       </div>
       
       {/* Options Panel */}
-      {showOptions && (
+      {showOptions && outputTarget === 'c-lvgl' && (
         <div className="options-panel">
           <div className="options-grid">
             <div className="option-item">
-              <label>LVGL 版本</label>
+              <label>{t("LVGL 版本")}</label>
               <select 
                 value={options.lvglVersion}
                 onChange={(e) => handleOptionChange('lvglVersion', e.target.value as '8' | '9')}
@@ -133,7 +155,7 @@ const CodePanel: React.FC = () => {
             </div>
             
             <div className="option-item">
-              <label>命名风格</label>
+              <label>{t("命名风格")}</label>
               <select 
                 value={options.namingStyle}
                 onChange={(e) => handleOptionChange('namingStyle', e.target.value as 'snake_case' | 'camelCase')}
@@ -144,18 +166,18 @@ const CodePanel: React.FC = () => {
             </div>
             
             <div className="option-item">
-              <label>缩进风格</label>
+              <label>{t("缩进风格")}</label>
               <select 
                 value={options.indentStyle}
                 onChange={(e) => handleOptionChange('indentStyle', e.target.value as 'spaces' | 'tabs')}
               >
-                <option value="spaces">空格</option>
+                <option value="spaces">{t("空格")}</option>
                 <option value="tabs">Tab</option>
               </select>
             </div>
             
             <div className="option-item">
-              <label>缩进大小</label>
+              <label>{t("缩进大小")}</label>
               <select 
                 value={options.indentSize}
                 onChange={(e) => handleOptionChange('indentSize', parseInt(e.target.value))}
@@ -174,8 +196,7 @@ const CodePanel: React.FC = () => {
                   checked={options.generateComments}
                   onChange={(e) => handleOptionChange('generateComments', e.target.checked)}
                 />
-                生成注释
-              </label>
+                {t("生成注释")}</label>
             </div>
             
             <div className="option-item checkbox-item">
@@ -185,18 +206,20 @@ const CodePanel: React.FC = () => {
                   checked={options.userCodeMarkers}
                   onChange={(e) => handleOptionChange('userCodeMarkers', e.target.checked)}
                 />
-                用户代码标记
-              </label>
+                {t("用户代码标记")}</label>
             </div>
           </div>
         </div>
       )}
       
       {/* Code Editor */}
+      {generatedCode.error && <pre role="alert">{generatedCode.error}</pre>}
+      {preparing && !generatedCode.error && <p role="status">{t('Preparing output resources...')}</p>}
+      {generatedCode.bundle && !generatedCode.bundle.deployable && <p role="status">{t('Contract preview only. This target is not verified for deployment.')}</p>}
       <div className="code-editor-container">
         <Editor
           height="100%"
-          language="c"
+          language={target.language}
           value={currentContent}
           theme="vs-dark"
           options={{

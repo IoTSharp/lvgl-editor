@@ -1,231 +1,50 @@
-# LVGL UI Editor
+# LvglEditor
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/status-Production%20Ready-green.svg" alt="Status">
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-</p>
+[English](README.md) · [简体中文](README.zh-CN.md) · [Русский](README.ru.md)
 
-一个功能完整的 **LVGL UI 可视化编辑器**，支持拖拽设计、事件绑定、逻辑编排和 C 代码生成。适用于嵌入式 GUI 开发。
+<!-- docs-sync: family=readme revision=2026-10-11.4 -->
+<!-- output-status: c-lvgl=partial;lispbm-vesc=partial;basic-iotembedded=partial;device=unverified -->
 
-## ✨ 功能特性
+A visual LVGL interface editor with one project model and three output targets: **C/LVGL**, **LispBM/VESC**, and **BASIC/IoTEmbedded**. The editor owns design, generation, resource conversion, target validation and export packaging. Hosts such as HmiCraft choose a target/device/API profile and consume the result.
 
-### 🎨 可视化设计
-- **16 种 LVGL 组件**：按钮、标签、图片、滑块、复选框、开关、进度条、弧形、文本框、下拉框、容器、标签页、窗口、图表、表格、日历
-- **拖拽放置**：从组件面板拖拽到画布
-- **组件嵌套**：支持容器内嵌套子组件
-- **可视化调整**：拖拽移动、8 向调整大小
-- **网格对齐**：可配置网格大小和吸附
+PR [#3](https://github.com/IoTSharp/lvgl-editor/pull/3) contributes the LispBM/VESC route. Its integration preserves the C workflow and tests and adds BASIC. Work is in progress; source integration, generation, compilation, script execution and real devices have separate acceptance criteria. See the [English roadmap](ROADMAP.md), [Chinese roadmap](ROADMAP.zh-CN.md) and [project constraints](AGENTS.md).
 
-### ✏️ 高级编辑
-- **框选多选**：鼠标拖拽矩形选择
-- **复制/粘贴/剪切**：完整剪贴板支持
-- **对齐工具**：左/中/右对齐、顶/中/底对齐、水平/垂直分布
-- **右键菜单**：快捷操作菜单
-- **层级调整**：置顶/置底/上移/下移一层
-- **层级面板**：树形显示组件结构，支持拖拽调整层级
-- **撤销/重做**：50 步历史记录
+## Output targets
 
-### 📄 多页面管理
-- 创建/删除/重命名页面
-- 页面背景色设置
-- 快速页面切换
+| Target ID | Output | Acceptance boundary |
+|---|---|---|
+| `c-lvgl` | C headers/source, events/logic and target resources | Unified source contract locally verified; target compilation remains unverified |
+| `lispbm-vesc` | Lisp layout/events and resources for a versioned VESC/LVGL bridge | PR #3 integration; not every VESC firmware provides the required APIs |
+| `basic-iotembedded` | Generated BASIC layout, separate user event modules, resources and package manifest | First increment: basic layout/event generation and package contract; HmiCraft runtime consumption and board acceptance remain separate |
 
-### ⚡ 事件绑定
-- **可视化事件编辑器**
-- **支持所有 LVGL 事件**：点击、长按、值改变、聚焦等
-- **内置动作**：
-  - 页面导航
-  - 设置属性
-  - 显示/隐藏组件
-  - 设置文本/数值
-- **自定义 C 代码**：Monaco 编辑器支持
+Choose a target in **New Project**, or change it in **Project Settings** if the host allows switching. Standalone defaults to C; HmiCraft's own device entry defaults to BASIC. Saved projects must retain target/profile and user modules for each language. Handwritten C/Lisp/BASIC is not automatically translated. Switching, regeneration, renaming, save/open and recovery must preserve user logic. Unsupported functionality or incompatible profiles produce located diagnostics and block export; an empty implementation is not a successful result. Implementation states are tracked in GEN-01/02/07/09/10.
 
-### 🔗 逻辑编排器
-基于 React Flow 的节点式可视化编程：
+The React/TypeScript workbench provides a palette, canvas, hierarchy/properties, pages, events, React Flow graphs, Monaco, resources and project persistence. Canvas is visual preview; C/WASM and script execution require matching adapters. HmiCraft owns profiles, HMI runtime, loading/deployment and device acceptance. IoTEmbedded owns generic MCU/RTOS/BSP, drivers and BASIC. Generators must work independently of HmiCraft source/services and must not connect to devices, flash firmware or write PLC values.
 
-| 节点类型 | 功能 |
-|---------|------|
-| 🟢 触发节点 | 事件触发、定时器触发 |
-| 🟡 条件节点 | If/Else、Switch、比较、逻辑运算 |
-| 🔵 动作节点 | 设置属性、导航、显示/隐藏、延时、调用函数 |
-| 🟣 数据节点 | 变量读写、数学运算、字符串操作、获取属性 |
-| ⚫ 自定义节点 | 嵌入 C 代码块 |
+## Development and verification
 
-- **连线系统**：执行流（白色）+ 数据流（彩色）
-- **变量管理**：全局变量面板
-- **调试模式**：单步执行、节点高亮
+Use the lockfile with compatible Node.js/npm: `npm ci`, then `npm run dev`. Vite prints the local URL. Run `npm run build`, `npm test` and `node scripts/check-docs-sync.mjs` for validation. `build` checks TypeScript before Vite; `build:web` only bundles and cannot replace it. Static hosting configures `VITE_ENABLE_COMPILE_PREVIEW=false` and deployment-specific `VITE_BASE_PATH`. Do not expose the development compiler service publicly. Toolchain-dependent C tests require configured LVGL/toolchain paths; record skips explicitly.
 
-### 💻 代码生成
-- **生成文件**：
-  - `ui.h` / `ui.c` - UI 初始化代码
-  - `ui_events.h` / `ui_events.c` - 事件处理代码
-  - `ui_logic.h` / `ui_logic.c` - 逻辑代码（预留）
-- **Monaco 编辑器预览**：语法高亮
-- **一键复制/下载**
-- **批量导出**：下载所有文件
+The historical **2026-10-10** baseline had a successful bundle, failed TypeScript checking and **386 passed / 4 failed** Vitest cases; environment-specific C compilation tests were not run. Retain failures alongside later fixes in [CHANGELOG](CHANGELOG.md) and the roadmap. No production or hardware acceptance follows from a build badge.
 
-### 📱 实时预览
-- Canvas 模拟渲染 LVGL 组件
-- 缩放控制（50% - 200%）
-- 悬停交互效果
+LVGL, runtime API, resource format, board/profile, editor schema and package format are versioned separately. Font conversion and packaging must match the target; a web build does not prove ABI compatibility. The UI is required to default to English and support Chinese/Russian switching; GEN-12 tracks implementation and complete UI verification separately from documentation translation.
 
-### 📦 资源管理
-- 图片上传和管理
-- 字体管理
-- 图标库
+## Documentation and distribution
 
-### 💾 项目管理
-- JSON 格式保存/加载
-- 自动保存（每 30 秒）
-- 启动时恢复提示
+English is the facade; three README files share revision/status, and English/Chinese roadmaps share all task IDs/statuses. Update all copies in one change and run the documentation check. Public source, a granted license, a release and device acceptance are separate states.
 
-## 🚀 快速开始
+The original README stated MIT, but the fixed baseline lacks a repository-wide LICENSE. Source/resource/WASM rights and third-party notices need review; this change grants no new license. Preserve attribution and exclude customer credentials, private industrial logic and unauthorized assets from the public repository.
 
-### 安装
+## First BASIC increment and API
 
-```bash
-# 克隆项目
-git clone <repository-url>
-cd lvgl-editor
+The common API in [src/output/index.ts](src/output/index.ts) exposes `generateTargetSource(input)` for synchronous source preview and `generateTargetProject(input)` for asynchronous resources, hashes and manifests. `OutputBundle` in [types.ts](src/output/types.ts) carries target/files/issues/manifest/sourceMap and `deployable=false`; it is a source-contract artifact.
 
-# 安装依赖
-npm install
+BASIC currently covers `obj`, `btn`, `label`, `slider`, `bar`, `switch`, `checkbox` with absolute pixel layout, basic default styles, `navigate/show/hide/enable/disable/setText/setValue` and user event modules. Graphs, bindings, animation, images/fonts and unsupported advanced styles block export. Files include `main.bas`, `generated/layout.bas`, `generated/events.bas`, `user/events.bas`, `api-contract.json`, `source-map.json` and `manifest.json`. `hmicraft-hmi-basic/1-draft` is not registered in IoTEmbedded; nested imports need the future HmiCraft loader. Generation does not complete runtime or device acceptance.
 
-# 启动开发服务器
-npm run dev
-```
+C/LVGL now has confirmed integration profiles under GEN-13: `cIntegrationProfile` defaults to `generic` for legacy compatibility and offers `stm32cube-hal` (STM32CubeMX/CubeIDE HAL) or `rt-thread-scons` (standard RT-Thread BSP/SCons). Profile selection is retained through save/reopen/export. The initial contract lays out STM32 `Core/Src/hmi` / `Core/Inc/hmi` or RT-Thread `applications/hmi` plus `SConscript`, with `integration-contract.json`; it provides no specific .ioc, BSP, completed target build or board proof. Profiles are a configuration axis inside `c-lvgl`, not additional output languages. BASIC has initial located source maps; C/Lisp source maps are currently empty and remain a later gate.
 
-访问 http://localhost:5173
+### Local verification snapshot — 2026-10-11
 
-### 构建生产版本
+Vitest: **509 passed / 48 C compilation tests skipped**. The actual `npm run build` (TypeScript `tsc -b` plus Vite) exited **0**. Browser ZIP and project JSON exports passed for C, LispBM and BASIC on a two-control sample with a built-in event and independent language code slots. English/Chinese/Russian switching without reload and BASIC save/reload recovery passed. All six ZIPs passed independent path, byte-length and SHA256 checks. Formal remote PR merge is still pending; GEN-09 remains partial because this is small-sample source-package evidence, not broad resources, target runtime or hardware acceptance.
 
-```bash
-npm run build
-npm run preview  # 预览构建结果
-```
-
-如果需要单独编译一个**不包含**“🔨 编译运行”在线 WASM 编译预览功能的版本，可以在构建时关闭开关：
-
-```bash
-VITE_ENABLE_COMPILE_PREVIEW=false npm run build:web
-```
-
-部署到 GitHub Pages 时，可以额外指定仓库子路径：
-
-```bash
-VITE_BASE_PATH=/lvgl-editor/ VITE_ENABLE_COMPILE_PREVIEW=false npm run build:web
-```
-
-仓库内已提供 `.github/workflows/deploy-pages.yml`，默认会在推送到 `main` 时构建并发布到 GitHub Pages，同时关闭在线编译预览功能。
-
-## ⌨️ 快捷键
-
-### 基本操作
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl + Z` | 撤销 |
-| `Ctrl + Shift + Z` / `Ctrl + Y` | 重做 |
-| `Delete` / `Backspace` | 删除选中 |
-| `Escape` | 取消选择 |
-
-### 选择与剪贴板
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl + A` | 全选 |
-| `Ctrl + 点击` | 多选切换 |
-| `Ctrl + C` | 复制 |
-| `Ctrl + X` | 剪切 |
-| `Ctrl + V` | 粘贴 |
-| `Ctrl + D` | 快速复制 |
-
-### 画布操作
-| 快捷键 | 功能 |
-|--------|------|
-| `Space + 拖拽` | 平移画布 |
-| `鼠标中键拖拽` | 平移画布 |
-| `Ctrl + 滚轮` | 缩放画布 |
-
-### 项目操作
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl + N` | 新建项目 |
-| `Ctrl + O` | 打开项目 |
-| `Ctrl + S` | 保存项目 |
-| `F1` / `?` | 显示帮助 |
-
-## 🛠️ 技术栈
-
-- **框架**: React 19 + TypeScript
-- **构建**: Vite 7
-- **状态管理**: Zustand 5
-- **拖拽**: @dnd-kit/core
-- **逻辑编排**: @xyflow/react 12
-- **代码编辑**: Monaco Editor
-- **打包**: JSZip
-
-## 📁 项目结构
-
-```
-src/
-├── components/           # UI 组件
-│   ├── AlignToolbar/     # 对齐工具栏
-│   ├── Canvas/           # 画布（拖拽、选择、调整大小）
-│   ├── CodePreview/      # 代码预览面板
-│   ├── ComponentPanel/   # 组件面板
-│   ├── ContextMenu/      # 右键菜单
-│   ├── EventPanel/       # 事件绑定面板
-│   ├── HelpPanel/        # 快捷键帮助
-│   ├── LogicEditor/      # 逻辑编排器
-│   ├── PageManager/      # 页面管理
-│   ├── Preview/          # 实时预览
-│   ├── PropertyEditor/   # 属性编辑器
-│   ├── StatusBar/        # 状态栏
-│   └── Toast/            # 通知提示
-├── codegen/              # 代码生成引擎
-│   ├── generator.ts      # 主生成器
-│   ├── templates/        # 代码模板
-│   ├── formatters/       # 格式化工具
-│   └── utils/            # 工具函数
-├── hooks/                # React Hooks
-│   └── useKeyboardShortcuts.ts
-├── resources/            # 资源管理
-├── store/                # 状态管理
-│   └── editorStore.ts    # Zustand Store
-├── types/                # TypeScript 类型
-└── utils/                # 工具函数
-    └── componentDefinitions.ts  # 组件定义
-```
-
-## 📊 支持的 LVGL 组件
-
-| 类别 | 组件 |
-|------|------|
-| **基础** | Button, Label, Image, Line |
-| **输入** | Textarea, Dropdown, Checkbox, Switch, Slider |
-| **容器** | Container (obj), Tab View, Tile View, Window |
-| **显示** | Progress Bar, Arc, Spinner, Chart, Table, Calendar |
-
-## 🔧 已知限制
-
-1. **字体转换**：需要外部 lv_font_conv 工具生成实际位图数据，编辑器内生成模板和命令
-2. **LVGL v9**：代码生成目前针对 LVGL v8 API
-3. **测试**：尚无单元测试或集成测试
-
-## 📝 更新日志
-
-查看 [CHANGELOG.md](./CHANGELOG.md) 了解完整更新历史。
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📄 License
-
-MIT License - 详见 [LICENSE](./LICENSE) 文件。
-
----
-
-<p align="center">
-  Made with ❤️ for embedded GUI development
-</p>
+See the [verification report](docs/verification-pr3-2026-10-11.md) and [shared sample](samples/three-targets.lvgl.json). Pinned LVGL/.ioc/BSP compilation, LispBM bridge/script execution, IoTEmbedded BASIC consumption, device transfer and industrial acceptance remain unverified. Historical failures are retained.

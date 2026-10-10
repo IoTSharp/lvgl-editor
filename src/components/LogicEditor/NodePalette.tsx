@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 // Node Palette - Drag nodes from here to the canvas
 
 import React, { useState, useCallback } from 'react';
@@ -47,14 +48,14 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
   return (
     <div className="node-palette">
       <div className="palette-header">
-        <h3>节点</h3>
+        <h3>{t("节点")}</h3>
       </div>
 
       {/* Search */}
       <div className="palette-search">
         <input
           type="text"
-          placeholder="搜索节点..."
+          placeholder={t("搜索节点...")}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
@@ -71,7 +72,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
           // Search results
           <div className="search-results">
             {filteredDefinitions.length === 0 ? (
-              <div className="no-results">未找到匹配的节点</div>
+              <div className="no-results">{t("未找到匹配的节点")}</div>
             ) : (
               filteredDefinitions.map(def => (
                 <NodeItem
@@ -92,7 +93,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onDragStart }) => {
                 style={{ borderLeftColor: category.color }}
               >
                 <span className="category-icon">{category.icon}</span>
-                <span className="category-name">{category.name}</span>
+                <span className="category-name">{t(category.name)}</span>
                 <span className="category-toggle">
                   {expandedCategories[category.id] ? '▼' : '▶'}
                 </span>
@@ -129,12 +130,12 @@ const NodeItem: React.FC<NodeItemProps> = ({ definition, onDragStart }) => {
       draggable
       onDragStart={e => onDragStart(e, definition)}
       style={{ borderLeftColor: definition.color }}
-      title={definition.description}
+      title={t(definition.description)}
     >
       <span className="node-icon">{definition.icon}</span>
       <div className="node-info">
-        <span className="node-label">{definition.label}</span>
-        <span className="node-description">{definition.description}</span>
+        <span className="node-label">{t(definition.label)}</span>
+        <span className="node-description">{t(definition.description)}</span>
       </div>
     </div>
   );

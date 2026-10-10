@@ -1,4 +1,5 @@
 import React from 'react';
+import { getLang, t } from '../../i18n';
 import type { ProjectListItem } from '../../store/projectStore';
 import { formatFileSize } from '../../resources/projectManager';
 import './ProjectCard.css';
@@ -11,7 +12,7 @@ interface ProjectCardProps {
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ item, onOpen, onDelete }) => {
   const { config, size } = item;
-  const updatedStr = new Date(config.updatedAt).toLocaleString('zh-CN');
+  const updatedStr = new Date(config.updatedAt).toLocaleString(getLang() === 'zh' ? 'zh-CN' : getLang());
 
   return (
     <div className="project-card" onClick={() => onOpen(config.id)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onOpen(config.id); }}>
@@ -27,7 +28,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ item, onOpen, onDelete }) => 
       </div>
       <button
         className="project-card-delete"
-        title="删除项目"
+        title={t('删除项目')}
         onClick={e => { e.stopPropagation(); onDelete(config.id); }}
       >
         🗑️

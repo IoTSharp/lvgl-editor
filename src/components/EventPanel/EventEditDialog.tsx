@@ -5,6 +5,10 @@ import type { EventBinding, LvglEventType, BuiltinActionType, BuiltinAction } fr
 import { LVGL_EVENTS } from './EventPanel';
 import CodeEditor from './CodeEditor';
 import './EventEditDialog.css';
+import { useAppStore } from '../../store/appStore';
+import { TARGETS } from '../../output';
+import { readTargetCode, writeTargetCode } from '../../utils/targetUserCode';
+import { t } from '../../i18n';
 
 interface EventEditDialogProps {
   event: EventBinding | null;
@@ -42,6 +46,8 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
   onClose,
 }) => {
   const { pages, currentPageId, getAllComponents } = useEditorStore();
+  const outputTarget = useAppStore(s => s.outputTarget);
+  const target = TARGETS.find(candidate => candidate.id === outputTarget)!;
   
   // Suppress unused variable warning - currentPageId is used for reactivity
   void currentPageId;
@@ -62,7 +68,7 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
   const [value, setValue] = useState<string>(
     event?.action?.value !== undefined ? String(event.action.value) : ''
   );
-  const [customCode, setCustomCode] = useState(event?.customCode || CODE_TEMPLATE);
+  const [customCode, setCustomCode] = useState(() => readTargetCode(outputTarget, event?.customCodeByTarget, event?.customCode) || (outputTarget === 'c-lvgl' ? CODE_TEMPLATE : ''));
   const [showCodePreview, setShowCodePreview] = useState(false);
 
   // Get all components for target selection
@@ -81,6 +87,10 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const handleSave = useCallback(() => {
     const newEvent: EventBinding = {
+      ...event,
+      // Changing the handler mode must retain inactive handwritten languages.
+      customCode: event?.customCode,
+      customCodeByTarget: event?.customCodeByTarget ? { ...event.customCodeByTarget } : undefined,
       id: event?.id || uuidv4(),
       eventType,
       handlerType,
@@ -116,19 +126,21 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
       
       newEvent.action = action;
     } else {
-      newEvent.customCode = customCode;
+      newEvent.customCodeByTarget = writeTargetCode(outputTarget, customCode, event?.customCodeByTarget, event?.customCode);
+      if (outputTarget === 'c-lvgl') newEvent.customCode = customCode;
     }
 
     onSave(newEvent);
   }, [
     event, eventType, handlerType, actionType,
-    targetPage, targetComponent, property, value, customCode, onSave
+    targetPage, targetComponent, property, value, customCode, outputTarget, onSave
   ]);
 
   const generateCodePreview = (): string => {
     if (handlerType === 'custom') {
       return customCode;
     }
+    if (outputTarget !== 'c-lvgl') return t('Built-in actions are generated for the selected target in Code preview.');
 
     let code = `static void event_handler(lv_event_t *e) {\n`;
     code += `    lv_obj_t *obj = lv_event_get_target(e);\n`;
@@ -182,12 +194,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         return (
           <div className="action-config">
             <div className="config-row">
-              <label>目标页面</label>
+              <label>{t("目标页面")}</label>
               <select 
                 value={targetPage} 
                 onChange={(e) => setTargetPage(e.target.value)}
               >
-                <option value="">选择页面...</option>
+                <option value="">{t("选择页面...")}</option>
                 {pages?.map(page => (
                   <option key={page.id} value={page.name}>
                     {page.name}
@@ -202,12 +214,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         return (
           <div className="action-config">
             <div className="config-row">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select 
                 value={targetComponent} 
                 onChange={(e) => setTargetComponent(e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.map(comp => (
                   <option key={comp.id} value={comp.name}>
                     {comp.name} ({comp.type})
@@ -216,30 +228,30 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
               </select>
             </div>
             <div className="config-row">
-              <label>属性名</label>
+              <label>{t("属性名")}</label>
               <select 
                 value={property} 
                 onChange={(e) => setProperty(e.target.value)}
               >
-                <option value="">选择属性...</option>
-                <option value="bg_color">背景色 (bg_color)</option>
-                <option value="border_color">边框色 (border_color)</option>
-                <option value="border_width">边框宽度 (border_width)</option>
-                <option value="radius">圆角 (radius)</option>
-                <option value="opa">透明度 (opa)</option>
-                <option value="x">X 坐标 (x)</option>
-                <option value="y">Y 坐标 (y)</option>
-                <option value="width">宽度 (width)</option>
-                <option value="height">高度 (height)</option>
+                <option value="">{t("选择属性...")}</option>
+                <option value="bg_color">{t("背景色 (bg_color)")}</option>
+                <option value="border_color">{t("边框色 (border_color)")}</option>
+                <option value="border_width">{t("边框宽度 (border_width)")}</option>
+                <option value="radius">{t("圆角 (radius)")}</option>
+                <option value="opa">{t("透明度 (opa)")}</option>
+                <option value="x">{t("X 坐标 (x)")}</option>
+                <option value="y">{t("Y 坐标 (y)")}</option>
+                <option value="width">{t("宽度 (width)")}</option>
+                <option value="height">{t("高度 (height)")}</option>
               </select>
             </div>
             <div className="config-row">
-              <label>属性值</label>
+              <label>{t("属性值")}</label>
               <input 
                 type="text" 
                 value={value} 
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="输入属性值"
+                placeholder={t("输入属性值")}
               />
             </div>
           </div>
@@ -252,12 +264,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         return (
           <div className="action-config">
             <div className="config-row">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select 
                 value={targetComponent} 
                 onChange={(e) => setTargetComponent(e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.map(comp => (
                   <option key={comp.id} value={comp.name}>
                     {comp.name} ({comp.type})
@@ -272,12 +284,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         return (
           <div className="action-config">
             <div className="config-row">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select 
                 value={targetComponent} 
                 onChange={(e) => setTargetComponent(e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.filter(c => ['label', 'btn', 'textarea'].includes(c.type)).map(comp => (
                   <option key={comp.id} value={comp.name}>
                     {comp.name} ({comp.type})
@@ -286,12 +298,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
               </select>
             </div>
             <div className="config-row">
-              <label>文本内容</label>
+              <label>{t("文本内容")}</label>
               <input 
                 type="text" 
                 value={value} 
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="输入文本"
+                placeholder={t("输入文本")}
               />
             </div>
           </div>
@@ -301,12 +313,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         return (
           <div className="action-config">
             <div className="config-row">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select 
                 value={targetComponent} 
                 onChange={(e) => setTargetComponent(e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.filter(c => ['slider', 'bar', 'arc'].includes(c.type)).map(comp => (
                   <option key={comp.id} value={comp.name}>
                     {comp.name} ({comp.type})
@@ -315,12 +327,12 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
               </select>
             </div>
             <div className="config-row">
-              <label>数值</label>
+              <label>{t("数值")}</label>
               <input 
                 type="number" 
                 value={value} 
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="输入数值"
+                placeholder={t("输入数值")}
               />
             </div>
           </div>
@@ -342,7 +354,7 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         <div className="dialog-content">
           {/* Event Type Selection */}
           <div className="form-section">
-            <label className="section-label">事件类型</label>
+            <label className="section-label">{t("事件类型")}</label>
             <select 
               value={eventType} 
               onChange={(e) => setEventType(e.target.value as LvglEventType)}
@@ -350,38 +362,36 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
             >
               {LVGL_EVENTS.map(evt => (
                 <option key={evt.type} value={evt.type}>
-                  {evt.label} ({evt.type})
+                  {t(evt.label)} ({evt.type})
                 </option>
               ))}
             </select>
             <p className="field-hint">
-              {LVGL_EVENTS.find(e => e.type === eventType)?.description}
+              {t(LVGL_EVENTS.find(e => e.type === eventType)?.description)}
             </p>
           </div>
 
           {/* Handler Type Selection */}
           <div className="form-section">
-            <label className="section-label">处理方式</label>
+            <label className="section-label">{t("处理方式")}</label>
             <div className="handler-type-tabs">
               <button 
                 className={`tab-btn ${handlerType === 'builtin' ? 'active' : ''}`}
                 onClick={() => setHandlerType('builtin')}
               >
-                内置动作
-              </button>
+                {t("内置动作")}</button>
               <button 
                 className={`tab-btn ${handlerType === 'custom' ? 'active' : ''}`}
                 onClick={() => setHandlerType('custom')}
               >
-                自定义代码
-              </button>
+                {t("自定义代码")}</button>
             </div>
           </div>
 
           {/* Handler Configuration */}
           {handlerType === 'builtin' ? (
             <div className="form-section">
-              <label className="section-label">动作类型</label>
+              <label className="section-label">{t("动作类型")}</label>
               <select 
                 value={actionType} 
                 onChange={(e) => setActionType(e.target.value as BuiltinActionType)}
@@ -389,23 +399,23 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
               >
                 {BUILTIN_ACTIONS.map(action => (
                   <option key={action.type} value={action.type}>
-                    {action.label}
+                    {t(action.label)}
                   </option>
                 ))}
               </select>
               <p className="field-hint">
-                {BUILTIN_ACTIONS.find(a => a.type === actionType)?.description}
+                {t(BUILTIN_ACTIONS.find(a => a.type === actionType)?.description)}
               </p>
               
               {renderActionConfig()}
             </div>
           ) : (
             <div className="form-section">
-              <label className="section-label">C 代码</label>
+              <label className="section-label">{t(target.label)} {t('User code')}</label>
               <CodeEditor 
                 value={customCode}
                 onChange={setCustomCode}
-                language="c"
+                language={target.language}
               />
             </div>
           )}
@@ -413,7 +423,7 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
           {/* Code Preview */}
           <div className="form-section">
             <div className="preview-header">
-              <label className="section-label">代码预览</label>
+              <label className="section-label">{t("代码预览")}</label>
               <button 
                 className="toggle-preview-btn"
                 onClick={() => setShowCodePreview(!showCodePreview)}
@@ -430,8 +440,8 @@ const EventEditDialog: React.FC<EventEditDialogProps> = ({
         </div>
 
         <div className="dialog-footer">
-          <button className="cancel-btn" onClick={onClose}>取消</button>
-          <button className="save-btn" onClick={handleSave}>保存</button>
+          <button className="cancel-btn" onClick={onClose}>{t("取消")}</button>
+          <button className="save-btn" onClick={handleSave}>{t("保存")}</button>
         </div>
       </div>
     </div>

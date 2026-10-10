@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 // Icon Library Component - Built-in icons for LVGL
 
 import React, { useState, useMemo } from 'react';
@@ -101,13 +102,13 @@ const IconLibrary: React.FC<IconLibraryProps> = ({ viewMode }) => {
 </svg>`;
     
     navigator.clipboard.writeText(svg);
-    toast.success('SVG 已复制到剪贴板');
+    toast.success(t("SVG 已复制到剪贴板"));
   };
   
   const handleCopyPath = () => {
     if (!selectedIconData) return;
     navigator.clipboard.writeText(selectedIconData.path);
-    toast.success('路径数据已复制到剪贴板');
+    toast.success(t("路径数据已复制到剪贴板"));
   };
   
   return (
@@ -130,7 +131,7 @@ const IconLibrary: React.FC<IconLibraryProps> = ({ viewMode }) => {
         {filteredIcons.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">⭐</span>
-            <p>没有找到图标</p>
+            <p>{t("没有找到图标")}</p>
           </div>
         ) : (
           filteredIcons.map(icon => (
@@ -164,8 +165,8 @@ const IconLibrary: React.FC<IconLibraryProps> = ({ viewMode }) => {
             <span className="icon-category">{selectedIconData.category}</span>
           </div>
           <div className="icon-actions">
-            <button onClick={handleCopySvg}>📋 复制 SVG</button>
-            <button onClick={handleCopyPath}>📝 复制路径</button>
+            <button onClick={handleCopySvg}>{t("📋 复制 SVG")}</button>
+            <button onClick={handleCopyPath}>{t("📝 复制路径")}</button>
           </div>
         </div>
       )}

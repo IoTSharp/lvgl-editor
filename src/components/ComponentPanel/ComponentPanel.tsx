@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useState, useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { componentCategories, getComponentsByCategory } from '../../utils/componentDefinitions';
@@ -25,7 +26,7 @@ const DraggableComponent: React.FC<DraggableComponentProps> = ({ definition }) =
       {...attributes}
     >
       <span className="component-icon">{definition.icon}</span>
-      <span className="component-name">{definition.name}</span>
+      <span className="component-name">{t(definition.name)}</span>
     </div>
   );
 };
@@ -47,7 +48,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
     <div className="category-section">
       <div className="category-header" onClick={onToggle}>
         <span className="category-icon">{category.icon}</span>
-        <span className="category-name">{category.name}</span>
+        <span className="category-name">{t(category.name)}</span>
         <span className={`collapse-icon ${isCollapsed ? 'collapsed' : ''}`}>▼</span>
       </div>
       {!isCollapsed && (
@@ -100,13 +101,13 @@ const ComponentPanel: React.FC = () => {
   return (
     <div className="component-panel">
       <div className="panel-header">
-        <h3>组件</h3>
+        <h3>{t("组件")}</h3>
       </div>
       
       <div className="search-box">
         <input
           type="text"
-          placeholder="搜索组件..."
+          placeholder={t("搜索组件...")}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />

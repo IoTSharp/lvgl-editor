@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 // Font Manager Component
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
@@ -100,7 +101,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
       }
     } catch (error) {
       console.error('Failed to upload font:', error);
-      toast.error('上传字体失败');
+      toast.error(t("上传字体失败"));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -111,7 +112,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
   
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (await modal.confirm('确定要删除这个字体吗？')) {
+    if (await modal.confirm(t("确定要删除这个字体吗？"))) {
       deleteFont(id);
     }
   };
@@ -157,7 +158,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
   
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('已复制到剪贴板');
+    toast.success(t("已复制到剪贴板"));
   };
 
   const getFormatLabel = (font: FontResource): string => {
@@ -204,8 +205,8 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
         {fonts.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">🔤</span>
-            <p>暂无字体资源</p>
-            <p className="empty-hint">点击上方按钮上传 TTF/OTF 字体</p>
+            <p>{t("暂无字体资源")}</p>
+            <p className="empty-hint">{t("点击上方按钮上传 TTF/OTF 字体")}</p>
           </div>
         ) : (
           fonts.map(font => (
@@ -232,7 +233,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
               <button
                 className="delete-btn"
                 onClick={(e) => handleDelete(font.id, e)}
-                title="删除"
+                title={t("删除")}
               >
                 🗑️
               </button>
@@ -244,38 +245,38 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
       {/* Selected Font Details */}
       {selectedFont && (
         <div className="font-details">
-          <h4>字体属性</h4>
+          <h4>{t("字体属性")}</h4>
 
           {/* Metadata */}
           <div className="font-meta-grid">
             <div className="meta-item">
-              <span className="meta-label">文件名</span>
+              <span className="meta-label">{t("文件名")}</span>
               <span className="meta-value">{selectedFont.name}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-label">格式</span>
+              <span className="meta-label">{t("格式")}</span>
               <span className="meta-value">{getFormatLabel(selectedFont)}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-label">大小</span>
+              <span className="meta-label">{t("大小")}</span>
               <span className="meta-value">{formatFileSize(selectedFont.size)}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-label">字体族</span>
+              <span className="meta-label">{t("字体族")}</span>
               <span className="meta-value">{selectedFont.family}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-label">样式</span>
+              <span className="meta-label">{t("样式")}</span>
               <span className="meta-value">{selectedFont.style}</span>
             </div>
             <div className="meta-item">
-              <span className="meta-label">字形数</span>
+              <span className="meta-label">{t("字形数")}</span>
               <span className="meta-value">{getGlyphCount(selectedFont).toLocaleString()}</span>
             </div>
           </div>
           
           <div className="detail-row">
-            <label>名称:</label>
+            <label>{t("名称:")}</label>
             <input
               type="text"
               value={selectedFont.name}
@@ -284,7 +285,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
           </div>
           
           <div className="detail-row">
-            <label>C 变量名:</label>
+            <label>{t("C 变量名:")}</label>
             <input
               type="text"
               value={selectedFont.cFontName}
@@ -293,38 +294,37 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
           </div>
           
           <div className="detail-section">
-            <label>字符集:</label>
+            <label>{t("字符集:")}</label>
             <select
               value={selectedFont.charset}
               onChange={(e) => updateFont(selectedFont.id, { charset: e.target.value as CharsetType })}
             >
-              <option value="ascii">ASCII (基础)</option>
-              <option value="latin">Latin Extended (拉丁扩展)</option>
-              <option value="cjk-basic">CJK Basic (中日韩基础)</option>
-              <option value="custom">自定义</option>
+              <option value="ascii">{t("ASCII (基础)")}</option>
+              <option value="latin">{t("Latin Extended (拉丁扩展)")}</option>
+              <option value="cjk-basic">{t("CJK Basic (中日韩基础)")}</option>
+              <option value="custom">{t("自定义")}</option>
             </select>
           </div>
           
           {selectedFont.charset === 'custom' && (
             <div className="detail-section">
-              <label>自定义字符:</label>
+              <label>{t("自定义字符:")}</label>
               <textarea
                 value={selectedFont.customChars ?? customCharsInput}
                 onChange={(e) => {
                   setCustomCharsInput(e.target.value);
                   updateFont(selectedFont.id, { customChars: e.target.value });
                 }}
-                placeholder="输入需要包含的字符，或粘贴文本后点击提取"
+                placeholder={t("输入需要包含的字符，或粘贴文本后点击提取")}
                 rows={3}
               />
               <button className="extract-btn" onClick={handleExtractChars}>
-                提取唯一字符
-              </button>
+                {t("提取唯一字符")}</button>
             </div>
           )}
 
           <div className="detail-section">
-            <label>BPP (抗锯齿):</label>
+            <label>{t("BPP (抗锯齿):")}</label>
             <div className="bpp-grid">
               {BPP_OPTIONS.map(bpp => (
                 <button
@@ -345,7 +345,7 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
           </div>
           
           <div className="font-preview-section">
-            <label>预览:</label>
+            <label>{t("预览:")}</label>
             <div 
               className="preview-box"
               style={{ fontFamily: fontFaceMap[selectedFont.id] || selectedFont.family }}
@@ -365,11 +365,9 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
           
           <div className="detail-actions">
             <button onClick={() => handleGenerateCommand(selectedFont)}>
-              🔧 生成转换命令
-            </button>
+              {t("🔧 生成转换命令")}</button>
             <button onClick={() => handleGenerateHeader(selectedFont)}>
-              📄 生成头文件模板
-            </button>
+              {t("📄 生成头文件模板")}</button>
           </div>
         </div>
       )}
@@ -379,18 +377,17 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
         <div className="modal-overlay" onClick={() => setShowCommandModal(false)}>
           <div className="modal-content command-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>lv_font_conv 转换命令</h3>
+              <h3>{t("lv_font_conv 转换命令")}</h3>
               <button className="close-btn" onClick={() => setShowCommandModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <p className="command-hint">
-                使用以下命令将字体转换为 LVGL 格式。需要先安装 lv_font_conv：
-                <code>npm install -g lv_font_conv</code>
+                {t("使用以下命令将字体转换为 LVGL 格式。需要先安装 lv_font_conv：")}<code>npm install -g lv_font_conv</code>
               </p>
               <pre className="command-preview">{generatedCommand}</pre>
             </div>
             <div className="modal-footer">
-              <button onClick={() => handleCopyText(generatedCommand)}>📋 复制命令</button>
+              <button onClick={() => handleCopyText(generatedCommand)}>{t("📋 复制命令")}</button>
             </div>
           </div>
         </div>
@@ -401,24 +398,24 @@ const FontManager: React.FC<FontManagerProps> = ({ viewMode }) => {
         <div className="modal-overlay" onClick={() => setShowHeaderModal(false)}>
           <div className="modal-content command-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>字体文件模板</h3>
+              <h3>{t("字体文件模板")}</h3>
               <button className="close-btn" onClick={() => setShowHeaderModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <p className="command-hint">头文件 (.h)：</p>
+              <p className="command-hint">{t("头文件 (.h)：")}</p>
               <pre className="command-preview">{generatedHeader}</pre>
               <div className="template-copy-row">
-                <button onClick={() => handleCopyText(generatedHeader)}>📋 复制头文件</button>
+                <button onClick={() => handleCopyText(generatedHeader)}>{t("📋 复制头文件")}</button>
               </div>
 
-              <p className="command-hint" style={{ marginTop: 16 }}>源文件模板 (.c)：</p>
+              <p className="command-hint" style={{ marginTop: 16 }}>{t("源文件模板 (.c)：")}</p>
               <pre className="command-preview">{generatedSource}</pre>
               <div className="template-copy-row">
-                <button onClick={() => handleCopyText(generatedSource)}>📋 复制源文件</button>
+                <button onClick={() => handleCopyText(generatedSource)}>{t("📋 复制源文件")}</button>
               </div>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowHeaderModal(false)}>关闭</button>
+              <button onClick={() => setShowHeaderModal(false)}>{t("关闭")}</button>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useAppStore } from '../../store/appStore';
@@ -5,7 +6,8 @@ import { getComponentDefinition } from '../../utils/componentDefinitions';
 import './StatusBar.css';
 
 const StatusBar: React.FC = () => {
-  const { canvas, selection, components, getComponentById, toggleGrid, setSnapToGrid } = useEditorStore();
+  const { canvas, selection, pages, currentPageId, getComponentById, toggleGrid, setSnapToGrid } = useEditorStore();
+  const components = pages.find(page => page.id === currentPageId)?.components ?? [];
   const { lastSaveTime } = useAppStore();
   
   const selectedCount = selection.selectedIds.length;
@@ -30,7 +32,7 @@ const StatusBar: React.FC = () => {
         {/* Selection info */}
         <div className="status-item">
           {selectedCount === 0 && (
-            <span className="status-text">未选中</span>
+            <span className="status-text">{t("未选中")}</span>
           )}
           {selectedCount === 1 && selectedComponent && (
             <span className="status-text">
@@ -42,7 +44,7 @@ const StatusBar: React.FC = () => {
             </span>
           )}
           {selectedCount > 1 && (
-            <span className="status-text">已选中 {selectedCount} 个组件</span>
+            <span className="status-text">{t("已选中")}{selectedCount} {t("个组件")}</span>
           )}
         </div>
         
@@ -50,14 +52,14 @@ const StatusBar: React.FC = () => {
         
         {/* Component count */}
         <div className="status-item">
-          <span className="status-text">组件: {totalComponents}</span>
+          <span className="status-text">{t("组件:")}{totalComponents}</span>
         </div>
 
         {lastSaveTime && (
           <>
             <div className="status-divider" />
             <div className="status-item">
-              <span className="status-text status-save-time">已保存 {formatSaveTime(lastSaveTime)}</span>
+              <span className="status-text status-save-time">{t("已保存")}{formatSaveTime(lastSaveTime)}</span>
             </div>
           </>
         )}
@@ -66,7 +68,7 @@ const StatusBar: React.FC = () => {
       <div className="status-right">
         {/* Canvas size */}
         <div className="status-item">
-          <span className="status-text">画布: {canvas.width} × {canvas.height}</span>
+          <span className="status-text">{t("画布:")}{canvas.width} × {canvas.height}</span>
         </div>
         
         <div className="status-divider" />
@@ -75,21 +77,19 @@ const StatusBar: React.FC = () => {
         <button
           className={`status-button ${canvas.showGrid ? 'active' : ''}`}
           onClick={toggleGrid}
-          title="显示/隐藏网格"
+          title={t("显示/隐藏网格")}
         >
           <span className="icon">⊞</span>
-          网格
-        </button>
+          {t("网格")}</button>
         
         {/* Snap toggle */}
         <button
           className={`status-button ${canvas.snapToGrid ? 'active' : ''}`}
           onClick={() => setSnapToGrid(!canvas.snapToGrid)}
-          title="吸附到网格"
+          title={t("吸附到网格")}
         >
           <span className="icon">⊡</span>
-          吸附
-        </button>
+          {t("吸附")}</button>
       </div>
     </div>
   );

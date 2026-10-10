@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useEffect, useRef } from 'react';
 import './ContextMenu.css';
 
@@ -89,7 +90,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }) => {
             onClick={() => handleItemClick(item)}
           >
             {item.icon && <span className="context-menu-icon">{item.icon}</span>}
-            <span className="context-menu-label">{item.label}</span>
+            <span className="context-menu-label">{t(item.label)}</span>
             {item.shortcut && (
               <span className="context-menu-shortcut">{item.shortcut}</span>
             )}

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 // Hierarchy Panel - Tree view of component structure
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -167,7 +168,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               e.stopPropagation();
               onToggleVisibility(component.id);
             }}
-            title={component.visible ? '可见' : '隐藏'}
+            title={t(component.visible ? 'Visible' : 'Hidden')}
           >
             {component.visible ? '👁️' : '👁️‍🗨️'}
           </span>
@@ -177,7 +178,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
               e.stopPropagation();
               onToggleLock(component.id);
             }}
-            title={component.locked ? '已锁定' : '未锁定'}
+            title={t(component.locked ? 'Locked' : 'Unlocked')}
           >
             {component.locked ? '🔒' : '🔓'}
           </span>
@@ -329,19 +330,19 @@ const HierarchyPanel: React.FC = () => {
   return (
     <div className="hierarchy-panel">
       <div className="hierarchy-header">
-        <h3>📋 层级</h3>
+        <h3>{t("📋 层级")}</h3>
         <div className="hierarchy-actions">
           <button
             className="hierarchy-btn"
             onClick={handleExpandAll}
-            title="展开全部"
+            title={t("展开全部")}
           >
             ⊞
           </button>
           <button
             className="hierarchy-btn"
             onClick={handleCollapseAll}
-            title="折叠全部"
+            title={t("折叠全部")}
           >
             ⊟
           </button>
@@ -355,8 +356,7 @@ const HierarchyPanel: React.FC = () => {
       >
         {components.length === 0 ? (
           <div className="empty-message">
-            暂无组件
-          </div>
+            {t("暂无组件")}</div>
         ) : (
           components.map(comp => (
             <TreeNode

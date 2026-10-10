@@ -3,6 +3,7 @@
 import type { ProjectFile, ImageResource, FontResource } from './types';
 import type { LogicGraph } from '../components/LogicEditor/types';
 import type { CanvasState, Page } from '../types';
+import { resolveHostTarget, resolveCIntegrationProfile, type TargetId, type CIntegrationProfileId } from '../output';
 
 const PROJECT_VERSION = '1.0.0';
 
@@ -15,10 +16,14 @@ export function createProjectFile(
   canvas: CanvasState,
   images: ImageResource[],
   fonts: FontResource[],
-  logicGraphs: LogicGraph[] = []
+  logicGraphs: LogicGraph[] = [],
+  outputTarget: TargetId = 'c-lvgl',
+  cIntegrationProfile: CIntegrationProfileId = 'generic'
 ): ProjectFile {
   return {
     version: PROJECT_VERSION,
+    outputTarget: resolveHostTarget(outputTarget),
+    cIntegrationProfile: resolveCIntegrationProfile(cIntegrationProfile),
     name,
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -62,12 +67,12 @@ export function parseProject(jsonString: string): ProjectFile {
   const project = JSON.parse(jsonString) as ProjectFile;
   
   // Version compatibility check
-  if (!project.version) {
+  if (typeof project?.version !== 'string' || !project.version) {
     throw new Error('Invalid project file: missing version');
   }
   
   // Migrate old versions if needed
-  const migrated = migrateProject(project);
+  const migrated = normalizeProject(project);
   
   return migrated;
 }
@@ -75,17 +80,22 @@ export function parseProject(jsonString: string): ProjectFile {
 /**
  * Migrate project from older versions
  */
-function migrateProject(project: ProjectFile): ProjectFile {
+export function normalizeProject(project: ProjectFile): ProjectFile {
+  const allowedFields = ['version', 'outputTarget', 'cIntegrationProfile', 'name', 'createdAt', 'updatedAt', 'canvasSize', 'pages', 'resources', 'variables', 'logicGraphs', 'codeGenOptions', 'display', 'lvglConfig'];
+  const unknownFields = Object.keys(project).filter(key => !allowedFields.includes(key));
+  if (unknownFields.length) throw new Error(`Unknown project fields: ${unknownFields.join(', ')}`);
   const [major] = project.version.split('.').map(Number);
   
   // Currently only version 1.x.x is supported
   if (major !== 1) {
-    console.warn(`Project version ${project.version} may not be fully compatible`);
+    throw new Error(`Unsupported project version: ${project.version}`);
   }
   
   // Ensure all required fields exist
   return {
     ...project,
+    outputTarget: resolveHostTarget(project.outputTarget),
+    cIntegrationProfile: resolveCIntegrationProfile(project.cIntegrationProfile),
     resources: project.resources || { images: [], fonts: [] },
     variables: project.variables || [],
     logicGraphs: project.logicGraphs || [],
@@ -198,6 +208,7 @@ export function validateProject(project: unknown): project is ProjectFile {
   
   if (typeof p.version !== 'string') return false;
   if (typeof p.name !== 'string') return false;
+  try { resolveHostTarget(p.outputTarget); resolveCIntegrationProfile(p.cIntegrationProfile); } catch { return false; }
   if (!p.canvasSize || typeof p.canvasSize !== 'object') return false;
   if (!Array.isArray(p.pages)) return false;
   

@@ -17,7 +17,8 @@ export type ActionNodeType =
   | 'set_text' 
   | 'set_value' 
   | 'call_function' 
-  | 'delay';
+  | 'delay'
+  | 'for_loop';
 
 // Data Node Types
 export type DataNodeType = 
@@ -25,7 +26,12 @@ export type DataNodeType =
   | 'var_write' 
   | 'math_op' 
   | 'string_op' 
-  | 'get_property';
+  | 'get_property'
+  | 'map_range'
+  | 'clamp'
+  | 'math_func'
+  | 'to_string'
+  | 'random';
 
 // Custom Node Types
 export type CustomNodeType = 'c_code_block';
@@ -121,7 +127,7 @@ export type CompareOperator = '==' | '!=' | '>' | '<' | '>=' | '<=';
 export type LogicOperator = 'AND' | 'OR' | 'NOT';
 
 // Math Operators
-export type MathOperator = '+' | '-' | '*' | '/' | '%';
+export type MathOperator = '+' | '-' | '*' | '/' | '%' | 'min' | 'max' | 'pow';
 
 // String Operations
 export type StringOperation = 'concat' | 'format' | 'substring' | 'length';

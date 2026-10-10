@@ -31,7 +31,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   parentWidth,
   parentHeight,
   parentLayout,
-  parentFlexDirection,
   onClick,
   onDragStart,
   onResizeStart,

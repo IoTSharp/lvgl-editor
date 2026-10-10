@@ -1,9 +1,9 @@
 // Test helpers and factory functions for codegen tests
 
-import type { Page, LvglComponent, EventBinding, Animation, StyleProps, Theme, BuiltinAction, LvglAlign, LvglFlags } from '../../types';
+import type { Page, LvglComponent, EventBinding, Animation, StyleProps, Theme, BuiltinAction } from '../../types';
 import type { CodeGenOptions } from '../types';
 import type { ImageResource, FontResource } from '../../resources/types';
-import type { LogicGraph, LogicNode, LogicConnection, LogicVariable, LogicNodeCategory, LogicNodeSubType, LogicPort, ConnectionType, VariableType, PortDataType } from '../../components/LogicEditor/types';
+import type { LogicGraph, LogicNode, LogicConnection, LogicVariable, LogicNodeCategory, LogicNodeSubType, LogicPort } from '../../components/LogicEditor/types';
 import { DEFAULT_CODEGEN_OPTIONS } from '../types';
 
 let _idCounter = 0;

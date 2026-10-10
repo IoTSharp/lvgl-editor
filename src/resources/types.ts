@@ -87,6 +87,9 @@ export interface ResourceStore {
 // Project file format
 export interface ProjectFile {
   version: string;
+  /** Missing only in legacy C/LVGL projects. */
+  outputTarget?: import('../output').TargetId;
+  cIntegrationProfile?: import('../output').CIntegrationProfileId;
   name: string;
   createdAt: number;
   updatedAt: number;

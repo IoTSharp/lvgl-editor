@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useState, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import type { Animation, AnimationType } from '../../types';
@@ -72,11 +73,11 @@ const AnimationPanel: React.FC = () => {
     return (
       <div className="animation-panel">
         <div className="panel-header">
-          <h3>🎬 动画</h3>
+          <h3>{t("🎬 动画")}</h3>
         </div>
         <div className="anim-no-selection">
-          <p>请选择一个组件</p>
-          <p className="hint">选中组件后可添加动画</p>
+          <p>{t("请选择一个组件")}</p>
+          <p className="hint">{t("选中组件后可添加动画")}</p>
         </div>
       </div>
     );
@@ -85,16 +86,15 @@ const AnimationPanel: React.FC = () => {
   return (
     <div className="animation-panel">
       <div className="panel-header">
-        <h3>🎬 动画</h3>
-        <button className="add-anim-btn" onClick={handleAddAnim} title="添加动画">+</button>
+        <h3>{t("🎬 动画")}</h3>
+        <button className="add-anim-btn" onClick={handleAddAnim} title={t("添加动画")}>+</button>
       </div>
       <div className="anim-list">
         {animations.length === 0 ? (
           <div className="no-anims">
-            <p>暂无动画</p>
+            <p>{t("暂无动画")}</p>
             <button className="add-first-anim" onClick={handleAddAnim}>
-              + 添加第一个动画
-            </button>
+              {t("+ 添加第一个动画")}</button>
           </div>
         ) : (
           animations.map(anim => (
@@ -109,8 +109,8 @@ const AnimationPanel: React.FC = () => {
                 </div>
               </div>
               <div className="anim-actions">
-                <button className="anim-edit-btn" onClick={() => handleEditAnim(anim)} title="编辑">✏️</button>
-                <button className="anim-delete-btn" onClick={() => handleDeleteAnim(anim.id)} title="删除">🗑️</button>
+                <button className="anim-edit-btn" onClick={() => handleEditAnim(anim)} title={t("编辑")}>✏️</button>
+                <button className="anim-delete-btn" onClick={() => handleDeleteAnim(anim.id)} title={t("删除")}>🗑️</button>
               </div>
             </div>
           ))

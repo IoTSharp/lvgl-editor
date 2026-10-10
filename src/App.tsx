@@ -17,7 +17,7 @@ import PageManager from './components/PageManager';
 import StatusBar from './components/StatusBar';
 import AlignToolbar from './components/AlignToolbar';
 import HelpPanel from './components/HelpPanel';
-import Toast, { useToast } from './components/Toast';
+import Toast, { useToast, toast } from './components/Toast';
 import Modal, { modal } from './components/Modal';
 import CodePreview from './components/CodePreview';
 import { LogicEditor } from './components/LogicEditor';
@@ -41,11 +41,15 @@ import type { LvglComponent, Page } from './types';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { getComponentDefinition } from './utils/componentDefinitions';
 import './App.css';
+import { t, useLang } from './i18n';
+import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher';
+import type { TargetId, CIntegrationProfileId } from './output';
 
 type TabType = 'design' | 'logic' | 'code' | 'preview';
 const isCompilePreviewEnabled = import.meta.env.VITE_ENABLE_COMPILE_PREVIEW !== 'false';
 
 const App: React.FC = () => {
+  useLang();
   const { currentView, currentProjectId, showProjectSettings, openProject, goToProjectList, setShowProjectSettings, setLastSaveTime, setDefaultFontSize } = useAppStore();
   const { loadProjectData, getProjectConfig, saveProjectData, exportProject, importProject } = useProjectStore();
 
@@ -67,12 +71,12 @@ const App: React.FC = () => {
             // Set default font size from project config
             const fontRes = fonts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
             setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes, cfg.lvglConfig.defaultFontSize));
-            openProject(lastId);
-          }).catch(() => {
-            // Failed to load, show project list
+            openProject(lastId, cfg.outputTarget, cfg.cIntegrationProfile);
+          }).catch(error => {
+            toast.error(t('工程恢复失败: {0}', String(error)));
           });
         }
-      });
+      }).catch(error => { toast.error(t('工程恢复失败: {0}', String(error))); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -119,7 +123,7 @@ interface EditorViewProps {
   importProject: (file: import('./resources/types').ProjectFile, name?: string) => Promise<string>;
   loadProjectData: (id: string) => Promise<{ data: { pages: Page[]; logicGraphs: import('./components/LogicEditor/types').LogicGraph[] }; images: import('./resources/types').ImageResource[]; fonts: import('./resources/types').FontResource[] }>;
   getProjectConfig: (id: string) => Promise<import('./store/projectStore').ProjectConfig | undefined>;
-  openProject: (id: string) => void;
+  openProject: (id: string, target?: TargetId, cIntegrationProfile?: CIntegrationProfileId) => void;
 }
 
 const EditorView: React.FC<EditorViewProps> = ({
@@ -142,13 +146,16 @@ const EditorView: React.FC<EditorViewProps> = ({
   const { addComponent, pages, setPages, setCanvasSize } = useEditorStore();
   const { images, fonts, importResources } = useResourceStore();
   const { messages, removeToast, success, error } = useToast();
+  const outputTarget = useAppStore(s => s.outputTarget);
+  const cIntegrationProfile = useAppStore(s => s.cIntegrationProfile);
+  const allowCompilePreview = isCompilePreviewEnabled && outputTarget === 'c-lvgl' && cIntegrationProfile === 'generic';
 
   // UI State
   const [showResourcePanel, setShowResourcePanel] = useState(false);
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('design');
   const [previewMode, setPreviewMode] = useState<'simple' | 'wasm' | 'compile'>('simple');
-  const resolvedPreviewMode = !isCompilePreviewEnabled && previewMode === 'compile'
+  const resolvedPreviewMode = !allowCompilePreview && previewMode === 'compile'
     ? 'simple'
     : previewMode;
   const [projectName, setProjectName] = useState('');
@@ -212,9 +219,9 @@ const EditorView: React.FC<EditorViewProps> = ({
       const logicGraphs = useLogicEditorStore.getState().graphs;
       await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
       setLastSaveTime(Date.now());
-      success('项目已保存');
+      success(t('Project saved'));
     } catch (err) {
-      error('保存失败: ' + String(err));
+      error(t('Save failed: {0}', String(err)));
     }
   }, [currentProjectId, pages, images, fonts, saveProjectData, setLastSaveTime, success, error]);
 
@@ -226,9 +233,9 @@ const EditorView: React.FC<EditorViewProps> = ({
       await saveProjectData(currentProjectId, pages, logicGraphs, images, fonts);
       const project = await exportProject(currentProjectId);
       downloadProject(project);
-      success(`项目已导出`);
+      success(t('Project exported'));
     } catch (err) {
-      error('导出失败: ' + String(err));
+      error(t('Export failed: {0}', String(err)));
     }
   }, [currentProjectId, pages, images, fonts, saveProjectData, exportProject, success, error]);
 
@@ -253,18 +260,18 @@ const EditorView: React.FC<EditorViewProps> = ({
         }
         const fontRes = fnts.find(f => f.cFontName === cfg.lvglConfig.defaultFont);
         setDefaultFontSize(parseFontSize(cfg.lvglConfig.defaultFont, fontRes?.sizes, cfg.lvglConfig.defaultFontSize));
-        openProject(id);
+        openProject(id, cfg.outputTarget, cfg.cIntegrationProfile);
         setProjectName(cfg.name);
       }
-      success(`项目「${project.name}」导入成功`);
+      success(t('Project "{0}" imported successfully', project.name));
     } catch (err) {
-      error('导入失败: ' + String(err));
+      error(t('Import failed: {0}', String(err)));
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleNewProjectClick = useCallback(async () => {
-    if (await modal.confirm('创建新项目将返回项目列表，当前项目会自动保存。继续吗？')) {
+    if (await modal.confirm(t("创建新项目将返回项目列表，当前项目会自动保存。继续吗？"))) {
       // Save current project first
       if (currentProjectId) {
         const logicGraphs = useLogicEditorStore.getState().graphs;
@@ -479,25 +486,23 @@ const EditorView: React.FC<EditorViewProps> = ({
         return (
           <div className="app-body full-panel">
             <div className="preview-sub-tabs">
+              {outputTarget === 'c-lvgl' && cIntegrationProfile !== 'generic' && <span role="status">{t('Board integration profiles require an external toolchain. Compile preview supports the generic profile only.')}</span>}
               <button
                 className={`preview-sub-tab ${resolvedPreviewMode === 'simple' ? 'active' : ''}`}
                 onClick={() => setPreviewMode('simple')}
               >
-                📱 简易预览
-              </button>
+                {t("📱 简易预览")}</button>
               <button
                 className={`preview-sub-tab ${resolvedPreviewMode === 'wasm' ? 'active' : ''}`}
                 onClick={() => setPreviewMode('wasm')}
               >
-                🖥️ LVGL 预览
-              </button>
-              {isCompilePreviewEnabled && (
+                {t("🖥️ LVGL 预览")}</button>
+              {allowCompilePreview && (
                 <button
                   className={`preview-sub-tab ${resolvedPreviewMode === 'compile' ? 'active' : ''}`}
                   onClick={() => setPreviewMode('compile')}
                 >
-                  🔨 编译运行
-                </button>
+                  {t("🔨 编译运行")}</button>
               )}
             </div>
             <div className="preview-sub-content">
@@ -519,7 +524,7 @@ const EditorView: React.FC<EditorViewProps> = ({
     <div className="app">
       <div className="app-header">
         <div className="app-logo">
-          <button className="back-to-list-btn" onClick={handleBackToList} title="返回项目列表">
+          <button className="back-to-list-btn" onClick={handleBackToList} title={t("返回项目列表")}>
             ◀
           </button>
           <span className="logo-icon">📐</span>
@@ -532,53 +537,54 @@ const EditorView: React.FC<EditorViewProps> = ({
             className={`tab-btn ${activeTab === 'design' ? 'active' : ''}`}
             onClick={() => setActiveTab('design')}
           >
-            🎨 设计
+            🎨 {t('Design')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'logic' ? 'active' : ''}`}
             onClick={() => setActiveTab('logic')}
           >
-            🔗 逻辑
+            🔗 {t('Logic')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'code' ? 'active' : ''}`}
             onClick={() => setActiveTab('code')}
           >
-            💻 代码
+            💻 {t('Code')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
             onClick={() => setActiveTab('preview')}
           >
-            📱 预览
+            📱 {t('Preview')}
           </button>
         </div>
 
         <div className="app-toolbar">
-          <ToolbarButton icon="💾" label="保存" onClick={handleSaveProject} shortcut="Ctrl+S" />
-          <ToolbarButton icon="📤" label="导出" onClick={handleExportProject} />
-          <ToolbarButton icon="📥" label="导入" onClick={handleImportProject} />
+          <ToolbarButton icon="💾" label="Save" onClick={handleSaveProject} shortcut="Ctrl+S" />
+          <ToolbarButton icon="📤" label="Export" onClick={handleExportProject} />
+          <ToolbarButton icon="📥" label="Import" onClick={handleImportProject} />
           <div className="toolbar-divider" />
-          <ToolbarButton icon="↩️" label="撤销" onClick={() => useEditorStore.getState().undo()} shortcut="Ctrl+Z" />
-          <ToolbarButton icon="↪️" label="重做" onClick={() => useEditorStore.getState().redo()} shortcut="Ctrl+Y" />
+          <ToolbarButton icon="↩️" label="Undo" onClick={() => useEditorStore.getState().undo()} shortcut="Ctrl+Z" />
+          <ToolbarButton icon="↪️" label="Redo" onClick={() => useEditorStore.getState().redo()} shortcut="Ctrl+Y" />
           <div className="toolbar-divider" />
           <ToolbarButton
             icon="📦"
-            label="资源"
+            label="Resources"
             onClick={() => setShowResourcePanel(!showResourcePanel)}
             active={showResourcePanel}
           />
           <ToolbarButton
             icon="⚙️"
-            label="设置"
+            label="Settings"
             onClick={() => setShowProjectSettings(true)}
           />
           <div className="toolbar-divider" />
           <ThemeSelector />
+          <LanguageSwitcher />
           <div className="toolbar-divider" />
           <ToolbarButton
             icon="❓"
-            label="帮助"
+            label="Help"
             onClick={() => setShowHelpPanel(true)}
             shortcut="F1"
           />
@@ -626,10 +632,10 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, label, onClick, dis
     className={`toolbar-button ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`}
     onClick={onClick}
     disabled={disabled}
-    title={shortcut ? `${label} (${shortcut})` : label}
+    title={shortcut ? `${t(label)} (${shortcut})` : t(label)}
   >
     <span className="toolbar-icon">{icon}</span>
-    <span className="toolbar-label">{label}</span>
+    <span className="toolbar-label">{t(label)}</span>
   </button>
 );
 

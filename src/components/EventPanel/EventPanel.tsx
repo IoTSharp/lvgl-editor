@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useState, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import type { EventBinding, LvglEventType } from '../../types';
@@ -108,11 +109,11 @@ const EventPanel: React.FC = () => {
     return (
       <div className="event-panel">
         <div className="panel-header">
-          <h3>事件</h3>
+          <h3>{t("事件")}</h3>
         </div>
         <div className="no-selection">
-          <p>未选中组件</p>
-          <p className="hint">选择组件后可添加事件</p>
+          <p>{t("未选中组件")}</p>
+          <p className="hint">{t("选择组件后可添加事件")}</p>
         </div>
       </div>
     );
@@ -121,8 +122,8 @@ const EventPanel: React.FC = () => {
   return (
     <div className="event-panel">
       <div className="panel-header">
-        <h3>事件</h3>
-        <button className="add-event-btn" onClick={handleAddEvent} title="添加事件">
+        <h3>{t("事件")}</h3>
+        <button className="add-event-btn" onClick={handleAddEvent} title={t("添加事件")}>
           <span>+</span>
         </button>
       </div>
@@ -130,10 +131,9 @@ const EventPanel: React.FC = () => {
       <div className="event-list">
         {component.events.length === 0 ? (
           <div className="no-events">
-            <p>暂无事件绑定</p>
+            <p>{t("暂无事件绑定")}</p>
             <button className="add-first-event" onClick={handleAddEvent}>
-              + 添加事件
-            </button>
+              {t("+ 添加事件")}</button>
           </div>
         ) : (
           component.events.map(event => (
@@ -151,14 +151,14 @@ const EventPanel: React.FC = () => {
                 <button 
                   className="event-edit-btn" 
                   onClick={() => handleEditEvent(event)}
-                  title="编辑"
+                  title={t("编辑")}
                 >
                   ✏️
                 </button>
                 <button 
                   className="event-delete-btn" 
                   onClick={() => handleDeleteEvent(event.id)}
-                  title="删除"
+                  title={t("删除")}
                 >
                   🗑️
                 </button>

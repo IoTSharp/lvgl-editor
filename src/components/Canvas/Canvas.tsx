@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useEditorStore } from '../../store/editorStore';
@@ -11,7 +12,6 @@ import {
   copySelectedComponents,
   cutSelectedComponents,
   pasteClipboardComponents,
-  pasteIntoContainer,
   duplicateSelectedComponents,
   selectAllComponents,
 } from '../../hooks/useKeyboardShortcuts';
@@ -100,8 +100,6 @@ const Canvas: React.FC = () => {
   // === Fine-grained store subscriptions ===
   // State that affects rendering
   const canvas = useEditorStore(s => s.canvas);
-  const selectedIds = useEditorStore(s => s.selection.selectedIds);
-  const hoveredId = useEditorStore(s => s.selection.hoveredId);
   const alignmentGuides = useEditorStore(s => s.alignmentGuides);
   const pages = useEditorStore(s => s.pages);
   const currentPageId = useEditorStore(s => s.currentPageId);
@@ -971,11 +969,11 @@ const Canvas: React.FC = () => {
       
       {/* Zoom controls */}
       <div className="zoom-controls">
-        <button onClick={handleZoomOut} title="缩小">−</button>
-        <button className="zoom-level" onClick={handleZoomReset} title="重置缩放">
+        <button onClick={handleZoomOut} title={t("缩小")}>−</button>
+        <button className="zoom-level" onClick={handleZoomReset} title={t("重置缩放")}>
           {Math.round(canvas.zoom * 100)}%
         </button>
-        <button onClick={handleZoomIn} title="放大">+</button>
+        <button onClick={handleZoomIn} title={t("放大")}>+</button>
       </div>
       
       {/* Context Menu */}

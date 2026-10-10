@@ -3,9 +3,9 @@
  * Generates C code via generateCode(), writes to a temp dir, and compiles with emcc + LVGL.
  * This validates that the generated code is syntactically and semantically correct C.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { execSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { generateCode } from '../generator';
@@ -16,21 +16,24 @@ import {
   createEvent,
   createBuiltinAction,
   createAnimation,
-  createTheme,
   createImageResource,
   createLogicGraph,
   createLogicNode,
   createLogicVariable,
   createLogicConnection,
   createLogicPort,
-  resetIdCounter,
 } from './helpers';
 
 // Paths
-const EMSDK_ENV = '/home/xcssa/.openclaw/workspace/tools/emsdk/emsdk_env.sh';
-const LVGL_ROOT = '/home/xcssa/.openclaw/workspace/tools/lvgl';
-const LVGL_LIB = '/home/xcssa/.openclaw/workspace/projects/lvgl-editor/wasm/build/liblvgl_emcc.a';
-const LV_CONF_DIR = '/home/xcssa/.openclaw/workspace/projects/lvgl-editor/wasm';
+const EMSDK_ENV = process.env.LVGL_EMSDK_ENV ?? '';
+const LVGL_ROOT = process.env.LVGL_ROOT ?? '';
+const LVGL_LIB = process.env.LVGL_LIB ?? '';
+const LV_CONF_DIR = process.env.LVGL_CONF_DIR ?? '';
+const BASH = process.env.LVGL_BASH ?? '/bin/bash';
+// C compilation is independent evidence. Ordinary source tests must not try an
+// author's private toolchain paths or report a skipped native compile as passed.
+const compileEnabled = process.env.LVGL_COMPILE_VERIFY === '1' &&
+  [EMSDK_ENV, LVGL_ROOT, LVGL_LIB, LV_CONF_DIR, BASH].every(p => p !== '' && existsSync(p));
 
 const MAIN_C = `
 #include "ui.h"
@@ -64,29 +67,14 @@ function compileGenerated(
 
     const sourceFiles = ['main.c', 'ui.c', 'ui_events.c', 'ui_logic.c', ...extraCFiles];
 
-    const cmd = [
-      `source ${EMSDK_ENV} 2>/dev/null &&`,
-      `emcc ${sourceFiles.join(' ')}`,
-      `-O0 -DLV_CONF_INCLUDE_SIMPLE`,
-      `-I/home/xcssa/.openclaw/workspace/tools`,
-      `-I${LVGL_ROOT}`,
-      `-I${LVGL_ROOT}/src`,
-      `-I${LV_CONF_DIR}`,
-      `-I.`,
-      LVGL_LIB,
-      `-sALLOW_MEMORY_GROWTH=1`,
-      `-Wno-unused-function`,
-      `-Wno-implicit-function-declaration`,
-      `-Wno-unused-variable`,
-      ...extraFlags,
-      `-o output.js`,
-    ].join(' ');
-
-    execSync(cmd, {
+    const flags = ['-O0', '-DLV_CONF_INCLUDE_SIMPLE', `-I${LVGL_ROOT}`, `-I${LVGL_ROOT}/src`, `-I${LV_CONF_DIR}`, '-I.', LVGL_LIB, '-sALLOW_MEMORY_GROWTH=1', '-Wno-unused-function', '-Wno-implicit-function-declaration', '-Wno-unused-variable', ...extraFlags, '-o', 'output.js'];
+    // GNU timeout bounds and terminates the compiler process group. Bash receives
+    // its script via stdin and all paths/source arguments remain distinct argv.
+    execFileSync('timeout', ['--signal=TERM', '--kill-after=5s', '60s', BASH, '-s', '--', EMSDK_ENV, ...sourceFiles, ...flags], {
       cwd: tmpDir,
+      input: 'set -e\nsource "$1" >/dev/null\nshift\nexec emcc "$@"\n',
       stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 60_000,
-      shell: '/bin/bash',
+      timeout: 65_000,
     });
     return { success: true, stderr: '' };
   } catch (err: any) {
@@ -99,7 +87,7 @@ function compileGenerated(
   }
 }
 
-describe('Compile verification', { timeout: 300_000 }, () => {
+describe.skipIf(!compileEnabled)('Compile verification (opt-in configured emcc + LVGL)', { timeout: 300_000 }, () => {
   // ── 1. Empty project (no pages) ──
   it('compiles empty project', { timeout: 30_000 }, () => {
     const code = generateCode([], defaultOptions());
@@ -265,7 +253,7 @@ describe('Compile verification', { timeout: 300_000 }, () => {
       styles: {
         default: {
           textColor: '#FF5500',
-          fontSize: 24,
+          textFontSize: 24,
           shadowColor: '#000000',
           shadowWidth: 5,
           shadowOffsetX: 2,
@@ -556,7 +544,7 @@ describe('Compile verification', { timeout: 300_000 }, () => {
   describe('Existing component untested properties', () => {
     it('compiles label longMode variants', { timeout: 30_000 }, () => {
       const modes = ['wrap', 'scroll', 'dot', 'clip'] as const;
-      const comps = modes.map((m, i) =>
+      const comps = modes.map((m) =>
         createComponent('label', { name: `lbl_${m}`, props: { text: `Mode ${m}`, longMode: m } }),
       );
       const page = createPage({ name: 'main', components: comps });

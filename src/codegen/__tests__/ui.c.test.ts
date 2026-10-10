@@ -8,8 +8,6 @@ import {
   createImageResource,
   createEvent,
   createAnimation,
-  createStyleProps,
-  resetIdCounter,
 } from './helpers';
 
 describe('generateUiSource', () => {

@@ -93,7 +93,8 @@ function generateStyleCode(
   options: CodeGenOptions,
   selector: string = '0',
   defaultFont?: string,
-  defaultFontSize?: number
+  defaultFontSize?: number,
+  fontResources: FontResource[] = []
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -256,7 +257,10 @@ function generateStyleCode(
       const fontSize = styles.textFontSize || 16;
       // Skip if same font and same size as project default
       if (styles.textFont !== defaultFont || fontSize !== (defaultFontSize || 16)) {
-        lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &${styles.textFont}_${fontSize}, ${selector});`);
+        const symbol = fontResources.some(f => f.cFontName === styles.textFont)
+          ? `${styles.textFont}_${fontSize}`
+          : styles.textFont.startsWith('font_') ? styles.textFont : `font_${styles.textFont}`;
+        lines.push(`${indent}lv_obj_set_style_text_font(${varName}, &${symbol}, ${selector});`);
       }
     }
   }
@@ -900,7 +904,8 @@ function generateComponentCode(
   defaultFont?: string,
   defaultFontSize?: number,
   useBuiltinSymbols?: boolean,
-  symbolFont?: string
+  symbolFont?: string,
+  fontResources: FontResource[] = []
 ): string[] {
   const lines: string[] = [];
   const indent = getIndent(options);
@@ -1023,24 +1028,24 @@ function generateComponentCode(
   }
 
   // Styles
-  const styleLines = generateStyleCode(varName, component.styles.default, options, '0', defaultFont, defaultFontSize);
+  const styleLines = generateStyleCode(varName, component.styles.default, options, '0', defaultFont, defaultFontSize, fontResources);
   lines.push(...styleLines);
 
   // Pressed state styles
   if (component.styles.pressed) {
-    const pressedLines = generateStyleCode(varName, component.styles.pressed, options, 'LV_STATE_PRESSED', defaultFont, defaultFontSize);
+    const pressedLines = generateStyleCode(varName, component.styles.pressed, options, 'LV_STATE_PRESSED', defaultFont, defaultFontSize, fontResources);
     lines.push(...pressedLines);
   }
 
   // Focused state styles
   if (component.styles.focused) {
-    const focusedLines = generateStyleCode(varName, component.styles.focused, options, 'LV_STATE_FOCUSED', defaultFont, defaultFontSize);
+    const focusedLines = generateStyleCode(varName, component.styles.focused, options, 'LV_STATE_FOCUSED', defaultFont, defaultFontSize, fontResources);
     lines.push(...focusedLines);
   }
 
   // Disabled state styles
   if (component.styles.disabled) {
-    const disabledLines = generateStyleCode(varName, component.styles.disabled, options, 'LV_STATE_DISABLED', defaultFont, defaultFontSize);
+    const disabledLines = generateStyleCode(varName, component.styles.disabled, options, 'LV_STATE_DISABLED', defaultFont, defaultFontSize, fontResources);
     lines.push(...disabledLines);
   }
 
@@ -1080,7 +1085,7 @@ function generateComponentCode(
     const defaultTab = `${varName}_tab_${component.props.activeTab || 0}`;
     for (const child of component.children) {
       const tabParent = childToTab[child.id] || defaultTab;
-      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
+      lines.push(...generateComponentCode(child, tabParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont, fontResources));
     }
   } else if (component.type === 'tileview' && component.props?.rows !== undefined && component.props?.cols !== undefined) {
     const tileChildMap: Record<string, string[]> = component.props.tileChildMap || {};
@@ -1097,19 +1102,19 @@ function generateComponentCode(
     const defaultTile = `${varName}_tile_0_0`;
     for (const child of component.children) {
       const tileParent = childToTile[child.id] || defaultTile;
-      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
+      lines.push(...generateComponentCode(child, tileParent, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont, fontResources));
     }
   } else if (component.type === 'win') {
     // Win children go into the content area
     if (component.children.length > 0) {
       lines.push(`${indent}lv_obj_t * ${varName}_content = lv_win_get_content(${varName});`);
       for (const child of component.children) {
-        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
+        lines.push(...generateComponentCode(child, `${varName}_content`, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont, fontResources));
       }
     }
   } else {
     for (const child of component.children) {
-      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
+      lines.push(...generateComponentCode(child, varName, options, pageName, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont, fontResources));
     }
   }
 
@@ -1166,7 +1171,7 @@ function generateScreenInitFunc(
   
   // Generate components
   for (const component of page.components) {
-    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont));
+    lines.push(...generateComponentCode(component, screenVar, options, page.name, needsPagePrefix, imageResources, defaultFont, defaultFontSize, useBuiltinSymbols, symbolFont, fontResources));
   }
   
   // User code section
@@ -1328,7 +1333,6 @@ export function generateUiSource(pages: Page[], options: CodeGenOptions, theme?:
     // Generate mutable font wrapper for fallback support
     // (const fonts in WASM are placed in read-only memory, so fallback pointer cannot be set at runtime)
     if (defaultFont && !/^montserrat_\d+$/.test(defaultFont)) {
-      const defaultFontCName = `${defaultFont}_${defaultFontSize || 16}`;
       lines.push('');
       if (options.generateComments) {
         lines.push(`${generateComment('Mutable copy of default font with symbol fallback (const fonts are read-only in WASM)', options)}`);

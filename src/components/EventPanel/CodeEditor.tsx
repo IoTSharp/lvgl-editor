@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React from 'react';
 import './CodeEditor.css';
 
@@ -31,8 +32,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       />
       <div className="code-editor-footer">
         <span className="line-count">
-          {value.split('\n').length} 行
-        </span>
+          {value.split('\n').length} {t("行")}</span>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useResourceStore } from '../../resources/resourceStore';
@@ -142,23 +143,23 @@ const DropdownOptionsEditor: React.FC<{
             className="dropdown-option-btn"
             onClick={() => handleMoveUp(i)}
             disabled={i === 0}
-            title="上移"
+            title={t("上移")}
           >↑</button>
           <button
             className="dropdown-option-btn"
             onClick={() => handleMoveDown(i)}
             disabled={i === options.length - 1}
-            title="下移"
+            title={t("下移")}
           >↓</button>
           <button
             className="dropdown-option-btn delete"
             onClick={() => handleDelete(i)}
             disabled={options.length <= 1}
-            title="删除"
+            title={t("删除")}
           >✕</button>
         </div>
       ))}
-      <button className="dropdown-option-add" onClick={handleAdd}>+ 添加选项</button>
+      <button className="dropdown-option-add" onClick={handleAdd}>{t("+ 添加选项")}</button>
     </div>
   );
 };
@@ -170,7 +171,7 @@ const ToggleSwitch: React.FC<{
   label?: string;
 }> = ({ checked, onChange, label }) => (
   <div className="toggle-switch-wrapper" onClick={() => onChange(!checked)}>
-    {label && <span className="toggle-switch-label">{label}</span>}
+    {label && <span className="toggle-switch-label">{t(label)}</span>}
     <div className={`toggle-switch ${checked ? 'on' : ''}`}>
       <div className="toggle-switch-knob" />
     </div>
@@ -277,11 +278,11 @@ const PropertyEditor: React.FC = () => {
     return (
       <div className="property-editor">
         <div className="panel-header">
-          <h3>属性</h3>
+          <h3>{t("属性")}</h3>
         </div>
         <div className="no-selection">
-          <p>未选中组件</p>
-          <p className="hint">点击画布上的组件进行编辑</p>
+          <p>{t("未选中组件")}</p>
+          <p className="hint">{t("点击画布上的组件进行编辑")}</p>
         </div>
       </div>
     );
@@ -290,22 +291,22 @@ const PropertyEditor: React.FC = () => {
   return (
     <div className="property-editor">
       <div className="panel-header">
-        <h3>属性</h3>
+        <h3>{t("属性")}</h3>
       </div>
       
       <div className="property-sections">
         {/* Component Info */}
         <div className="property-section">
-          <div className="section-header">组件信息</div>
+          <div className="section-header">{t("组件信息")}</div>
           <div className="property-row">
-            <label>类型</label>
+            <label>{t("类型")}</label>
             <div className="property-value readonly">
               <span className="component-type-icon">{definition?.icon}</span>
               {definition?.name || component.type}
             </div>
           </div>
           <div className="property-row">
-            <label>名称</label>
+            <label>{t("名称")}</label>
             <input
               type="text"
               value={component.name}
@@ -316,7 +317,7 @@ const PropertyEditor: React.FC = () => {
 
         {/* Position */}
         <div className="property-section">
-          <div className="section-header">位置</div>
+          <div className="section-header">{t("位置")}</div>
           <div className="property-row two-col">
             <div className="property-field">
               <label>X</label>
@@ -339,11 +340,11 @@ const PropertyEditor: React.FC = () => {
 
         {/* Size */}
         <div className="property-section">
-          <div className="section-header">尺寸</div>
+          <div className="section-header">{t("尺寸")}</div>
           {/* Width */}
           <div style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <label style={{ fontSize: 12, color: '#666', width: 32, flexShrink: 0 }}>宽度</label>
+              <label style={{ fontSize: 12, color: '#666', width: 32, flexShrink: 0 }}>{t("宽度")}</label>
               <div className="size-mode-switcher">
                 {(['px', 'percent', 'content'] as const).map((m) => (
                   <button
@@ -357,7 +358,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             {(component.widthMode || 'px') === 'content' ? (
-              <div style={{ fontSize: 12, color: '#999', padding: '6px 8px', background: '#f5f5f5', borderRadius: 4 }}>自适应内容</div>
+              <div style={{ fontSize: 12, color: '#999', padding: '6px 8px', background: '#f5f5f5', borderRadius: 4 }}>{t("自适应内容")}</div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <input
@@ -382,7 +383,7 @@ const PropertyEditor: React.FC = () => {
           {/* Height */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <label style={{ fontSize: 12, color: '#666', width: 32, flexShrink: 0 }}>高度</label>
+              <label style={{ fontSize: 12, color: '#666', width: 32, flexShrink: 0 }}>{t("高度")}</label>
               <div className="size-mode-switcher">
                 {(['px', 'percent', 'content'] as const).map((m) => (
                   <button
@@ -396,7 +397,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             {(component.heightMode || 'px') === 'content' ? (
-              <div style={{ fontSize: 12, color: '#999', padding: '6px 8px', background: '#f5f5f5', borderRadius: 4 }}>自适应内容</div>
+              <div style={{ fontSize: 12, color: '#999', padding: '6px 8px', background: '#f5f5f5', borderRadius: 4 }}>{t("自适应内容")}</div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <input
@@ -422,7 +423,7 @@ const PropertyEditor: React.FC = () => {
 
         {/* Alignment */}
         <div className="property-section">
-          <div className="section-header">对齐</div>
+          <div className="section-header">{t("对齐")}</div>
           <div className="align-grid">
             {ALIGN_OPTIONS.map((opt) => (
               <button
@@ -432,32 +433,32 @@ const PropertyEditor: React.FC = () => {
                 onClick={() => handlePropertyChange('align', opt.value)}
                 title={opt.value}
               >
-                {opt.label}
+                {t(opt.label)}
               </button>
             ))}
           </div>
           <div className="property-row" style={{ marginTop: 8 }}>
-            <label>对齐</label>
+            <label>{t("对齐")}</label>
             <select
               value={component.align || 'default'}
               onChange={(e) => handlePropertyChange('align', e.target.value)}
               style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
             >
-              <option value="default">默认</option>
-              <option value="center">居中</option>
-              <option value="top_left">左上</option>
-              <option value="top_mid">上中</option>
-              <option value="top_right">右上</option>
-              <option value="left_mid">左中</option>
-              <option value="right_mid">右中</option>
-              <option value="bottom_left">左下</option>
-              <option value="bottom_mid">下中</option>
-              <option value="bottom_right">右下</option>
+              <option value="default">{t("默认")}</option>
+              <option value="center">{t("居中")}</option>
+              <option value="top_left">{t("左上")}</option>
+              <option value="top_mid">{t("上中")}</option>
+              <option value="top_right">{t("右上")}</option>
+              <option value="left_mid">{t("左中")}</option>
+              <option value="right_mid">{t("右中")}</option>
+              <option value="bottom_left">{t("左下")}</option>
+              <option value="bottom_mid">{t("下中")}</option>
+              <option value="bottom_right">{t("右下")}</option>
             </select>
           </div>
           <div className="property-row two-col">
             <div className="property-field">
-              <label>偏移 X</label>
+              <label>{t("偏移 X")}</label>
               <input
                 type="number"
                 value={component.alignOffsetX || 0}
@@ -465,7 +466,7 @@ const PropertyEditor: React.FC = () => {
               />
             </div>
             <div className="property-field">
-              <label>偏移 Y</label>
+              <label>{t("偏移 Y")}</label>
               <input
                 type="number"
                 value={component.alignOffsetY || 0}
@@ -483,7 +484,7 @@ const PropertyEditor: React.FC = () => {
 
         {/* Styles */}
         <div className="property-section">
-          <div className="section-header">样式</div>
+          <div className="section-header">{t("样式")}</div>
           
           {/* Style state switcher */}
           <div className="style-state-switcher">
@@ -493,7 +494,7 @@ const PropertyEditor: React.FC = () => {
                 className={`style-state-btn ${activeStyleState === key ? 'active' : ''} ${key !== 'default' && component.styles[key] ? 'has-override' : ''}`}
                 onClick={() => setActiveStyleState(key)}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
@@ -502,16 +503,15 @@ const PropertyEditor: React.FC = () => {
             <div className="style-state-info">
               {hasStateOverride ? (
                 <button className="clear-override-btn" onClick={handleClearStateOverride}>
-                  清除{STYLE_STATES.find(s => s.key === activeStyleState)?.label}状态样式
-                </button>
+                  {t("清除")}{t(STYLE_STATES.find(s => s.key === activeStyleState)?.label ?? '')}{t("状态样式")}</button>
               ) : (
-                <span className="inherit-hint">继承默认样式，修改后将创建独立样式</span>
+                <span className="inherit-hint">{t("继承默认样式，修改后将创建独立样式")}</span>
               )}
             </div>
           )}
           
           <div className="property-row">
-            <label>背景色</label>
+            <label>{t("背景色")}</label>
             <div className="color-input-wrapper">
               <input
                 type="color"
@@ -528,7 +528,7 @@ const PropertyEditor: React.FC = () => {
           </div>
           
           <div className="property-row">
-            <label>边框色</label>
+            <label>{t("边框色")}</label>
             <div className="color-input-wrapper">
               <input
                 type="color"
@@ -546,7 +546,7 @@ const PropertyEditor: React.FC = () => {
           
           <div className="property-row two-col">
             <div className="property-field">
-              <label>边框宽度</label>
+              <label>{t("边框宽度")}</label>
               <input
                 type="number"
                 value={currentStyles.borderWidth || 0}
@@ -556,7 +556,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-field">
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <label>圆角</label>
+                <label>{t("圆角")}</label>
                 <button
                   className={`link-toggle-btn small ${radiusLinked ? 'linked' : ''}`}
                   onClick={() => {
@@ -587,22 +587,22 @@ const PropertyEditor: React.FC = () => {
           {!radiusLinked && (
             <div className="four-dir-grid">
               <div className="property-field">
-                <label>左上</label>
+                <label>{t("左上")}</label>
                 <input type="number" value={currentStyles.borderRadiusTopLeft || 0} min={0}
                   onChange={(e) => handleStyleChange('borderRadiusTopLeft', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>右上</label>
+                <label>{t("右上")}</label>
                 <input type="number" value={currentStyles.borderRadiusTopRight || 0} min={0}
                   onChange={(e) => handleStyleChange('borderRadiusTopRight', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>左下</label>
+                <label>{t("左下")}</label>
                 <input type="number" value={currentStyles.borderRadiusBottomLeft || 0} min={0}
                   onChange={(e) => handleStyleChange('borderRadiusBottomLeft', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>右下</label>
+                <label>{t("右下")}</label>
                 <input type="number" value={currentStyles.borderRadiusBottomRight || 0} min={0}
                   onChange={(e) => handleStyleChange('borderRadiusBottomRight', parseInt(e.target.value) || 0)} />
               </div>
@@ -611,7 +611,7 @@ const PropertyEditor: React.FC = () => {
 
           {/* Border side selector */}
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label style={{ width: 'auto' }}>边框边</label>
+            <label style={{ width: 'auto' }}>{t("边框边")}</label>
             <div className="border-side-group">
               {([
                 ['full', '全部'], ['top', '上'], ['bottom', '下'], ['left', '左'],
@@ -627,7 +627,7 @@ const PropertyEditor: React.FC = () => {
           </div>
           
           <div className="property-row">
-            <label>透明度</label>
+            <label>{t("透明度")}</label>
             <input
               type="range"
               min={0}
@@ -640,7 +640,7 @@ const PropertyEditor: React.FC = () => {
           </div>
 
           <div className="property-row">
-            <label>文本颜色</label>
+            <label>{t("文本颜色")}</label>
             <div className="color-input-wrapper">
               <input
                 type="color"
@@ -657,7 +657,7 @@ const PropertyEditor: React.FC = () => {
           </div>
 
           <div className="property-row">
-            <label>内边距</label>
+            <label>{t("内边距")}</label>
             {paddingLinked ? (
               <input
                 type="number"
@@ -687,22 +687,22 @@ const PropertyEditor: React.FC = () => {
           {!paddingLinked && (
             <div className="four-dir-grid">
               <div className="property-field">
-                <label>上</label>
+                <label>{t("上")}</label>
                 <input type="number" value={currentStyles.paddingTop || 0} min={0}
                   onChange={(e) => handleStyleChange('paddingTop', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>下</label>
+                <label>{t("下")}</label>
                 <input type="number" value={currentStyles.paddingBottom || 0} min={0}
                   onChange={(e) => handleStyleChange('paddingBottom', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>左</label>
+                <label>{t("左")}</label>
                 <input type="number" value={currentStyles.paddingLeft || 0} min={0}
                   onChange={(e) => handleStyleChange('paddingLeft', parseInt(e.target.value) || 0)} />
               </div>
               <div className="property-field">
-                <label>右</label>
+                <label>{t("右")}</label>
                 <input type="number" value={currentStyles.paddingRight || 0} min={0}
                   onChange={(e) => handleStyleChange('paddingRight', parseInt(e.target.value) || 0)} />
               </div>
@@ -710,9 +710,9 @@ const PropertyEditor: React.FC = () => {
           )}
 
           {/* Shadow */}
-          {isSectionVisible('shadow', component.type) && <CollapsibleSection title="阴影">
+          {isSectionVisible('shadow', component.type) && <CollapsibleSection title={t("阴影")}>
             <div className="property-row">
-              <label>颜色</label>
+              <label>{t("颜色")}</label>
               <div className="color-input-wrapper">
                 <input
                   type="color"
@@ -728,7 +728,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>宽度</label>
+              <label>{t("宽度")}</label>
               <input
                 type="number"
                 value={currentStyles.shadowWidth || 0}
@@ -738,7 +738,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>偏移 X</label>
+                <label>{t("偏移 X")}</label>
                 <input
                   type="number"
                   value={currentStyles.shadowOffsetX || 0}
@@ -746,7 +746,7 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
               <div className="property-field">
-                <label>偏移 Y</label>
+                <label>{t("偏移 Y")}</label>
                 <input
                   type="number"
                   value={currentStyles.shadowOffsetY || 0}
@@ -755,7 +755,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>扩展</label>
+              <label>{t("扩展")}</label>
               <input
                 type="number"
                 value={currentStyles.shadowSpread || 0}
@@ -764,7 +764,7 @@ const PropertyEditor: React.FC = () => {
               />
             </div>
             <div className="property-row">
-              <label>透明度</label>
+              <label>{t("透明度")}</label>
               <input
                 type="range"
                 min={0}
@@ -778,9 +778,9 @@ const PropertyEditor: React.FC = () => {
           </CollapsibleSection>}
 
           {/* Transform */}
-          {isSectionVisible('transform', component.type) && <CollapsibleSection title="变换">
+          {isSectionVisible('transform', component.type) && <CollapsibleSection title={t("变换")}>
             <div className="property-row">
-              <label>旋转角度</label>
+              <label>{t("旋转角度")}</label>
               <input
                 type="range"
                 min={0}
@@ -793,7 +793,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>缩放 X (%)</label>
+                <label>{t("缩放 X (%)")}</label>
                 <input
                   type="range"
                   min={0}
@@ -805,7 +805,7 @@ const PropertyEditor: React.FC = () => {
                 <span className="range-value" style={{ textAlign: 'center' }}>{((currentStyles.transformZoomX ?? 256) / 256 * 100).toFixed(0)}%</span>
               </div>
               <div className="property-field">
-                <label>缩放 Y (%)</label>
+                <label>{t("缩放 Y (%)")}</label>
                 <input
                   type="range"
                   min={0}
@@ -819,7 +819,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>旋转中心 X</label>
+                <label>{t("旋转中心 X")}</label>
                 <input
                   type="number"
                   value={currentStyles.transformPivotX || 0}
@@ -827,7 +827,7 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
               <div className="property-field">
-                <label>旋转中心 Y</label>
+                <label>{t("旋转中心 Y")}</label>
                 <input
                   type="number"
                   value={currentStyles.transformPivotY || 0}
@@ -838,22 +838,22 @@ const PropertyEditor: React.FC = () => {
           </CollapsibleSection>}
 
           {/* Scrollbar */}
-          {isSectionVisible('scrollbar', component.type) && <CollapsibleSection title="滚动条">
+          {isSectionVisible('scrollbar', component.type) && <CollapsibleSection title={t("滚动条")}>
             <div className="property-row">
-              <label>模式</label>
+              <label>{t("模式")}</label>
               <select
                 value={currentStyles.scrollbarMode || 'auto'}
                 onChange={(e) => handleStyleChange('scrollbarMode', e.target.value)}
                 style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
               >
-                <option value="off">关闭</option>
-                <option value="on">始终显示</option>
-                <option value="active">活动时显示</option>
-                <option value="auto">自动</option>
+                <option value="off">{t("关闭")}</option>
+                <option value="on">{t("始终显示")}</option>
+                <option value="active">{t("活动时显示")}</option>
+                <option value="auto">{t("自动")}</option>
               </select>
             </div>
             <div className="property-row">
-              <label>宽度</label>
+              <label>{t("宽度")}</label>
               <input
                 type="number"
                 value={currentStyles.scrollbarWidth || 0}
@@ -862,7 +862,7 @@ const PropertyEditor: React.FC = () => {
               />
             </div>
             <div className="property-row">
-              <label>颜色</label>
+              <label>{t("颜色")}</label>
               <div className="color-input-wrapper">
                 <input
                   type="color"
@@ -880,10 +880,10 @@ const PropertyEditor: React.FC = () => {
           </CollapsibleSection>}
 
           {/* Text / Font */}
-          {isSectionVisible('textStyle', component.type) && <CollapsibleSection title="文本">
+          {isSectionVisible('textStyle', component.type) && <CollapsibleSection title={t("文本")}>
             <FontSelector currentStyles={currentStyles} handleStyleChange={handleStyleChange} />
             <div className="property-row">
-              <label>字体大小</label>
+              <label>{t("字体大小")}</label>
               <input
                 type="number"
                 value={currentStyles.textFontSize || 14}
@@ -894,7 +894,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>字间距</label>
+                <label>{t("字间距")}</label>
                 <input
                   type="number"
                   value={currentStyles.textLetterSpace || 0}
@@ -902,7 +902,7 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
               <div className="property-field">
-                <label>行间距</label>
+                <label>{t("行间距")}</label>
                 <input
                   type="number"
                   value={currentStyles.textLineSpace || 0}
@@ -911,35 +911,35 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>文本装饰</label>
+              <label>{t("文本装饰")}</label>
               <select
                 value={currentStyles.textDecor || 'none'}
                 onChange={(e) => handleStyleChange('textDecor', e.target.value as StyleProps['textDecor'])}
                 style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
               >
-                <option value="none">无</option>
-                <option value="underline">下划线</option>
-                <option value="strikethrough">删除线</option>
+                <option value="none">{t("无")}</option>
+                <option value="underline">{t("下划线")}</option>
+                <option value="strikethrough">{t("删除线")}</option>
               </select>
             </div>
           </CollapsibleSection>}
 
           {/* Gradient */}
-          {isSectionVisible('gradient', component.type) && <CollapsibleSection title="渐变">
+          {isSectionVisible('gradient', component.type) && <CollapsibleSection title={t("渐变")}>
             <div className="property-row">
-              <label>方向</label>
+              <label>{t("方向")}</label>
               <select
                 value={currentStyles.bgGradDir || 'none'}
                 onChange={(e) => handleStyleChange('bgGradDir', e.target.value as StyleProps['bgGradDir'])}
                 style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
               >
-                <option value="none">无</option>
-                <option value="hor">水平</option>
-                <option value="ver">垂直</option>
+                <option value="none">{t("无")}</option>
+                <option value="hor">{t("水平")}</option>
+                <option value="ver">{t("垂直")}</option>
               </select>
             </div>
             <div className="property-row">
-              <label>渐变色</label>
+              <label>{t("渐变色")}</label>
               <div className="color-input-wrapper">
                 <input
                   type="color"
@@ -955,7 +955,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>停止点</label>
+              <label>{t("停止点")}</label>
               <input
                 type="range"
                 min={0}
@@ -971,7 +971,7 @@ const PropertyEditor: React.FC = () => {
           {/* Outline */}
           {isSectionVisible('outline', component.type) && <CollapsibleSection title="Outline">
             <div className="property-row">
-              <label>颜色</label>
+              <label>{t("颜色")}</label>
               <div className="color-input-wrapper">
                 <input
                   type="color"
@@ -987,7 +987,7 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>宽度</label>
+              <label>{t("宽度")}</label>
               <input
                 type="number"
                 value={currentStyles.outlineWidth || 0}
@@ -996,7 +996,7 @@ const PropertyEditor: React.FC = () => {
               />
             </div>
             <div className="property-row">
-              <label>间距</label>
+              <label>{t("间距")}</label>
               <input
                 type="number"
                 value={currentStyles.outlinePad || 0}
@@ -1009,16 +1009,16 @@ const PropertyEditor: React.FC = () => {
           {/* Blend mode */}
           {isSectionVisible('blendMode', component.type) && (
           <div className="property-row" style={{ marginTop: 10 }}>
-            <label>混合模式</label>
+            <label>{t("混合模式")}</label>
             <select
               value={currentStyles.blendMode || 'normal'}
               onChange={(e) => handleStyleChange('blendMode', e.target.value as StyleProps['blendMode'])}
               style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
             >
-              <option value="normal">正常</option>
-              <option value="additive">叠加</option>
-              <option value="subtractive">减去</option>
-              <option value="multiply">乘法</option>
+              <option value="normal">{t("正常")}</option>
+              <option value="additive">{t("叠加")}</option>
+              <option value="subtractive">{t("减去")}</option>
+              <option value="multiply">{t("乘法")}</option>
             </select>
           </div>
           )}
@@ -1030,7 +1030,7 @@ const PropertyEditor: React.FC = () => {
         {/* Flex/Grid child properties */}
         {parentLayout === 'flex' && (
           <div className="property-section">
-            <div className="section-header">Flex 子项</div>
+            <div className="section-header">{t("Flex 子项")}</div>
             <div className="property-row">
               <label>flexGrow</label>
               <input
@@ -1057,11 +1057,11 @@ const PropertyEditor: React.FC = () => {
                 value={component.props.alignSelf || 'auto'}
                 onChange={(e) => handlePropsChange('alignSelf', e.target.value)}
               >
-                <option value="auto">自动</option>
-                <option value="flex-start">起始</option>
-                <option value="flex-end">末尾</option>
-                <option value="center">居中</option>
-                <option value="stretch">拉伸</option>
+                <option value="auto">{t("自动")}</option>
+                <option value="flex-start">{t("起始")}</option>
+                <option value="flex-end">{t("末尾")}</option>
+                <option value="center">{t("居中")}</option>
+                <option value="stretch">{t("拉伸")}</option>
               </select>
             </div>
           </div>
@@ -1069,10 +1069,10 @@ const PropertyEditor: React.FC = () => {
 
         {parentLayout === 'grid' && (
           <div className="property-section">
-            <div className="section-header">Grid 子项</div>
+            <div className="section-header">{t("Grid 子项")}</div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>起始列</label>
+                <label>{t("起始列")}</label>
                 <input
                   type="number"
                   value={component.props.gridColumn ?? 0}
@@ -1081,7 +1081,7 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
               <div className="property-field">
-                <label>跨列数</label>
+                <label>{t("跨列数")}</label>
                 <input
                   type="number"
                   value={component.props.gridColumnSpan ?? 1}
@@ -1092,7 +1092,7 @@ const PropertyEditor: React.FC = () => {
             </div>
             <div className="property-row two-col">
               <div className="property-field">
-                <label>起始行</label>
+                <label>{t("起始行")}</label>
                 <input
                   type="number"
                   value={component.props.gridRow ?? 0}
@@ -1101,7 +1101,7 @@ const PropertyEditor: React.FC = () => {
                 />
               </div>
               <div className="property-field">
-                <label>跨行数</label>
+                <label>{t("跨行数")}</label>
                 <input
                   type="number"
                   value={component.props.gridRowSpan ?? 1}
@@ -1111,27 +1111,27 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
             <div className="property-row">
-              <label>水平对齐</label>
+              <label>{t("水平对齐")}</label>
               <select
                 value={component.props.gridCellAlignX || 'stretch'}
                 onChange={(e) => handlePropsChange('gridCellAlignX', e.target.value)}
               >
-                <option value="start">起始</option>
-                <option value="center">居中</option>
-                <option value="end">末尾</option>
-                <option value="stretch">拉伸</option>
+                <option value="start">{t("起始")}</option>
+                <option value="center">{t("居中")}</option>
+                <option value="end">{t("末尾")}</option>
+                <option value="stretch">{t("拉伸")}</option>
               </select>
             </div>
             <div className="property-row">
-              <label>垂直对齐</label>
+              <label>{t("垂直对齐")}</label>
               <select
                 value={component.props.gridCellAlignY || 'stretch'}
                 onChange={(e) => handlePropsChange('gridCellAlignY', e.target.value)}
               >
-                <option value="start">起始</option>
-                <option value="center">居中</option>
-                <option value="end">末尾</option>
-                <option value="stretch">拉伸</option>
+                <option value="start">{t("起始")}</option>
+                <option value="center">{t("居中")}</option>
+                <option value="end">{t("末尾")}</option>
+                <option value="stretch">{t("拉伸")}</option>
               </select>
             </div>
           </div>
@@ -1190,8 +1190,8 @@ function renderFlagsSection(
         const items = isContainer ? group.items : group.items.filter(item => !SCROLL_FLAGS.has(item.key));
         if (items.length === 0) return null;
         return (
-          <div key={group.label} className="flags-group">
-            <div className="flags-group-label">{group.label}</div>
+          <div key={t(group.label)} className="flags-group">
+            <div className="flags-group-label">{t(group.label)}</div>
             {items.map((item) => (
               <div key={item.key} className="flag-row">
                 <input
@@ -1200,7 +1200,7 @@ function renderFlagsSection(
                   checked={!!flags[item.key]}
                   onChange={(e) => handleFlagChange(item.key, e.target.checked)}
                 />
-                <label htmlFor={`flag-${item.key}`}>{item.label}</label>
+                <label htmlFor={`flag-${item.key}`}>{t(item.label)}</label>
               </div>
             ))}
           </div>
@@ -1222,13 +1222,13 @@ function FontSelector({
 
   return (
     <div className="property-row">
-      <label>字体</label>
+      <label>{t("字体")}</label>
       <select
         value={currentStyles.textFont || ''}
         onChange={(e) => handleStyleChange('textFont', e.target.value || undefined)}
         style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
       >
-        <option value="">默认</option>
+        <option value="">{t("默认")}</option>
         <optgroup label="内置字体">
           {BUILTIN_FONTS.map((f) => (
             <option key={f} value={f}>{f}</option>
@@ -1358,13 +1358,13 @@ function ComponentFontSelector({
   return (
     <>
       <div className="property-row">
-        <label>字体</label>
+        <label>{t("字体")}</label>
         <select
           value={currentValue}
           onChange={(e) => handleFontChange(e.target.value)}
           style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 4, fontSize: 12 }}
         >
-          <option value="">默认</option>
+          <option value="">{t("默认")}</option>
           <optgroup label="内置字体">
             {BUILTIN_FONTS.map((f) => (
               <option key={f} value={f}>{f}</option>
@@ -1381,7 +1381,7 @@ function ComponentFontSelector({
       </div>
       {showSizeSelector && (
         <div className="property-row">
-          <label>字体大小</label>
+          <label>{t("字体大小")}</label>
           <select
             value={availableSizes.includes(fontSize || 14) ? (fontSize || 14) : 'custom'}
             onChange={(e) => {
@@ -1394,7 +1394,7 @@ function ComponentFontSelector({
               <option key={s} value={s}>{s}px</option>
             ))}
             {!availableSizes.includes(fontSize || 14) && (
-              <option value="custom">{fontSize || 14}px (自定义)</option>
+              <option value="custom">{fontSize || 14}{t("px (自定义)")}</option>
             )}
           </select>
         </div>
@@ -1415,26 +1415,26 @@ function ContainerLayoutEditor({
 }): React.ReactNode {
   return (
     <div className="property-section">
-      <div className="section-header">容器布局</div>
+      <div className="section-header">{t("容器布局")}</div>
       <div className="property-row">
-        <label>滚动方向</label>
+        <label>{t("滚动方向")}</label>
         <select
           value={props.scrollDir || 'none'}
           onChange={(e) => onChange('scrollDir', e.target.value)}
         >
-          <option value="none">不滚动</option>
-          <option value="hor">水平</option>
-          <option value="ver">垂直</option>
-          <option value="all">全方向</option>
+          <option value="none">{t("不滚动")}</option>
+          <option value="hor">{t("水平")}</option>
+          <option value="ver">{t("垂直")}</option>
+          <option value="all">{t("全方向")}</option>
         </select>
       </div>
       <div className="property-row">
-        <label>布局模式</label>
+        <label>{t("布局模式")}</label>
         <select
           value={props.layout || 'none'}
           onChange={(e) => onChange('layout', e.target.value)}
         >
-          <option value="none">无</option>
+          <option value="none">{t("无")}</option>
           <option value="flex">Flex</option>
           <option value="grid">Grid</option>
         </select>
@@ -1442,17 +1442,17 @@ function ContainerLayoutEditor({
       {props.layout === 'flex' && (
         <>
           <div className="property-row">
-            <label>方向</label>
+            <label>{t("方向")}</label>
             <select
               value={props.flexDirection || 'row'}
               onChange={(e) => onChange('flexDirection', e.target.value)}
             >
-              <option value="row">水平</option>
-              <option value="column">垂直</option>
+              <option value="row">{t("水平")}</option>
+              <option value="column">{t("垂直")}</option>
             </select>
           </div>
           <div className="property-row">
-            <label>间距</label>
+            <label>{t("间距")}</label>
             <input
               type="number"
               value={props.gap || 0}
@@ -1461,54 +1461,54 @@ function ContainerLayoutEditor({
             />
           </div>
           <div className="property-row">
-            <label>换行</label>
+            <label>{t("换行")}</label>
             <select
               value={props.flexWrap || 'nowrap'}
               onChange={(e) => onChange('flexWrap', e.target.value)}
             >
-              <option value="nowrap">不换行</option>
-              <option value="wrap">换行</option>
-              <option value="wrap-reverse">反向换行</option>
+              <option value="nowrap">{t("不换行")}</option>
+              <option value="wrap">{t("换行")}</option>
+              <option value="wrap-reverse">{t("反向换行")}</option>
             </select>
           </div>
           <div className="property-row">
-            <label>主轴对齐</label>
+            <label>{t("主轴对齐")}</label>
             <select
               value={props.justifyContent || 'flex-start'}
               onChange={(e) => onChange('justifyContent', e.target.value)}
             >
-              <option value="flex-start">起始</option>
-              <option value="flex-end">末尾</option>
-              <option value="center">居中</option>
-              <option value="space-between">两端对齐</option>
-              <option value="space-around">等距环绕</option>
-              <option value="space-evenly">等距分布</option>
+              <option value="flex-start">{t("起始")}</option>
+              <option value="flex-end">{t("末尾")}</option>
+              <option value="center">{t("居中")}</option>
+              <option value="space-between">{t("两端对齐")}</option>
+              <option value="space-around">{t("等距环绕")}</option>
+              <option value="space-evenly">{t("等距分布")}</option>
             </select>
           </div>
           <div className="property-row">
-            <label>交叉对齐</label>
+            <label>{t("交叉对齐")}</label>
             <select
               value={props.alignItems || 'flex-start'}
               onChange={(e) => onChange('alignItems', e.target.value)}
             >
-              <option value="flex-start">起始</option>
-              <option value="flex-end">末尾</option>
-              <option value="center">居中</option>
-              <option value="stretch">拉伸</option>
+              <option value="flex-start">{t("起始")}</option>
+              <option value="flex-end">{t("末尾")}</option>
+              <option value="center">{t("居中")}</option>
+              <option value="stretch">{t("拉伸")}</option>
             </select>
           </div>
           <div className="property-row">
-            <label>多行对齐</label>
+            <label>{t("多行对齐")}</label>
             <select
               value={props.alignContent || 'flex-start'}
               onChange={(e) => onChange('alignContent', e.target.value)}
             >
-              <option value="flex-start">起始</option>
-              <option value="flex-end">末尾</option>
-              <option value="center">居中</option>
-              <option value="stretch">拉伸</option>
-              <option value="space-between">两端对齐</option>
-              <option value="space-around">等距环绕</option>
+              <option value="flex-start">{t("起始")}</option>
+              <option value="flex-end">{t("末尾")}</option>
+              <option value="center">{t("居中")}</option>
+              <option value="stretch">{t("拉伸")}</option>
+              <option value="space-between">{t("两端对齐")}</option>
+              <option value="space-around">{t("等距环绕")}</option>
             </select>
           </div>
         </>
@@ -1516,30 +1516,30 @@ function ContainerLayoutEditor({
       {props.layout === 'grid' && (
         <>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>列定义</label>
+            <label>{t("列定义")}</label>
             <input
               type="text"
               value={props.gridColumns || '1fr 1fr 1fr'}
               onChange={(e) => onChange('gridColumns', e.target.value)}
-              placeholder="如: 1fr 2fr 1fr"
+              placeholder={t("如: 1fr 2fr 1fr")}
               style={{ width: '100%', boxSizing: 'border-box' }}
             />
             <GridTemplatePreview value={props.gridColumns || '1fr 1fr 1fr'} />
           </div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>行定义</label>
+            <label>{t("行定义")}</label>
             <input
               type="text"
               value={props.gridRows || '1fr 1fr'}
               onChange={(e) => onChange('gridRows', e.target.value)}
-              placeholder="如: 1fr 2fr"
+              placeholder={t("如: 1fr 2fr")}
               style={{ width: '100%', boxSizing: 'border-box' }}
             />
             <GridTemplatePreview value={props.gridRows || '1fr 1fr'} />
           </div>
           <div className="property-row two-col">
             <div className="property-field">
-              <label>列间距</label>
+              <label>{t("列间距")}</label>
               <input
                 type="number"
                 value={props.gridColumnGap || 0}
@@ -1548,7 +1548,7 @@ function ContainerLayoutEditor({
               />
             </div>
             <div className="property-field">
-              <label>行间距</label>
+              <label>{t("行间距")}</label>
               <input
                 type="number"
                 value={props.gridRowGap || 0}
@@ -1578,9 +1578,9 @@ function renderComponentProps(
       return (
         <>
           <div className="property-section">
-            <div className="section-header">按钮</div>
+            <div className="section-header">{t("按钮")}</div>
             <div className="property-row">
-              <label>文本</label>
+              <label>{t("文本")}</label>
               <input
                 type="text"
                 value={props.text || ''}
@@ -1594,14 +1594,14 @@ function renderComponentProps(
               onBatchChange={onBatchChange}
             />
             <div className="property-row">
-              <label>对齐方式</label>
+              <label>{t("对齐方式")}</label>
               <select
                 value={props.textAlign || 'center'}
                 onChange={(e) => onChange('textAlign', e.target.value)}
               >
-                <option value="left">左对齐</option>
-                <option value="center">居中</option>
-                <option value="right">右对齐</option>
+                <option value="left">{t("左对齐")}</option>
+                <option value="center">{t("居中")}</option>
+                <option value="right">{t("右对齐")}</option>
               </select>
             </div>
           </div>
@@ -1612,9 +1612,9 @@ function renderComponentProps(
     case 'label':
       return (
         <div className="property-section">
-          <div className="section-header">标签</div>
+          <div className="section-header">{t("标签")}</div>
           <div className="property-row">
-            <label>文本</label>
+            <label>{t("文本")}</label>
             <input
               type="text"
               value={props.text || ''}
@@ -1628,26 +1628,26 @@ function renderComponentProps(
             onBatchChange={onBatchChange}
           />
           <div className="property-row">
-            <label>对齐方式</label>
+            <label>{t("对齐方式")}</label>
             <select
               value={props.textAlign || 'left'}
               onChange={(e) => onChange('textAlign', e.target.value)}
             >
-              <option value="left">左对齐</option>
-              <option value="center">居中</option>
-              <option value="right">右对齐</option>
+              <option value="left">{t("左对齐")}</option>
+              <option value="center">{t("居中")}</option>
+              <option value="right">{t("右对齐")}</option>
             </select>
           </div>
           <div className="property-row">
-            <label>长文本模式</label>
+            <label>{t("长文本模式")}</label>
             <select
               value={props.longMode || 'wrap'}
               onChange={(e) => onChange('longMode', e.target.value)}
             >
-              <option value="wrap">换行</option>
-              <option value="scroll">滚动</option>
-              <option value="dot">省略号</option>
-              <option value="clip">裁剪</option>
+              <option value="wrap">{t("换行")}</option>
+              <option value="scroll">{t("滚动")}</option>
+              <option value="dot">{t("省略号")}</option>
+              <option value="clip">{t("裁剪")}</option>
             </select>
           </div>
         </div>
@@ -1656,9 +1656,9 @@ function renderComponentProps(
     case 'textarea':
       return (
         <div className="property-section">
-          <div className="section-header">文本框</div>
+          <div className="section-header">{t("文本框")}</div>
           <div className="property-row">
-            <label>内容</label>
+            <label>{t("内容")}</label>
             <textarea
               value={props.text || ''}
               onChange={(e) => onChange('text', e.target.value)}
@@ -1667,7 +1667,7 @@ function renderComponentProps(
             />
           </div>
           <div className="property-row">
-            <label>占位符</label>
+            <label>{t("占位符")}</label>
             <input
               type="text"
               value={props.placeholder || ''}
@@ -1681,7 +1681,7 @@ function renderComponentProps(
             onBatchChange={onBatchChange}
           />
           <div className="property-row">
-            <label>最大长度</label>
+            <label>{t("最大长度")}</label>
             <input
               type="number"
               value={props.maxLength || 0}
@@ -1689,10 +1689,10 @@ function renderComponentProps(
               onChange={(e) => onChange('maxLength', parseInt(e.target.value) || 0)}
               style={{ flex: 1 }}
             />
-            {(props.maxLength || 0) === 0 && <span style={{ fontSize: 11, color: '#999', marginLeft: 6, whiteSpace: 'nowrap' }}>(无限制)</span>}
+            {(props.maxLength || 0) === 0 && <span style={{ fontSize: 11, color: '#999', marginLeft: 6, whiteSpace: 'nowrap' }}>{t("(无限制)")}</span>}
           </div>
           <div className="property-row">
-            <label>密码模式</label>
+            <label>{t("密码模式")}</label>
             <input
               type="checkbox"
               checked={props.password || false}
@@ -1700,7 +1700,7 @@ function renderComponentProps(
             />
           </div>
           <div className="property-row">
-            <label>单行模式</label>
+            <label>{t("单行模式")}</label>
             <input
               type="checkbox"
               checked={props.oneLine || false}
@@ -1713,9 +1713,9 @@ function renderComponentProps(
     case 'checkbox':
       return (
         <div className="property-section">
-          <div className="section-header">复选框</div>
+          <div className="section-header">{t("复选框")}</div>
           <div className="property-row">
-            <label>文本</label>
+            <label>{t("文本")}</label>
             <input
               type="text"
               value={props.text || ''}
@@ -1729,7 +1729,7 @@ function renderComponentProps(
             onBatchChange={onBatchChange}
           />
           <div className="property-row">
-            <label>选中</label>
+            <label>{t("选中")}</label>
             <input
               type="checkbox"
               checked={props.checked || false}
@@ -1742,9 +1742,9 @@ function renderComponentProps(
     case 'switch':
       return (
         <div className="property-section">
-          <div className="section-header">开关</div>
+          <div className="section-header">{t("开关")}</div>
           <div className="property-row">
-            <label>开启</label>
+            <label>{t("开启")}</label>
             <ToggleSwitch
               checked={props.checked || false}
               onChange={(checked) => onChange('checked', checked)}
@@ -1756,10 +1756,10 @@ function renderComponentProps(
     case 'slider':
       return (
         <div className="property-section">
-          <div className="section-header">滑块</div>
+          <div className="section-header">{t("滑块")}</div>
           <div className="property-row two-col">
             <div className="property-field">
-              <label>最小值</label>
+              <label>{t("最小值")}</label>
               <input
                 type="number"
                 value={props.min ?? 0}
@@ -1774,7 +1774,7 @@ function renderComponentProps(
               />
             </div>
             <div className="property-field">
-              <label>最大值</label>
+              <label>{t("最大值")}</label>
               <input
                 type="number"
                 value={props.max ?? 100}
@@ -1790,7 +1790,7 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>当前值</label>
+            <label>{t("当前值")}</label>
             <div className="range-with-value">
               <input
                 type="range"
@@ -1811,7 +1811,7 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>步长</label>
+            <label>{t("步长")}</label>
             <input
               type="number"
               value={props.step || 1}
@@ -1820,13 +1820,13 @@ function renderComponentProps(
             />
           </div>
           <div className="property-row">
-            <label>方向</label>
+            <label>{t("方向")}</label>
             <select
               value={props.orientation || 'horizontal'}
               onChange={(e) => onChange('orientation', e.target.value)}
             >
-              <option value="horizontal">水平</option>
-              <option value="vertical">垂直</option>
+              <option value="horizontal">{t("水平")}</option>
+              <option value="vertical">{t("垂直")}</option>
             </select>
           </div>
         </div>
@@ -1835,10 +1835,10 @@ function renderComponentProps(
     case 'bar':
       return (
         <div className="property-section">
-          <div className="section-header">进度条</div>
+          <div className="section-header">{t("进度条")}</div>
           <div className="property-row two-col">
             <div className="property-field">
-              <label>最小值</label>
+              <label>{t("最小值")}</label>
               <input
                 type="number"
                 value={props.min ?? 0}
@@ -1853,7 +1853,7 @@ function renderComponentProps(
               />
             </div>
             <div className="property-field">
-              <label>最大值</label>
+              <label>{t("最大值")}</label>
               <input
                 type="number"
                 value={props.max ?? 100}
@@ -1869,7 +1869,7 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>当前值</label>
+            <label>{t("当前值")}</label>
             <div className="range-with-value">
               <input
                 type="range"
@@ -1889,13 +1889,13 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>方向</label>
+            <label>{t("方向")}</label>
             <select
               value={props.orientation || 'horizontal'}
               onChange={(e) => onChange('orientation', e.target.value)}
             >
-              <option value="horizontal">水平</option>
-              <option value="vertical">垂直</option>
+              <option value="horizontal">{t("水平")}</option>
+              <option value="vertical">{t("垂直")}</option>
             </select>
           </div>
         </div>
@@ -1916,16 +1916,16 @@ function renderComponentProps(
     case 'dropdown':
       return (
         <div className="property-section">
-          <div className="section-header">下拉框</div>
+          <div className="section-header">{t("下拉框")}</div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-            <label>选项</label>
+            <label>{t("选项")}</label>
             <DropdownOptionsEditor
               options={props.options || ['Option 1', 'Option 2', 'Option 3']}
               onChange={(newOptions) => onChange('options', newOptions)}
             />
           </div>
           <div className="property-row">
-            <label>默认选中</label>
+            <label>{t("默认选中")}</label>
             <select
               value={props.selected || 0}
               onChange={(e) => onChange('selected', parseInt(e.target.value) || 0)}
@@ -1942,13 +1942,13 @@ function renderComponentProps(
             onBatchChange={onBatchChange}
           />
           <div className="property-row">
-            <label>展开方向</label>
+            <label>{t("展开方向")}</label>
             <select
               value={props.direction || 'down'}
               onChange={(e) => onChange('direction', e.target.value)}
             >
-              <option value="down">向下</option>
-              <option value="up">向上</option>
+              <option value="down">{t("向下")}</option>
+              <option value="up">{t("向上")}</option>
             </select>
           </div>
         </div>
@@ -1957,9 +1957,9 @@ function renderComponentProps(
     case 'arc':
       return (
         <div className="property-section">
-          <div className="section-header">圆弧</div>
+          <div className="section-header">{t("圆弧")}</div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>起始角度: {props.startAngle || 135}°</label>
+            <label>{t("起始角度:")}{props.startAngle || 135}°</label>
             <input
               type="range"
               min={0}
@@ -1969,7 +1969,7 @@ function renderComponentProps(
             />
           </div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>结束角度: {props.endAngle || 45}°</label>
+            <label>{t("结束角度:")}{props.endAngle || 45}°</label>
             <input
               type="range"
               min={0}
@@ -1980,7 +1980,7 @@ function renderComponentProps(
           </div>
           <div className="property-row two-col">
             <div className="property-field">
-              <label>最小值</label>
+              <label>{t("最小值")}</label>
               <input
                 type="number"
                 value={props.min || 0}
@@ -1988,7 +1988,7 @@ function renderComponentProps(
               />
             </div>
             <div className="property-field">
-              <label>最大值</label>
+              <label>{t("最大值")}</label>
               <input
                 type="number"
                 value={props.max || 100}
@@ -1997,7 +1997,7 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>当前值</label>
+            <label>{t("当前值")}</label>
             <div className="range-with-value">
               <input
                 type="range"
@@ -2017,14 +2017,14 @@ function renderComponentProps(
             </div>
           </div>
           <div className="property-row">
-            <label>模式</label>
+            <label>{t("模式")}</label>
             <select
               value={props.mode || 'normal'}
               onChange={(e) => onChange('mode', e.target.value)}
             >
-              <option value="normal">普通</option>
-              <option value="symmetrical">对称</option>
-              <option value="reverse">反向</option>
+              <option value="normal">{t("普通")}</option>
+              <option value="symmetrical">{t("对称")}</option>
+              <option value="reverse">{t("反向")}</option>
             </select>
           </div>
         </div>
@@ -2033,9 +2033,9 @@ function renderComponentProps(
     case 'spinner':
       return (
         <div className="property-section">
-          <div className="section-header">加载器</div>
+          <div className="section-header">{t("加载器")}</div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>旋转速度: {props.speed || 1000}ms</label>
+            <label>{t("旋转速度:")}{props.speed || 1000}ms</label>
             <input
               type="range"
               min={100}
@@ -2046,7 +2046,7 @@ function renderComponentProps(
             />
           </div>
           <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <label>弧度: {props.arcLength || 60}°</label>
+            <label>{t("弧度:")}{props.arcLength || 60}°</label>
             <input
               type="range"
               min={10}
@@ -2108,9 +2108,9 @@ function ImagePropsEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">图片</div>
+      <div className="section-header">{t("图片")}</div>
       <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-        <label>图片源</label>
+        <label>{t("图片源")}</label>
         <div className="image-src-picker">
           <div
             className="image-src-display"
@@ -2128,14 +2128,14 @@ function ImagePropsEditor({
             ) : props.src ? (
               <span className="image-src-name" style={{ color: '#999' }}>{props.src}</span>
             ) : (
-              <span className="image-src-placeholder">选择图片资源...</span>
+              <span className="image-src-placeholder">{t("选择图片资源...")}</span>
             )}
             <span className="image-src-arrow">▼</span>
           </div>
           {showDropdown && (
             <div className="image-src-dropdown">
               {images.length === 0 ? (
-                <div className="image-src-empty">暂无图片资源，请先在资源管理器中上传</div>
+                <div className="image-src-empty">{t("暂无图片资源，请先在资源管理器中上传")}</div>
               ) : (
                 <>
                   {images.map((img) => (
@@ -2153,8 +2153,7 @@ function ImagePropsEditor({
                   ))}
                   {props.src && (
                     <div className="image-src-option clear-option" onClick={handleClear}>
-                      清除选择
-                    </div>
+                      {t("清除选择")}</div>
                   )}
                 </>
               )}
@@ -2165,23 +2164,23 @@ function ImagePropsEditor({
           type="text"
           value={props.src || ''}
           onChange={(e) => onChange('src', e.target.value)}
-          placeholder="或手动输入图片 ID / URL"
+          placeholder={t("或手动输入图片 ID / URL")}
           style={{ fontSize: 11, color: '#888' }}
         />
       </div>
       <div className="property-row">
-        <label>缩放模式</label>
+        <label>{t("缩放模式")}</label>
         <select
           value={props.scaleMode || 'none'}
           onChange={(e) => onChange('scaleMode', e.target.value)}
         >
-          <option value="none">原始</option>
-          <option value="cover">覆盖</option>
-          <option value="contain">包含</option>
+          <option value="none">{t("原始")}</option>
+          <option value="cover">{t("覆盖")}</option>
+          <option value="contain">{t("包含")}</option>
         </select>
       </div>
       <div className="property-row">
-        <label>旋转角度</label>
+        <label>{t("旋转角度")}</label>
         <input
           type="number"
           value={props.rotation || 0}
@@ -2278,9 +2277,9 @@ function TableEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">表格</div>
+      <div className="section-header">{t("表格")}</div>
       <div className="property-row">
-        <label>表头行</label>
+        <label>{t("表头行")}</label>
         <input
           type="checkbox"
           checked={headerRow}
@@ -2288,14 +2287,14 @@ function TableEditor({
         />
       </div>
       <div className="table-editor-actions">
-        <button onClick={addRow} title="添加行">+ 行</button>
-        <button onClick={addCol} title="添加列">+ 列</button>
-        <button onClick={deleteRow} title="删除最后一行" disabled={rows <= 1}>- 行</button>
-        <button onClick={deleteCol} title="删除最后一列" disabled={cols <= 1}>- 列</button>
+        <button onClick={addRow} title={t("添加行")}>{t("+ 行")}</button>
+        <button onClick={addCol} title={t("添加列")}>{t("+ 列")}</button>
+        <button onClick={deleteRow} title={t("删除最后一行")} disabled={rows <= 1}>{t("- 行")}</button>
+        <button onClick={deleteCol} title={t("删除最后一列")} disabled={cols <= 1}>{t("- 列")}</button>
       </div>
       {selectedCell && (
         <div className="table-cell-align-bar">
-          <span className="table-cell-align-label">单元格对齐:</span>
+          <span className="table-cell-align-label">{t("单元格对齐:")}</span>
           {(['left', 'center', 'right'] as const).map(a => (
             <button
               key={a}
@@ -2335,10 +2334,10 @@ function TableEditor({
           </tbody>
         </table>
       </div>
-      <CollapsibleSection title="列宽设置">
+      <CollapsibleSection title={t("列宽设置")}>
         {Array.from({ length: cols }, (_, c) => (
           <div key={c} className="property-row">
-            <label>列 {c + 1}</label>
+            <label>{t("列")}{c + 1}</label>
             <input
               type="number"
               value={columnWidths[c] ?? 60}
@@ -2385,9 +2384,9 @@ function WindowEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">窗口</div>
+      <div className="section-header">{t("窗口")}</div>
       <div className="property-row">
-        <label>标题</label>
+        <label>{t("标题")}</label>
         <input
           type="text"
           value={props.title || ''}
@@ -2395,7 +2394,7 @@ function WindowEditor({
         />
       </div>
       <div className="property-row">
-        <label>标题栏高度</label>
+        <label>{t("标题栏高度")}</label>
         <input
           type="number"
           value={props.headerHeight ?? 40}
@@ -2405,14 +2404,14 @@ function WindowEditor({
         />
       </div>
       <div className="property-row">
-        <label>关闭按钮</label>
+        <label>{t("关闭按钮")}</label>
         <input
           type="checkbox"
           checked={props.showCloseBtn !== false}
           onChange={(e) => onChange('showCloseBtn', e.target.checked)}
         />
       </div>
-      <CollapsibleSection title="标题栏按钮">
+      <CollapsibleSection title={t("标题栏按钮")}>
         <div className="win-btn-list">
           {headerButtons.map((btn, i) => (
             <div key={i} className="win-btn-item">
@@ -2429,13 +2428,13 @@ function WindowEditor({
                 type="text"
                 value={btn.id}
                 onChange={(e) => updateHeaderButton(i, 'id', e.target.value)}
-                placeholder="按钮ID"
+                placeholder={t("按钮ID")}
                 className="win-btn-id-input"
               />
-              <button className="win-btn-delete" onClick={() => removeHeaderButton(i)} title="删除">✕</button>
+              <button className="win-btn-delete" onClick={() => removeHeaderButton(i)} title={t("删除")}>✕</button>
             </div>
           ))}
-          <button className="win-btn-add" onClick={addHeaderButton}>+ 添加按钮</button>
+          <button className="win-btn-add" onClick={addHeaderButton}>{t("+ 添加按钮")}</button>
         </div>
       </CollapsibleSection>
     </div>
@@ -2482,23 +2481,23 @@ function ChartSeriesEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">图表</div>
+      <div className="section-header">{t("图表")}</div>
       <div className="property-row">
-        <label>类型</label>
+        <label>{t("类型")}</label>
         <select
           value={props.type || 'line'}
           onChange={(e) => onChange('type', e.target.value)}
         >
-          <option value="line">折线图</option>
-          <option value="bar">柱状图</option>
-          <option value="scatter">散点图</option>
+          <option value="line">{t("折线图")}</option>
+          <option value="bar">{t("柱状图")}</option>
+          <option value="scatter">{t("散点图")}</option>
         </select>
       </div>
 
       <div className="chart-series-list">
         <div className="chart-series-header">
-          <span>数据系列 ({series.length})</span>
-          <button className="chart-series-add-btn" onClick={addSeries}>+ 添加</button>
+          <span>{t("数据系列 (")}{series.length})</span>
+          <button className="chart-series-add-btn" onClick={addSeries}>{t("+ 添加")}</button>
         </div>
         {series.map((s, i) => (
           <div key={i} className="chart-series-item">
@@ -2508,19 +2507,19 @@ function ChartSeriesEditor({
             >
               <span className="chart-series-color-dot" style={{ backgroundColor: s.color }} />
               <span className="chart-series-name">{s.name}</span>
-              <span className="chart-series-count">{s.data.length}点</span>
+              <span className="chart-series-count">{s.data.length}{t("点")}</span>
               {series.length > 1 && (
                 <button
                   className="chart-series-delete"
                   onClick={(e) => { e.stopPropagation(); removeSeries(i); }}
-                  title="删除系列"
+                  title={t("删除系列")}
                 >✕</button>
               )}
             </div>
             {expandedSeries === i && (
               <div className="chart-series-detail">
                 <div className="property-row">
-                  <label>名称</label>
+                  <label>{t("名称")}</label>
                   <input
                     type="text"
                     value={s.name}
@@ -2528,7 +2527,7 @@ function ChartSeriesEditor({
                   />
                 </div>
                 <div className="property-row">
-                  <label>颜色</label>
+                  <label>{t("颜色")}</label>
                   <div className="color-input-wrapper">
                     <input
                       type="color"
@@ -2544,7 +2543,7 @@ function ChartSeriesEditor({
                   </div>
                 </div>
                 <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-                  <label>数据点</label>
+                  <label>{t("数据点")}</label>
                   <input
                     type="text"
                     value={s.data.join(', ')}
@@ -2554,7 +2553,7 @@ function ChartSeriesEditor({
                 </div>
                 <div className="property-row two-col">
                   <div className="property-field">
-                    <label>线宽</label>
+                    <label>{t("线宽")}</label>
                     <input
                       type="number"
                       value={s.lineWidth ?? 2}
@@ -2564,7 +2563,7 @@ function ChartSeriesEditor({
                     />
                   </div>
                   <div className="property-field">
-                    <label>点大小</label>
+                    <label>{t("点大小")}</label>
                     <input
                       type="number"
                       value={s.pointSize ?? 4}
@@ -2582,7 +2581,7 @@ function ChartSeriesEditor({
 
       <div className="property-row two-col">
         <div className="property-field">
-          <label>Y轴最小</label>
+          <label>{t("Y轴最小")}</label>
           <input
             type="number"
             value={props.yAxisMin ?? 0}
@@ -2590,7 +2589,7 @@ function ChartSeriesEditor({
           />
         </div>
         <div className="property-field">
-          <label>Y轴最大</label>
+          <label>{t("Y轴最大")}</label>
           <input
             type="number"
             value={props.yAxisMax ?? 100}
@@ -2599,16 +2598,16 @@ function ChartSeriesEditor({
         </div>
       </div>
       <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-        <label>X轴标签</label>
+        <label>{t("X轴标签")}</label>
         <input
           type="text"
           value={(props.xLabels || []).join(', ')}
           onChange={(e) => onChange('xLabels', e.target.value.split(',').map((v: string) => v.trim()).filter(Boolean))}
-          placeholder="标签1, 标签2, ..."
+          placeholder={t("标签1, 标签2, ...")}
         />
       </div>
       <div className="property-row">
-        <label>显示图例</label>
+        <label>{t("显示图例")}</label>
         <input
           type="checkbox"
           checked={props.showLegend || false}
@@ -2616,7 +2615,7 @@ function ChartSeriesEditor({
         />
       </div>
       <div className="property-row">
-        <label>显示网格</label>
+        <label>{t("显示网格")}</label>
         <input
           type="checkbox"
           checked={props.showGrid !== false}
@@ -2677,10 +2676,10 @@ function CalendarEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">日历</div>
+      <div className="section-header">{t("日历")}</div>
       <div className="property-row two-col">
         <div className="property-field">
-          <label>年份</label>
+          <label>{t("年份")}</label>
           <input
             type="number"
             value={props.year || new Date().getFullYear()}
@@ -2690,7 +2689,7 @@ function CalendarEditor({
           />
         </div>
         <div className="property-field">
-          <label>月份</label>
+          <label>{t("月份")}</label>
           <input
             type="number"
             value={props.month || 1}
@@ -2701,7 +2700,7 @@ function CalendarEditor({
         </div>
       </div>
       <div className="property-row">
-        <label>显示星期标题</label>
+        <label>{t("显示星期标题")}</label>
         <input
           type="checkbox"
           checked={props.showDayNames !== false}
@@ -2709,7 +2708,7 @@ function CalendarEditor({
         />
       </div>
       <div className="property-row">
-        <label>今日标记</label>
+        <label>{t("今日标记")}</label>
         <input
           type="checkbox"
           checked={props.showToday !== false}
@@ -2717,7 +2716,7 @@ function CalendarEditor({
         />
       </div>
 
-      <CollapsibleSection title="高亮日期" defaultOpen={highlightedDates.length > 0}>
+      <CollapsibleSection title={t("高亮日期")} defaultOpen={highlightedDates.length > 0}>
         <div className="calendar-date-tags">
           {highlightedDates.map(date => (
             <span key={date} className="calendar-date-tag">
@@ -2735,14 +2734,14 @@ function CalendarEditor({
             placeholder="YYYY-MM-DD"
             className="calendar-date-input"
           />
-          <button className="calendar-date-add-btn" onClick={addDate}>添加</button>
+          <button className="calendar-date-add-btn" onClick={addDate}>{t("添加")}</button>
         </div>
         {dateError && <span className="calendar-date-error">{dateError}</span>}
       </CollapsibleSection>
 
-      <CollapsibleSection title="日期范围">
+      <CollapsibleSection title={t("日期范围")}>
         <div className="property-row">
-          <label>范围选择模式</label>
+          <label>{t("范围选择模式")}</label>
           <input
             type="checkbox"
             checked={props.dateRangeMode || false}
@@ -2752,7 +2751,7 @@ function CalendarEditor({
         {props.dateRangeMode && (
           <>
             <div className="property-row">
-              <label>起始日期</label>
+              <label>{t("起始日期")}</label>
               <input
                 type="date"
                 value={props.rangeStart || ''}
@@ -2760,7 +2759,7 @@ function CalendarEditor({
               />
             </div>
             <div className="property-row">
-              <label>结束日期</label>
+              <label>{t("结束日期")}</label>
               <input
                 type="date"
                 value={props.rangeEnd || ''}
@@ -2840,7 +2839,7 @@ function TabManager({
 
   return (
     <div className="property-section">
-      <div className="section-header">标签视图</div>
+      <div className="section-header">{t("标签视图")}</div>
       <div className="tab-manager-list">
         {tabs.map((tab, i) => (
           <div
@@ -2856,46 +2855,45 @@ function TabManager({
               className="tab-manager-name-input"
             />
             <span className="tab-manager-child-count">
-              {(tabChildMap[String(i)] || []).length} 个组件
-            </span>
+              {(tabChildMap[String(i)] || []).length} {t("个组件")}</span>
             <div className="tab-manager-actions">
               <button
                 className="tab-manager-move-btn"
                 onClick={(e) => { e.stopPropagation(); moveTab(i, 'up'); }}
                 disabled={i === 0}
-                title="上移"
+                title={t("上移")}
               >↑</button>
               <button
                 className="tab-manager-move-btn"
                 onClick={(e) => { e.stopPropagation(); moveTab(i, 'down'); }}
                 disabled={i === tabs.length - 1}
-                title="下移"
+                title={t("下移")}
               >↓</button>
               {tabs.length > 1 && (
                 <button
                   className="tab-manager-delete-btn"
                   onClick={(e) => { e.stopPropagation(); removeTab(i); }}
-                  title="删除"
+                  title={t("删除")}
                 >✕</button>
               )}
             </div>
           </div>
         ))}
-        <button className="tab-manager-add-btn" onClick={addTab}>+ 添加 Tab</button>
+        <button className="tab-manager-add-btn" onClick={addTab}>{t("+ 添加 Tab")}</button>
       </div>
       <div className="property-row">
-        <label>标签位置</label>
+        <label>{t("标签位置")}</label>
         <select
           value={props.tabPosition || 'top'}
           onChange={(e) => onChange('tabPosition', e.target.value)}
         >
-          <option value="top">顶部</option>
-          <option value="bottom">底部</option>
-          <option value="left">左侧</option>
-          <option value="right">右侧</option>
+          <option value="top">{t("顶部")}</option>
+          <option value="bottom">{t("底部")}</option>
+          <option value="left">{t("左侧")}</option>
+          <option value="right">{t("右侧")}</option>
         </select>
       </div>
-      <div className="tab-manager-hint">拖入组件将自动分配到当前活动的 Tab</div>
+      <div className="tab-manager-hint">{t("拖入组件将自动分配到当前活动的 Tab")}</div>
     </div>
   );
 }
@@ -2923,10 +2921,10 @@ function TileGridEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">瓦片视图</div>
+      <div className="section-header">{t("瓦片视图")}</div>
       <div className="property-row two-col">
         <div className="property-field">
-          <label>行数</label>
+          <label>{t("行数")}</label>
           <input
             type="number"
             value={rows}
@@ -2936,7 +2934,7 @@ function TileGridEditor({
           />
         </div>
         <div className="property-field">
-          <label>列数</label>
+          <label>{t("列数")}</label>
           <input
             type="number"
             value={cols}
@@ -2959,7 +2957,7 @@ function TileGridEditor({
                   key={c}
                   className={`tile-grid-cell ${isActive ? 'active' : ''}`}
                   onClick={() => selectTile(r, c)}
-                  title={`Tile [${r}, ${c}] - ${childCount} 个组件`}
+                  title={t("Tile [{0}, {1}] - {2} 个组件", r, c, childCount)}
                 >
                   <span className="tile-grid-cell-label">{childCount}</span>
                 </div>
@@ -2971,7 +2969,7 @@ function TileGridEditor({
 
       <div className="property-row two-col">
         <div className="property-field">
-          <label>当前行</label>
+          <label>{t("当前行")}</label>
           <input
             type="number"
             value={currentRow}
@@ -2981,7 +2979,7 @@ function TileGridEditor({
           />
         </div>
         <div className="property-field">
-          <label>当前列</label>
+          <label>{t("当前列")}</label>
           <input
             type="number"
             value={currentCol}
@@ -2991,40 +2989,7 @@ function TileGridEditor({
           />
         </div>
       </div>
-      <div className="tile-grid-hint">拖入组件将自动分配到当前选中的 Tile</div>
-    </div>
-  );
-}
-
-// Font size input with preset dropdown + custom number
-const FONT_SIZE_PRESETS = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72];
-
-function FontSizeInput({ value, onChange }: { value: number; onChange: (v: number) => void }): React.ReactNode {
-  const isPreset = FONT_SIZE_PRESETS.includes(value);
-  return (
-    <div className="font-size-input">
-      <select
-        value={isPreset ? value : 'custom'}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v === 'custom') return;
-          onChange(parseInt(v));
-        }}
-        className="font-size-select"
-      >
-        {FONT_SIZE_PRESETS.map(s => (
-          <option key={s} value={s}>{s}px</option>
-        ))}
-        {!isPreset && <option value="custom">{value}px (自定义)</option>}
-      </select>
-      <input
-        type="number"
-        className="font-size-number"
-        value={value}
-        min={6}
-        max={128}
-        onChange={(e) => onChange(Math.max(6, parseInt(e.target.value) || 14))}
-      />
+      <div className="tile-grid-hint">{t("拖入组件将自动分配到当前选中的 Tile")}</div>
     </div>
   );
 }
@@ -3060,9 +3025,9 @@ function LineEditor({
 
   return (
     <div className="property-section">
-      <div className="section-header">线条</div>
+      <div className="section-header">{t("线条")}</div>
       <div className="property-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-        <label>线宽: {props.lineWidth || 2}px</label>
+        <label>{t("线宽:")}{props.lineWidth || 2}px</label>
         <input
           type="range"
           min={1}
@@ -3072,7 +3037,7 @@ function LineEditor({
         />
       </div>
       <div className="property-row">
-        <label>线条颜色</label>
+        <label>{t("线条颜色")}</label>
         <div className="color-input-wrapper">
           <input
             type="color"
@@ -3087,7 +3052,7 @@ function LineEditor({
           />
         </div>
       </div>
-      <CollapsibleSection title={`坐标点 (${points.length})`} defaultOpen>
+      <CollapsibleSection title={t("坐标点 ({0})", points.length)} defaultOpen>
         <div className="line-points-list">
           {points.map((pt, i) => (
             <div key={i} className="line-point-row">
@@ -3109,11 +3074,11 @@ function LineEditor({
                 />
               </div>
               {points.length > 2 && (
-                <button className="line-point-delete" onClick={() => removePoint(i)} title="删除">✕</button>
+                <button className="line-point-delete" onClick={() => removePoint(i)} title={t("删除")}>✕</button>
               )}
             </div>
           ))}
-          <button className="line-point-add" onClick={addPoint}>+ 添加坐标点</button>
+          <button className="line-point-add" onClick={addPoint}>{t("+ 添加坐标点")}</button>
         </div>
       </CollapsibleSection>
     </div>

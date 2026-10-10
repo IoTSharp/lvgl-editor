@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Animation, AnimationType, AnimationEasing } from '../../types';
@@ -110,73 +111,73 @@ const AnimationEditDialog: React.FC<AnimationEditDialogProps> = ({
 
         <div className="dialog-content">
           <div className="form-section">
-            <label className="section-label">动画名称</label>
+            <label className="section-label">{t("动画名称")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="可选，留空使用默认名称"
+              placeholder={t("可选，留空使用默认名称")}
             />
           </div>
 
           <div className="form-section">
-            <label className="section-label">动画类型</label>
+            <label className="section-label">{t("动画类型")}</label>
             <select value={type} onChange={(e) => handleTypeChange(e.target.value as AnimationType)}>
-              {ANIMATION_TYPES.map(t => (
-                <option key={t.type} value={t.type}>{t.label}</option>
+              {ANIMATION_TYPES.map(animation => (
+                <option key={animation.type} value={animation.type}>{t(animation.label)}</option>
               ))}
             </select>
           </div>
 
           <div className="form-section">
-            <label className="section-label">缓动函数</label>
+            <label className="section-label">{t("缓动函数")}</label>
             <select value={easing} onChange={(e) => setEasing(e.target.value as AnimationEasing)}>
               {EASING_OPTIONS.map(e => (
-                <option key={e.type} value={e.type}>{e.label}</option>
+                <option key={e.type} value={e.type}>{t(e.label)}</option>
               ))}
             </select>
           </div>
 
           <div className="form-row">
             <div className="form-section">
-              <label className="section-label">时长 (ms)</label>
+              <label className="section-label">{t("时长 (ms)")}</label>
               <input type="number" value={duration} min={0} onChange={(e) => setDuration(Number(e.target.value))} />
             </div>
             <div className="form-section">
-              <label className="section-label">延迟 (ms)</label>
+              <label className="section-label">{t("延迟 (ms)")}</label>
               <input type="number" value={delay} min={0} onChange={(e) => setDelay(Number(e.target.value))} />
             </div>
             <div className="form-section">
-              <label className="section-label">重复次数</label>
+              <label className="section-label">{t("重复次数")}</label>
               <input type="number" value={repeat} min={0} onChange={(e) => setRepeat(Number(e.target.value))} />
-              <p className="field-hint">0 = 不重复</p>
+              <p className="field-hint">{t("0 = 不重复")}</p>
             </div>
           </div>
 
           <div className="form-section">
-            <label className="section-label">动画属性</label>
+            <label className="section-label">{t("动画属性")}</label>
             <select value={property} onChange={(e) => setProperty(e.target.value)}>
               {PROPERTY_OPTIONS.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
+                <option key={p.value} value={p.value}>{t(p.label)}</option>
               ))}
             </select>
           </div>
 
           <div className="form-row">
             <div className="form-section">
-              <label className="section-label">起始值</label>
+              <label className="section-label">{t("起始值")}</label>
               <input type="number" value={startValue} onChange={(e) => setStartValue(Number(e.target.value))} />
             </div>
             <div className="form-section">
-              <label className="section-label">结束值</label>
+              <label className="section-label">{t("结束值")}</label>
               <input type="number" value={endValue} onChange={(e) => setEndValue(Number(e.target.value))} />
             </div>
           </div>
         </div>
 
         <div className="dialog-footer">
-          <button className="cancel-btn" onClick={onClose}>取消</button>
-          <button className="save-btn" onClick={handleSave}>保存</button>
+          <button className="cancel-btn" onClick={onClose}>{t("取消")}</button>
+          <button className="save-btn" onClick={handleSave}>{t("保存")}</button>
         </div>
       </div>
     </div>

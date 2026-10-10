@@ -5,182 +5,108 @@ import { useThemeStore } from '../../store/themeStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources/resourceStore';
 import { useAppStore } from '../../store/appStore';
-import { useProjectStore } from '../../store/projectStore';
-import { generateCode, getGeneratedFileNames } from '../../codegen/generator';
-import type { CodeGenOptions, GeneratedCode } from '../../codegen/types';
+import { useProjectStore, type ProjectConfig } from '../../store/projectStore';
+import { TARGETS, generateTargetSource, generateTargetProject, type OutputInput, type OutputBundle } from '../../output';
+import type { CodeGenOptions } from '../../codegen/types';
+import { describeOutputError, downloadBlob, downloadOutputZip } from '../../utils/outputDownload';
 import { toast } from '../Toast';
+import { t } from '../../i18n';
 import './CodePreview.css';
 
 const CodePreview: React.FC = () => {
-  const { pages } = useEditorStore();
-  const { graphs: logicGraphs } = useLogicEditorStore();
-  const { currentTheme } = useThemeStore();
-  const imageResources = useResourceStore((s) => s.images);
-  const fontResources = useResourceStore((s) => s.fonts);
-  const currentProjectId = useAppStore((s) => s.currentProjectId);
-  const getProjectConfig = useProjectStore((s) => s.getProjectConfig);
-  const [selectedFile, setSelectedFile] = useState<keyof GeneratedCode>('ui.c');
-  const [isLoading, setIsLoading] = useState(true);
+  const pages = useEditorStore(s => s.pages);
+  const logicGraphs = useLogicEditorStore(s => s.graphs);
+  const currentTheme = useThemeStore(s => s.currentTheme);
+  const images = useResourceStore(s => s.images);
+  const fonts = useResourceStore(s => s.fonts);
+  const { currentProjectId, outputTarget, cIntegrationProfile } = useAppStore();
+  const { getProjectConfig, projects } = useProjectStore();
+  const configRevision = projects.find(p => p.config.id === currentProjectId)?.config.updatedAt;
+  const [config, setConfig] = useState<ProjectConfig>();
+  const [selectedFile, setSelectedFile] = useState('ui.c');
   const [lvglVersion, setLvglVersion] = useState<CodeGenOptions['lvglVersion']>('9');
-  const [projectDefaultFont, setProjectDefaultFont] = useState<string | undefined>();
-  const [projectDefaultFontSize, setProjectDefaultFontSize] = useState<number | undefined>();
-  const [projectUseBuiltinSymbols, setProjectUseBuiltinSymbols] = useState<boolean>(true);
-  const [projectSymbolFont, setProjectSymbolFont] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const [prepared, setPrepared] = useState<{ input: OutputInput; bundle: OutputBundle | null; error: string }>();
 
   useEffect(() => {
-    if (!currentProjectId) return;
-    getProjectConfig(currentProjectId).then(cfg => {
-      if (cfg) {
-        setProjectDefaultFont(cfg.lvglConfig.defaultFont);
-        setProjectDefaultFontSize(cfg.lvglConfig.defaultFontSize);
-        setProjectUseBuiltinSymbols(cfg.lvglConfig.useBuiltinSymbols !== false);
-        setProjectSymbolFont(cfg.lvglConfig.symbolFont);
-      }
-    });
-  }, [currentProjectId, getProjectConfig]);
+    let cancelled = false;
+    if (currentProjectId) getProjectConfig(currentProjectId)
+      .then(cfg => { if (!cancelled) setConfig(cfg); })
+      .catch(error => { if (!cancelled) toast.error(describeOutputError(error)); });
+    return () => { cancelled = true; };
+  }, [currentProjectId, configRevision, getProjectConfig]);
 
-  const fileNames = getGeneratedFileNames();
+  const input = useMemo<OutputInput>(() => ({
+    target: outputTarget, cIntegrationProfile, pages, logicGraphs, theme: currentTheme, images, fonts,
+    options: { lvglVersion }, defaultFont: config?.lvglConfig.defaultFont,
+    defaultFontSize: config?.lvglConfig.defaultFontSize,
+    useBuiltinSymbols: config?.lvglConfig.useBuiltinSymbols,
+    symbolFont: config?.lvglConfig.symbolFont,
+  }), [outputTarget, cIntegrationProfile, pages, logicGraphs, currentTheme, images, fonts, lvglVersion, config]);
 
-  const codeGenOptions: Partial<CodeGenOptions> = useMemo(() => ({
-    lvglVersion,
-  }), [lvglVersion]);
-
-  const generatedCode = useMemo(() => {
-    try {
-      return generateCode(pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont);
-    } catch {
-      console.error('Code generation error');
-      return null;
-    }
-  }, [pages, codeGenOptions, logicGraphs, currentTheme, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont]);
-
-  const currentCode = generatedCode?.[selectedFile] || '// 代码生成失败';
+  const source = useMemo(() => {
+    try { return { bundle: generateTargetSource(input), error: '' }; }
+    catch (error) { return { bundle: null, error: describeOutputError(error) }; }
+  }, [input]);
+  useEffect(() => {
+    let cancelled = false;
+    generateTargetProject(input)
+      .then(bundle => { if (!cancelled) setPrepared({ input, bundle, error: '' }); })
+      .catch(error => { if (!cancelled) setPrepared({ input, bundle: null, error: describeOutputError(error) }); });
+    return () => { cancelled = true; };
+  }, [input]);
+  const result = prepared?.input === input ? prepared : source;
+  const preparing = prepared?.input !== input || (currentProjectId !== null && config?.id !== currentProjectId);
+  const files = result.bundle?.files ?? {};
+  const fileNames = Object.keys(files).filter(name => typeof files[name] === 'string');
+  const activeFile = fileNames.includes(selectedFile) ? selectedFile : fileNames[0] ?? '';
+  const currentCode = activeFile ? String(files[activeFile]) : '';
+  const target = TARGETS.find(candidate => candidate.id === outputTarget)!;
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(currentCode);
-      toast.success('代码已复制到剪贴板');
-    } catch {
-      toast.error('复制失败');
-    }
+    try { await navigator.clipboard.writeText(currentCode); toast.success(t('Code copied to clipboard')); }
+    catch { toast.error(t('Copy failed')); }
   };
-
   const handleDownload = () => {
-    const blob = new Blob([currentCode], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = selectedFile;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success(`${selectedFile} 已下载`);
+    if (!result.bundle || !activeFile || preparing) return;
+    downloadBlob(new Blob([currentCode], { type: 'text/plain' }), activeFile.split('/').pop() || activeFile);
   };
-
   const handleDownloadAll = async () => {
-    if (!generatedCode) return;
-    
+    if (busy || preparing || !result.bundle) return;
+    setBusy(true);
     try {
-      // Create a simple zip-like download by downloading each file
-      for (const [fileName, content] of Object.entries(generatedCode)) {
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        // Small delay between downloads
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      toast.success('所有文件已下载');
-    } catch {
-      toast.error('下载失败');
-    }
+      const name = (config?.name || 'lvgl_ui').replace(/[^\p{L}\p{N}._-]+/gu, '_');
+      await downloadOutputZip(result.bundle, `${name}-${outputTarget}.zip`);
+      toast.success(t('ZIP downloaded'));
+    } catch (error) { toast.error(describeOutputError(error)); }
+    finally { setBusy(false); }
   };
 
-  return (
-    <div className="code-preview">
-      <div className="code-preview-header">
-        <div className="code-preview-tabs">
-          {fileNames.map(fileName => (
-            <button
-              key={fileName}
-              className={`code-tab ${selectedFile === fileName ? 'active' : ''}`}
-              onClick={() => setSelectedFile(fileName)}
-            >
-              {fileName}
-            </button>
-          ))}
-        </div>
-        <div className="code-preview-actions">
-          <select
-            className="code-version-select"
-            value={lvglVersion}
-            onChange={(e) => setLvglVersion(e.target.value as CodeGenOptions['lvglVersion'])}
-            title="LVGL 版本"
-          >
-            <option value="8">LVGL v8</option>
-            <option value="9">LVGL v9</option>
-          </select>
-          <button className="code-action-btn" onClick={handleCopy} title="复制代码">
-            📋 复制
-          </button>
-          <button className="code-action-btn" onClick={handleDownload} title="下载当前文件">
-            💾 下载
-          </button>
-          <button className="code-action-btn primary" onClick={handleDownloadAll} title="下载所有文件">
-            📦 全部下载
-          </button>
-        </div>
+  return <div className="code-preview">
+    <div className="code-preview-header">
+      <div className="code-preview-tabs">
+        {fileNames.map(fileName => <button key={fileName} className={`code-tab ${activeFile === fileName ? 'active' : ''}`} onClick={() => setSelectedFile(fileName)}>{fileName}</button>)}
       </div>
-      <div className="code-preview-editor">
-        <div className="code-preview-editor-inner">
-          <Editor
-            width="100%"
-            height="100%"
-            language="c"
-            theme="vs-light"
-            value={currentCode}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: 13,
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              wordWrap: 'off',
-              automaticLayout: true,
-              folding: true,
-              renderLineHighlight: 'line',
-              scrollbar: {
-                verticalScrollbarSize: 10,
-                horizontalScrollbarSize: 10,
-              },
-            }}
-            onMount={() => setIsLoading(false)}
-            loading={
-              <div className="code-preview-loading">
-                <span>加载编辑器...</span>
-              </div>
-            }
-          />
-        </div>
-        {isLoading && (
-          <div className="code-preview-loading">
-            <span>加载编辑器...</span>
-          </div>
-        )}
-      </div>
-      <div className="code-preview-footer">
-        <span className="code-stats">
-          {currentCode.split('\n').length} 行 | {new Blob([currentCode]).size} 字节
-        </span>
+      <div className="code-preview-actions">
+        <span>{target.label}</span>
+        {outputTarget === 'c-lvgl' && <select className="code-version-select" value={lvglVersion} onChange={e => setLvglVersion(e.target.value as CodeGenOptions['lvglVersion'])} title={t('LVGL version')}>
+          <option value="8">LVGL v8</option><option value="9">LVGL v9</option>
+        </select>}
+        <button className="code-action-btn" onClick={handleCopy} disabled={!activeFile || preparing}>{t('Copy')}</button>
+        <button className="code-action-btn" onClick={handleDownload} disabled={!activeFile || busy || preparing}>{t('Download')}</button>
+        <button className="code-action-btn primary" onClick={handleDownloadAll} disabled={!result.bundle || busy || preparing}>{busy ? t('Exporting...') : t('Download ZIP')}</button>
       </div>
     </div>
-  );
+    {result.error && <pre role="alert">{result.error}</pre>}
+    {preparing && !result.error && <p role="status">{t('Preparing output resources...')}</p>}
+    {result.bundle && !result.bundle.deployable && <p role="status">{t('Contract preview only. This target is not verified for deployment.')}</p>}
+    <div className="code-preview-editor"><div className="code-preview-editor-inner">
+      <Editor width="100%" height="100%" language={target.language} theme="vs-light" value={currentCode}
+        options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13, lineNumbers: 'on', scrollBeyondLastLine: false, wordWrap: 'off', automaticLayout: true, folding: true }}
+        loading={<div className="code-preview-loading">{t('Loading editor...')}</div>} />
+    </div></div>
+    <div className="code-preview-footer"><span className="code-stats">{currentCode.split('\n').length} {t('lines |')} {new Blob([currentCode]).size} {t('bytes')}</span></div>
+  </div>;
 };
 
 export default CodePreview;

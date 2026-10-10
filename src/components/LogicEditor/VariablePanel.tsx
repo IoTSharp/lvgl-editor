@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 // Variable Panel - Manage global variables
 
 import React, { useState, useCallback } from 'react';
@@ -36,7 +37,7 @@ const VariablePanel: React.FC = () => {
   }, [newVarName, newVarType, addVariable]);
 
   const handleDeleteVariable = useCallback(async (id: string) => {
-    if (await modal.confirm('确定删除此变量吗？')) {
+    if (await modal.confirm(t("确定删除此变量吗？"))) {
       deleteVariable(id);
     }
   }, [deleteVariable]);
@@ -68,10 +69,10 @@ const VariablePanel: React.FC = () => {
     return (
       <div className="variable-panel">
         <div className="panel-header">
-          <h3>变量</h3>
+          <h3>{t("变量")}</h3>
         </div>
         <div className="no-graph">
-          <p>请先选择或创建逻辑图</p>
+          <p>{t("请先选择或创建逻辑图")}</p>
         </div>
       </div>
     );
@@ -80,11 +81,11 @@ const VariablePanel: React.FC = () => {
   return (
     <div className="variable-panel">
       <div className="panel-header">
-        <h3>变量</h3>
+        <h3>{t("变量")}</h3>
         <button 
           className="add-var-btn" 
           onClick={() => setIsAdding(true)}
-          title="添加变量"
+          title={t("添加变量")}
         >
           +
         </button>
@@ -95,7 +96,7 @@ const VariablePanel: React.FC = () => {
         <div className="add-var-form">
           <input
             type="text"
-            placeholder="变量名"
+            placeholder={t("变量名")}
             value={newVarName}
             onChange={e => setNewVarName(e.target.value)}
             autoFocus
@@ -112,11 +113,9 @@ const VariablePanel: React.FC = () => {
           </select>
           <div className="form-actions">
             <button className="btn-confirm" onClick={handleAddVariable}>
-              添加
-            </button>
+              {t("添加")}</button>
             <button className="btn-cancel" onClick={() => setIsAdding(false)}>
-              取消
-            </button>
+              {t("取消")}</button>
           </div>
         </div>
       )}
@@ -125,8 +124,8 @@ const VariablePanel: React.FC = () => {
       <div className="variable-list">
         {variables.length === 0 ? (
           <div className="no-variables">
-            <p>暂无变量</p>
-            <button onClick={() => setIsAdding(true)}>+ 添加变量</button>
+            <p>{t("暂无变量")}</p>
+            <button onClick={() => setIsAdding(true)}>{t("+ 添加变量")}</button>
           </div>
         ) : (
           variables.map(variable => (
@@ -220,7 +219,7 @@ const VariableItem: React.FC<VariableItemProps> = ({
         )}
       </div>
       <div className="var-actions">
-        <button className="btn-delete" onClick={onDelete} title="删除">
+        <button className="btn-delete" onClick={onDelete} title={t("删除")}>
           🗑️
         </button>
       </div>

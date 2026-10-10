@@ -2,6 +2,7 @@
 // Generates C code from logic orchestration graphs
 
 import type { CodeGenOptions } from '../types';
+import { getComponentVarName } from '../utils/nameUtils';
 import type {
   LogicGraph,
   LogicNode,
@@ -22,6 +23,9 @@ export function generateLogicSource(
   options: CodeGenOptions,
   graphs: LogicGraph[] = []
 ): string {
+  // Resolve the same variable spelling as ui.c for either naming style. Only
+  // generation copies receive this internal value; project graph data is intact.
+  graphs = graphs.map(graph => ({ ...graph, nodes: graph.nodes.map(node => ({ ...node, params: { ...node.params, __outputComponentVariable: node.params.targetComponent ? getComponentVarName(node.params.targetComponent, options) : undefined } })) }));
   const lines: string[] = [];
   
   // Includes
@@ -162,7 +166,7 @@ function generateInitFunction(graphs: LogicGraph[], options: CodeGenOptions): st
       const eventType = trigger.params.eventType || 'LV_EVENT_CLICKED';
       const targetComp = trigger.params.targetComponent;
       if (targetComp) {
-        const targetVar = `ui_${toSnakeCase(targetComp)}`;
+        const targetVar = trigger.params.__outputComponentVariable;
         if (options.generateComments) {
           lines.push(`${indent}// ${graph.name}: ${eventType} on ${targetComp}`);
         }
@@ -465,7 +469,7 @@ function generateNodeExpression(node: LogicNode, graph: LogicGraph): string {
     case 'get_property': {
       const target = node.params.targetComponent || 'obj';
       const prop = node.params.property || 'x';
-      const targetVar = `ui_${toSnakeCase(target)}`;
+      const targetVar = node.params.__outputComponentVariable ?? `ui_${toSnakeCase(target)}`;
       const propGetters: Record<string, string> = {
         x: `lv_obj_get_x(${targetVar})`,
         y: `lv_obj_get_y(${targetVar})`,
@@ -641,7 +645,7 @@ function generateSetPropertyCode(node: LogicNode, indent: string): string {
   const target = node.params.targetComponent || 'obj';
   const property = node.params.property || 'x';
   const value = node.params.value !== undefined ? node.params.value : 'value';
-  const targetName = `ui_${toSnakeCase(target)}`;
+  const targetName = node.params.__outputComponentVariable ?? `ui_${toSnakeCase(target)}`;
   
   const setters: Record<string, string> = {
     x: `lv_obj_set_x(${targetName}, ${value});`,
@@ -676,7 +680,7 @@ function generateNavigatePageCode(node: LogicNode, indent: string): string {
 function generateShowHideCode(node: LogicNode, indent: string): string {
   const target = node.params.targetComponent || 'obj';
   const action = node.params.action || 'toggle';
-  const targetName = `ui_${toSnakeCase(target)}`;
+  const targetName = node.params.__outputComponentVariable ?? `ui_${toSnakeCase(target)}`;
   
   switch (action) {
     case 'show':
@@ -699,7 +703,7 @@ function generateShowHideCode(node: LogicNode, indent: string): string {
 function generateSetTextCode(node: LogicNode, graph: LogicGraph, indent: string): string {
   const target = node.params.targetComponent || 'label';
   const text = getInputValue(node, '文本', graph);
-  const targetName = `ui_${toSnakeCase(target)}`;
+  const targetName = node.params.__outputComponentVariable ?? `ui_${toSnakeCase(target)}`;
   
   return `${indent}lv_label_set_text(${targetName}, ${text});`;
 }
@@ -707,7 +711,7 @@ function generateSetTextCode(node: LogicNode, graph: LogicGraph, indent: string)
 function generateSetValueCode(node: LogicNode, graph: LogicGraph, indent: string): string {
   const target = node.params.targetComponent || 'slider';
   const value = getInputValue(node, '数值', graph);
-  const targetName = `ui_${toSnakeCase(target)}`;
+  const targetName = node.params.__outputComponentVariable ?? `ui_${toSnakeCase(target)}`;
   const compType = node.params.componentType || 'slider';
   
   // Choose the correct LVGL API based on component type

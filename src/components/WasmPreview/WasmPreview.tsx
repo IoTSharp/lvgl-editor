@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { editorStateToJson } from './editorStateToJson';
@@ -76,8 +77,7 @@ const WasmPreview: React.FC = () => {
           {statusLabel}
         </span>
         <button className="wasm-preview-refresh" onClick={handleRefresh}>
-          🔄 刷新
-        </button>
+          {t("🔄 刷新")}</button>
       </div>
 
       <div className="wasm-preview-body">
@@ -86,18 +86,17 @@ const WasmPreview: React.FC = () => {
           style={{ width: canvas.width, height: canvas.height }}
         >
           {status === 'loading' && (
-            <div className="wasm-preview-overlay">LVGL 运行时加载中...</div>
+            <div className="wasm-preview-overlay">{t("LVGL 运行时加载中...")}</div>
           )}
           {status === 'error' && (
             <div className="wasm-preview-overlay wasm-preview-overlay--error">
-              WASM 加载失败，请点击刷新重试
-            </div>
+              {t("WASM 加载失败，请点击刷新重试")}</div>
           )}
           <iframe
             ref={iframeRef}
             className="wasm-preview-iframe"
             src="/wasm/lvgl_wasm.html"
-            title="LVGL WASM 预览"
+            title={t("LVGL WASM 预览")}
             width={canvas.width}
             height={canvas.height}
           />
@@ -105,8 +104,7 @@ const WasmPreview: React.FC = () => {
       </div>
 
       <div className="wasm-preview-footer">
-        使用 LVGL WASM 运行时渲染，与真实设备效果一致
-      </div>
+        {t("使用 LVGL WASM 运行时渲染，与真实设备效果一致")}</div>
     </div>
   );
 };

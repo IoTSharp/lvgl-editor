@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useResourceStore } from '../../resources/resourceStore';
@@ -707,16 +708,16 @@ const PreviewPanel: React.FC = () => {
   return (
     <div className="preview-panel">
       <div className="preview-header">
-        <h3>📱 实时预览</h3>
+        <h3>{t("📱 实时预览")}</h3>
         <div className="preview-controls">
           {!animPlaying ? (
-            <button className="preview-btn" onClick={startAnimation} title="播放动画">▶</button>
+            <button className="preview-btn" onClick={startAnimation} title={t("播放动画")}>▶</button>
           ) : animPaused ? (
-            <button className="preview-btn" onClick={resumeAnimation} title="继续">▶</button>
+            <button className="preview-btn" onClick={resumeAnimation} title={t("继续")}>▶</button>
           ) : (
-            <button className="preview-btn" onClick={pauseAnimation} title="暂停">⏸</button>
+            <button className="preview-btn" onClick={pauseAnimation} title={t("暂停")}>⏸</button>
           )}
-          <button className="preview-btn" onClick={resetAnimation} title="重置" disabled={!animPlaying && animStates.size === 0}>⏹</button>
+          <button className="preview-btn" onClick={resetAnimation} title={t("重置")} disabled={!animPlaying && animStates.size === 0}>⏹</button>
           <span className="preview-divider" />
           <button onClick={() => setScale(s => Math.max(0.5, s - 0.25))}>−</button>
           <span>{Math.round(scale * 100)}%</span>
@@ -752,7 +753,7 @@ const PreviewPanel: React.FC = () => {
           ))}
         </div>
         <span>{canvas.width} × {canvas.height}</span>
-        {hoveredComponent && <span>悬停: {hoveredComponent.slice(0, 8)}...</span>}
+        {hoveredComponent && <span>{t("悬停:")}{hoveredComponent.slice(0, 8)}...</span>}
       </div>
     </div>
   );

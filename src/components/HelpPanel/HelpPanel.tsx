@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React from 'react';
 import './HelpPanel.css';
 
@@ -65,18 +66,18 @@ const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose }) => {
     <div className="help-panel-overlay" onClick={onClose}>
       <div className="help-panel" onClick={e => e.stopPropagation()}>
         <div className="help-panel-header">
-          <h2>⌨️ 快捷键帮助</h2>
+          <h2>{t("⌨️ 快捷键帮助")}</h2>
           <button className="help-panel-close" onClick={onClose}>×</button>
         </div>
         <div className="help-panel-content">
           {shortcutGroups.map((group, index) => (
             <div key={index} className="shortcut-group">
-              <h3>{group.title}</h3>
+              <h3>{t(group.title)}</h3>
               <div className="shortcut-list">
                 {group.shortcuts.map((shortcut, idx) => (
                   <div key={idx} className="shortcut-item">
-                    <kbd className="shortcut-keys">{shortcut.keys}</kbd>
-                    <span className="shortcut-desc">{shortcut.description}</span>
+                    <kbd className="shortcut-keys">{t(shortcut.keys)}</kbd>
+                    <span className="shortcut-desc">{t(shortcut.description)}</span>
                   </div>
                 ))}
               </div>
@@ -84,7 +85,7 @@ const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose }) => {
           ))}
         </div>
         <div className="help-panel-footer">
-          <span>按 Escape 或点击外部关闭</span>
+          <span>{t("按 Escape 或点击外部关闭")}</span>
         </div>
       </div>
     </div>

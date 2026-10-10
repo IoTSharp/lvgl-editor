@@ -347,12 +347,12 @@ export const NODE_DEFINITIONS: LogicNodeDefinition[] = [
   {
     type: 'custom',
     subType: 'c_code_block',
-    label: 'C 代码块',
-    description: '嵌入自定义 C 代码',
+    label: 'User code',
+    description: 'Handwritten code for the selected output target',
     icon: '💻',
     color: NODE_COLORS.custom,
     defaultParams: {
-      code: '// 自定义代码\n',
+      code: '',
     },
     inputs: [
       { name: '执行', type: 'execution' },

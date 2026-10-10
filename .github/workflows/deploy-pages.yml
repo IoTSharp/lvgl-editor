@@ -33,13 +33,21 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Check synchronized documentation
+        run: node scripts/check-docs-sync.mjs
+
+      - name: Test source contracts
+        env:
+          VITE_ENABLE_COMPILE_PREVIEW: 'false'
+        run: npm test -- --maxWorkers=2
 
       - name: Build web app
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_ENABLE_COMPILE_PREVIEW: 'false'
-        run: npm run build:web
+        run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -46,7 +46,8 @@ export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: 
   lines.push(generateInclude('lvgl.h'));
   lines.push('');
 
-  // Font declarations — only declare custom font+size combos actually used
+  // Imported font resources form the public declaration contract, even before a
+  // component references them. Additional used sizes are included below.
   if (fonts.length > 0) {
     const isBuiltin = (name: string) => /^montserrat_\d+$/.test(name);
     const customFontNames = new Set(fonts.map(f => f.cFontName));
@@ -58,6 +59,7 @@ export function generateUiHeader(pages: Page[], options: CodeGenOptions, fonts: 
       }
       usedFonts.get(fontName)!.add(size);
     };
+    for (const font of fonts) for (const size of font.sizes) addFont(font.cFontName, size);
 
     const walkComponents = (components: LvglComponent[]) => {
       for (const comp of components) {

@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 // Logic Editor - Main component with React Flow
 
 import React, { useCallback, useMemo, useState, useRef } from 'react';
@@ -223,7 +224,7 @@ const LogicEditorInner: React.FC = () => {
 
   // Delete current graph
   const handleDeleteGraph = useCallback(async () => {
-    if (currentGraphId && await modal.confirm('确定删除此逻辑图吗？')) {
+    if (currentGraphId && await modal.confirm(t("确定删除此逻辑图吗？"))) {
       deleteGraph(currentGraphId);
     }
   }, [currentGraphId, deleteGraph]);
@@ -256,9 +257,9 @@ const LogicEditorInner: React.FC = () => {
       >
         {!currentGraph ? (
           <div className="no-graph-message">
-            <h3>没有选中的逻辑图</h3>
-            <p>创建或选择一个逻辑图开始编辑</p>
-            <button onClick={handleCreateGraph}>+ 创建逻辑图</button>
+            <h3>{t("没有选中的逻辑图")}</h3>
+            <p>{t("创建或选择一个逻辑图开始编辑")}</p>
+            <button onClick={handleCreateGraph}>{t("+ 创建逻辑图")}</button>
           </div>
         ) : (
           <ReactFlow
@@ -310,14 +311,13 @@ const LogicEditorInner: React.FC = () => {
                       </div>
                     ))}
                     <div className="graph-item create" onClick={handleCreateGraph}>
-                      + 新建逻辑图
-                    </div>
+                      {t("+ 新建逻辑图")}</div>
                   </div>
                 )}
               </div>
               
               {currentGraph && (
-                <button className="delete-graph-btn" onClick={handleDeleteGraph} title="删除逻辑图">
+                <button className="delete-graph-btn" onClick={handleDeleteGraph} title={t("删除逻辑图")}>
                   🗑️
                 </button>
               )}
@@ -328,23 +328,20 @@ const LogicEditorInner: React.FC = () => {
               {debugState.isDebugging ? (
                 <>
                   <button className="debug-btn stop" onClick={stopDebug}>
-                    ⏹️ 停止
-                  </button>
+                    {t("⏹️ 停止")}</button>
                   <button 
                     className="debug-btn step" 
                     onClick={stepDebug}
                     disabled={!debugState.currentNodeId}
                   >
-                    ⏭️ 单步
-                  </button>
+                    {t("⏭️ 单步")}</button>
                   <span className="debug-status">
                     {debugState.isPaused ? '⏸️ 已暂停' : '▶️ 运行中'}
                   </span>
                 </>
               ) : (
                 <button className="debug-btn start" onClick={startDebug}>
-                  🐛 调试
-                </button>
+                  {t("🐛 调试")}</button>
               )}
             </Panel>
           </ReactFlow>

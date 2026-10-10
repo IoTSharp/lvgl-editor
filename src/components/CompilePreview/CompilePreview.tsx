@@ -1,14 +1,17 @@
+import { t } from '../../i18n';
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { useLogicEditorStore } from '../LogicEditor';
 import { useResourceStore } from '../../resources';
 import { useAppStore } from '../../store/appStore';
 import { useProjectStore } from '../../store/projectStore';
-import { generateCode } from '../../codegen';
+import { generateTargetSource } from '../../output';
+import type { GeneratedCode } from '../../codegen/types';
+import { describeOutputError } from '../../utils/outputDownload';
 import { compileCode, type CompileStatus, type WasmRuntime, type FontCompileRequest } from './compilerService';
 import { getCharsetRanges } from '../../resources/converters/fontConverter';
 import type { LvglComponent } from '../../types';
-import type { FontResource, ImageResource } from '../../resources/types';
+import type { FontResource } from '../../resources/types';
 import { loadImageFromBase64, generateImageCCode, DEFAULT_IMAGE_OPTIONS } from '../../resources/converters/imageConverter';
 import './CompilePreview.css';
 
@@ -94,6 +97,7 @@ const LV_KEY_MAP: Record<string, number> = {
 };
 
 const CompilePreview: React.FC = () => {
+  const cIntegrationProfile = useAppStore(s => s.cIntegrationProfile);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const runtimeRef = useRef<WasmRuntime | null>(null);
   const rafIdRef = useRef<number>(0);
@@ -133,8 +137,9 @@ const CompilePreview: React.FC = () => {
 
   // Generate C code from current editor state
   const generateCCode = useCallback(() => {
-    return generateCode(pages, {}, logicGraphs, undefined, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont);
-  }, [pages, logicGraphs, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont]);
+    if (cIntegrationProfile !== 'generic') throw new Error('Compile preview supports the generic profile only; board profiles require their external toolchains.');
+    return generateTargetSource({ target: 'c-lvgl', cIntegrationProfile, pages, logicGraphs, images: imageResources, fonts: fontResources, defaultFont: projectDefaultFont, defaultFontSize: projectDefaultFontSize, useBuiltinSymbols: projectUseBuiltinSymbols, symbolFont: projectSymbolFont }).files as GeneratedCode;
+  }, [cIntegrationProfile, pages, logicGraphs, imageResources, fontResources, projectDefaultFont, projectDefaultFontSize, projectUseBuiltinSymbols, projectSymbolFont]);
 
   // Render framebuffer to canvas
   const renderFramebuffer = useCallback((fbData: Uint8Array, width: number, height: number) => {
@@ -209,7 +214,15 @@ const CompilePreview: React.FC = () => {
     setCompileOutput('');
     setShowOutput(false);
 
-    const code = generateCCode();
+    let code: GeneratedCode;
+    try { code = generateCCode(); }
+    catch (error) {
+      setStatus('error');
+      setStatusMessage(describeOutputError(error));
+      setCompileOutput(describeOutputError(error));
+      setShowOutput(true);
+      return;
+    }
 
     const userFiles: Record<string, string> = {};
     for (const [fileName, content] of Object.entries(code)) {
@@ -438,8 +451,7 @@ const CompilePreview: React.FC = () => {
 
         {running && (
           <button className="compile-stop-btn" onClick={handleStop}>
-            ⏹ 停止
-          </button>
+            {t("⏹ 停止")}</button>
         )}
 
         <span className="compile-status">
@@ -485,8 +497,8 @@ const CompilePreview: React.FC = () => {
         {showOutput && (
           <div className="compile-output-panel">
             <div className="compile-output-header">
-              <span>编译输出</span>
-              <button onClick={() => setCompileOutput('')}>清除</button>
+              <span>{t("编译输出")}</span>
+              <button onClick={() => setCompileOutput('')}>{t("清除")}</button>
             </div>
             <pre className="compile-output-content">
               {compileOutput || '（无输出）'}
@@ -496,8 +508,7 @@ const CompilePreview: React.FC = () => {
       </div>
 
       <div className="compile-preview-footer">
-        服务端 emcc 编译，LVGL 真实渲染 · 支持鼠标和键盘交互
-      </div>
+        {t("服务端 emcc 编译，LVGL 真实渲染 · 支持鼠标和键盘交互")}</div>
     </div>
   );
 };

@@ -6,6 +6,10 @@ import { useEditorStore } from '../../store/editorStore';
 import type { CompareOperator, LogicOperator, MathOperator, StringOperation } from './types';
 import { LVGL_EVENTS } from '../EventPanel/EventPanel';
 import './NodeEditDialog.css';
+import { useAppStore } from '../../store/appStore';
+import { TARGETS } from '../../output';
+import { readTargetCode, writeTargetCode } from '../../utils/targetUserCode';
+import { t } from '../../i18n';
 
 interface NodeEditDialogProps {
   nodeId: string;
@@ -45,6 +49,8 @@ const STRING_OPERATIONS: { value: StringOperation; label: string }[] = [
 const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
   const { getNode, updateNode, getVariables } = useLogicEditorStore();
   const { pages, getAllComponents } = useEditorStore();
+  const outputTarget = useAppStore(s => s.outputTarget);
+  const target = TARGETS.find(candidate => candidate.id === outputTarget)!;
   
   const node = getNode(nodeId);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,14 +87,14 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'event_trigger':
         return (
           <div className="param-group">
-            <label>事件类型</label>
+            <label>{t("事件类型")}</label>
             <select
               value={params.eventType || 'LV_EVENT_CLICKED'}
               onChange={e => handleParamChange('eventType', e.target.value)}
             >
               {LVGL_EVENTS.map(evt => (
                 <option key={evt.type} value={evt.type}>
-                  {evt.label} ({evt.type})
+                  {t(evt.label)} ({evt.type})
                 </option>
               ))}
             </select>
@@ -99,17 +105,17 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
         return (
           <>
             <div className="param-group">
-              <label>模式</label>
+              <label>{t("模式")}</label>
               <select
                 value={params.mode || 'delay'}
                 onChange={e => handleParamChange('mode', e.target.value)}
               >
-                <option value="delay">延时执行</option>
-                <option value="interval">周期执行</option>
+                <option value="delay">{t("延时执行")}</option>
+                <option value="interval">{t("周期执行")}</option>
               </select>
             </div>
             <div className="param-group">
-              <label>时间 (毫秒)</label>
+              <label>{t("时间 (毫秒)")}</label>
               <input
                 type="number"
                 min="0"
@@ -124,13 +130,13 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'compare':
         return (
           <div className="param-group">
-            <label>比较运算符</label>
+            <label>{t("比较运算符")}</label>
             <select
               value={params.operator || '=='}
               onChange={e => handleParamChange('operator', e.target.value)}
             >
               {COMPARE_OPERATORS.map(op => (
-                <option key={op.value} value={op.value}>{op.label}</option>
+                <option key={op.value} value={op.value}>{t(op.label)}</option>
               ))}
             </select>
           </div>
@@ -139,13 +145,13 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'logic_op':
         return (
           <div className="param-group">
-            <label>逻辑运算符</label>
+            <label>{t("逻辑运算符")}</label>
             <select
               value={params.operator || 'AND'}
               onChange={e => handleParamChange('operator', e.target.value)}
             >
               {LOGIC_OPERATORS.map(op => (
-                <option key={op.value} value={op.value}>{op.label}</option>
+                <option key={op.value} value={op.value}>{t(op.label)}</option>
               ))}
             </select>
           </div>
@@ -154,13 +160,13 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'math_op':
         return (
           <div className="param-group">
-            <label>数学运算符</label>
+            <label>{t("数学运算符")}</label>
             <select
               value={params.operator || '+'}
               onChange={e => handleParamChange('operator', e.target.value)}
             >
               {MATH_OPERATORS.map(op => (
-                <option key={op.value} value={op.value}>{op.label}</option>
+                <option key={op.value} value={op.value}>{t(op.label)}</option>
               ))}
             </select>
           </div>
@@ -169,13 +175,13 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'string_op':
         return (
           <div className="param-group">
-            <label>字符串操作</label>
+            <label>{t("字符串操作")}</label>
             <select
               value={params.operation || 'concat'}
               onChange={e => handleParamChange('operation', e.target.value)}
             >
               {STRING_OPERATIONS.map(op => (
-                <option key={op.value} value={op.value}>{op.label}</option>
+                <option key={op.value} value={op.value}>{t(op.label)}</option>
               ))}
             </select>
           </div>
@@ -184,7 +190,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'delay':
         return (
           <div className="param-group">
-            <label>延时 (毫秒)</label>
+            <label>{t("延时 (毫秒)")}</label>
             <input
               type="number"
               min="0"
@@ -199,27 +205,27 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
         return (
           <>
             <div className="param-group">
-              <label>目标页面</label>
+              <label>{t("目标页面")}</label>
               <select
                 value={params.targetPage || ''}
                 onChange={e => handleParamChange('targetPage', e.target.value)}
               >
-                <option value="">选择页面...</option>
+                <option value="">{t("选择页面...")}</option>
                 {pages.map(page => (
                   <option key={page.id} value={page.id}>{page.name}</option>
                 ))}
               </select>
             </div>
             <div className="param-group">
-              <label>动画效果</label>
+              <label>{t("动画效果")}</label>
               <select
                 value={params.animation || 'none'}
                 onChange={e => handleParamChange('animation', e.target.value)}
               >
-                <option value="none">无</option>
-                <option value="fade">淡入淡出</option>
-                <option value="slide_left">左滑</option>
-                <option value="slide_right">右滑</option>
+                <option value="none">{t("无")}</option>
+                <option value="fade">{t("淡入淡出")}</option>
+                <option value="slide_left">{t("左滑")}</option>
+                <option value="slide_right">{t("右滑")}</option>
               </select>
             </div>
           </>
@@ -229,12 +235,12 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
         return (
           <>
             <div className="param-group">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select
                 value={params.targetComponent || ''}
                 onChange={e => handleParamChange('targetComponent', e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.map(comp => (
                   <option key={comp.id} value={comp.id}>
                     {comp.name} ({comp.type})
@@ -243,14 +249,14 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
               </select>
             </div>
             <div className="param-group">
-              <label>动作</label>
+              <label>{t("动作")}</label>
               <select
                 value={params.action || 'toggle'}
                 onChange={e => handleParamChange('action', e.target.value)}
               >
-                <option value="show">显示</option>
-                <option value="hide">隐藏</option>
-                <option value="toggle">切换</option>
+                <option value="show">{t("显示")}</option>
+                <option value="hide">{t("隐藏")}</option>
+                <option value="toggle">{t("切换")}</option>
               </select>
             </div>
           </>
@@ -261,12 +267,12 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
         return (
           <>
             <div className="param-group">
-              <label>目标组件</label>
+              <label>{t("目标组件")}</label>
               <select
                 value={params.targetComponent || ''}
                 onChange={e => handleParamChange('targetComponent', e.target.value)}
               >
-                <option value="">选择组件...</option>
+                <option value="">{t("选择组件...")}</option>
                 {allComponents.map(comp => (
                   <option key={comp.id} value={comp.id}>
                     {comp.name} ({comp.type})
@@ -275,20 +281,20 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
               </select>
             </div>
             <div className="param-group">
-              <label>属性</label>
+              <label>{t("属性")}</label>
               <select
                 value={params.property || ''}
                 onChange={e => handleParamChange('property', e.target.value)}
               >
-                <option value="">选择属性...</option>
-                <option value="x">X 位置</option>
-                <option value="y">Y 位置</option>
-                <option value="width">宽度</option>
-                <option value="height">高度</option>
-                <option value="visible">可见性</option>
-                <option value="opacity">透明度</option>
-                <option value="text">文本</option>
-                <option value="value">数值</option>
+                <option value="">{t("选择属性...")}</option>
+                <option value="x">{t("X 位置")}</option>
+                <option value="y">{t("Y 位置")}</option>
+                <option value="width">{t("宽度")}</option>
+                <option value="height">{t("高度")}</option>
+                <option value="visible">{t("可见性")}</option>
+                <option value="opacity">{t("透明度")}</option>
+                <option value="text">{t("文本")}</option>
+                <option value="value">{t("数值")}</option>
               </select>
             </div>
           </>
@@ -298,12 +304,12 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'set_value':
         return (
           <div className="param-group">
-            <label>目标组件</label>
+            <label>{t("目标组件")}</label>
             <select
               value={params.targetComponent || ''}
               onChange={e => handleParamChange('targetComponent', e.target.value)}
             >
-              <option value="">选择组件...</option>
+              <option value="">{t("选择组件...")}</option>
               {allComponents.map(comp => (
                 <option key={comp.id} value={comp.id}>
                   {comp.name} ({comp.type})
@@ -317,12 +323,12 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'var_write':
         return (
           <div className="param-group">
-            <label>变量</label>
+            <label>{t("变量")}</label>
             <select
               value={params.variableId || ''}
               onChange={e => handleParamChange('variableId', e.target.value)}
             >
-              <option value="">选择变量...</option>
+              <option value="">{t("选择变量...")}</option>
               {variables.map(v => (
                 <option key={v.id} value={v.id}>
                   {v.name} ({v.type})
@@ -336,7 +342,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
         return (
           <>
             <div className="param-group">
-              <label>函数名</label>
+              <label>{t("函数名")}</label>
               <input
                 type="text"
                 placeholder="my_function"
@@ -345,9 +351,9 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
               />
             </div>
             <div className="param-group">
-              <label>参数说明</label>
+              <label>{t("参数说明")}</label>
               <textarea
-                placeholder="函数参数说明..."
+                placeholder={t("函数参数说明...")}
                 value={params.description || ''}
                 onChange={e => handleParamChange('description', e.target.value)}
                 rows={2}
@@ -359,12 +365,12 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'c_code_block':
         return (
           <div className="param-group">
-            <label>C 代码</label>
+              <label>{t(target.label)} {t('User code')}</label>
             <textarea
               className="code-textarea"
-              placeholder="// 自定义 C 代码"
-              value={params.code || ''}
-              onChange={e => handleParamChange('code', e.target.value)}
+                placeholder={t('Enter code for the selected target')}
+                value={readTargetCode(outputTarget, params.codeByTarget, params.code)}
+                onChange={e => setParams(prev => ({ ...prev, codeByTarget: writeTargetCode(outputTarget, e.target.value, prev.codeByTarget, prev.code), ...(outputTarget === 'c-lvgl' ? { code: e.target.value } : {}) }))}
               rows={8}
               spellCheck={false}
             />
@@ -374,7 +380,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       case 'switch':
         return (
           <div className="param-group">
-            <label>分支数量</label>
+            <label>{t("分支数量")}</label>
             <input
               type="number"
               min="2"
@@ -391,7 +397,7 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
       default:
         return (
           <div className="no-params">
-            <p>此节点没有可配置的参数</p>
+            <p>{t("此节点没有可配置的参数")}</p>
           </div>
         );
     }
@@ -401,19 +407,19 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
     <div className="node-edit-dialog-overlay" onClick={onClose}>
       <div className="node-edit-dialog" onClick={e => e.stopPropagation()}>
         <div className="dialog-header">
-          <h3>编辑节点</h3>
+          <h3>{t("编辑节点")}</h3>
           <button className="close-btn" onClick={onClose}>✕</button>
         </div>
 
         <div className="dialog-body">
           {/* Node Label */}
           <div className="param-group">
-            <label>节点名称</label>
+            <label>{t("节点名称")}</label>
             <input
               type="text"
-              value={label}
+              value={t(label)}
               onChange={e => setLabel(e.target.value)}
-              placeholder="节点名称"
+              placeholder={t("节点名称")}
             />
           </div>
 
@@ -427,14 +433,14 @@ const NodeEditDialog: React.FC<NodeEditDialogProps> = ({ nodeId, onClose }) => {
 
           {/* Parameters */}
           <div className="params-section">
-            <h4>参数</h4>
+            <h4>{t("参数")}</h4>
             {renderParamEditor()}
           </div>
         </div>
 
         <div className="dialog-footer">
-          <button className="btn-cancel" onClick={onClose}>取消</button>
-          <button className="btn-save" onClick={handleSave}>保存</button>
+          <button className="btn-cancel" onClick={onClose}>{t("取消")}</button>
+          <button className="btn-save" onClick={handleSave}>{t("保存")}</button>
         </div>
       </div>
     </div>

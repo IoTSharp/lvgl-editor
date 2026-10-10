@@ -6,6 +6,8 @@ import { useEditorStore } from '../../store/editorStore';
 import { useResourceStore } from '../../resources/resourceStore';
 import { toast } from '../Toast';
 import './ProjectSettings.css';
+import { TARGETS, C_INTEGRATION_PROFILES, resolveTargetId, resolveCIntegrationProfile, getInitializationOptions, type TargetId, type CIntegrationProfileId } from '../../output';
+import { t } from '../../i18n';
 
 const FONT_OPTIONS = [
   'montserrat_14',
@@ -19,12 +21,15 @@ const FONT_OPTIONS = [
 const FONT_SIZE_OPTIONS = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48];
 
 const ProjectSettings: React.FC = () => {
-  const { currentProjectId, setShowProjectSettings, setDefaultFontSize } = useAppStore();
+  const { currentProjectId, setShowProjectSettings, setDefaultFontSize, setOutputTarget, setCIntegrationProfile } = useAppStore();
   const { getProjectConfig, updateProjectConfig } = useProjectStore();
   const { setCanvasSize } = useEditorStore();
   const fonts = useResourceStore((s) => s.fonts);
+  const initialization = getInitializationOptions();
 
   const [config, setConfig] = useState<ProjectConfig | null>(null);
+  const [outputTarget, setOutputTargetLocal] = useState<TargetId>('c-lvgl');
+  const [cIntegrationProfile, setCIntegrationProfileLocal] = useState<CIntegrationProfileId>('generic');
   const [name, setName] = useState('');
   const [width, setWidth] = useState(480);
   const [height, setHeight] = useState(320);
@@ -41,6 +46,8 @@ const ProjectSettings: React.FC = () => {
     getProjectConfig(currentProjectId).then(cfg => {
       if (!cfg) return;
       setConfig(cfg);
+      setOutputTargetLocal(resolveTargetId(cfg.outputTarget));
+      setCIntegrationProfileLocal(resolveCIntegrationProfile(cfg.cIntegrationProfile));
       setName(cfg.name);
       setWidth(cfg.display.width);
       setHeight(cfg.display.height);
@@ -68,6 +75,8 @@ const ProjectSettings: React.FC = () => {
 
     const updated: ProjectConfig = {
       ...config,
+      outputTarget,
+      cIntegrationProfile,
       name: name.trim() || config.name,
       display: { ...config.display, width, height, colorDepth },
       lvglConfig: {
@@ -82,14 +91,16 @@ const ProjectSettings: React.FC = () => {
       },
     };
     await updateProjectConfig(updated);
+    setOutputTarget(outputTarget);
+    setCIntegrationProfile(cIntegrationProfile);
     setCanvasSize(width, height);
     // Update canvas default font size
     const fontRes = fonts.find(f => f.cFontName === defaultFont);
     setDefaultFontSize(parseFontSize(defaultFont, fontRes?.sizes, isCustomFont ? defaultFontSize : undefined));
     setShowProjectSettings(false);
-    toast.success('项目设置已保存');
+    toast.success(t("项目设置已保存"));
     if (lvglChanged) {
-      toast.info('LVGL 配置已更改，编译预览时将使用新配置');
+      toast.info(t("LVGL 配置已更改，编译预览时将使用新配置"));
     }
   };
 
@@ -100,52 +111,59 @@ const ProjectSettings: React.FC = () => {
   return (
     <div className="modal-global-overlay" onClick={handleClose}>
       <div className="modal-dialog project-settings-dialog" onClick={e => e.stopPropagation()}>
-        <div className="ps-title">项目设置</div>
+        <div className="ps-title">{t("项目设置")}</div>
         <div className="ps-body">
           <label className="npd-label">
-            项目名称
-            <input className="npd-input" type="text" value={name} onChange={e => setName(e.target.value)} />
+            {t('Output target')}
+            <select className="npd-select" value={outputTarget} disabled={!initialization.allowTargetSwitch} onChange={e => setOutputTargetLocal(resolveTargetId(e.target.value))}>
+              {TARGETS.filter(target => initialization.allowedTargets.includes(target.id) || target.id === outputTarget).map(target => <option key={target.id} value={target.id}>{target.label}</option>)}
+            </select>
+          </label>
+          <p>{t('User code is kept separately for each target. Switching does not translate code.')}</p>
+          {outputTarget === 'c-lvgl' && <label className="npd-label">
+            {t('C integration profile')}
+            <select className="npd-select" value={cIntegrationProfile} onChange={e => setCIntegrationProfileLocal(resolveCIntegrationProfile(e.target.value))}>
+              {C_INTEGRATION_PROFILES.map(profile => <option key={profile.id} value={profile.id}>{profile.label}</option>)}
+            </select>
+          </label>}
+          <label className="npd-label">
+            {t("项目名称")}<input className="npd-input" type="text" value={name} onChange={e => setName(e.target.value)} />
           </label>
 
-          <div className="npd-section-title">显示配置</div>
+          <div className="npd-section-title">{t("显示配置")}</div>
 
           <div className="npd-row">
             <label className="npd-label npd-half">
-              宽度
-              <input className="npd-input" type="number" min={100} max={2048} value={width} onChange={e => setWidth(Number(e.target.value))} />
+              {t("宽度")}<input className="npd-input" type="number" min={100} max={2048} value={width} onChange={e => setWidth(Number(e.target.value))} />
             </label>
             <label className="npd-label npd-half">
-              高度
-              <input className="npd-input" type="number" min={100} max={2048} value={height} onChange={e => setHeight(Number(e.target.value))} />
+              {t("高度")}<input className="npd-input" type="number" min={100} max={2048} value={height} onChange={e => setHeight(Number(e.target.value))} />
             </label>
           </div>
 
           <label className="npd-label">
-            色深
-            <select className="npd-select" value={colorDepth} onChange={e => setColorDepth(Number(e.target.value) as 16 | 24 | 32)}>
+            {t("色深")}<select className="npd-select" value={colorDepth} onChange={e => setColorDepth(Number(e.target.value) as 16 | 24 | 32)}>
               <option value={16}>16 bit (RGB565)</option>
               <option value={24}>24 bit (RGB888)</option>
               <option value={32}>32 bit (ARGB8888)</option>
             </select>
           </label>
 
-          <div className="npd-section-title">LVGL 配置</div>
+          <div className="npd-section-title">{t("LVGL 配置")}</div>
 
           <label className="npd-label npd-checkbox-label">
             <input type="checkbox" checked={fontLarge} onChange={e => setFontLarge(e.target.checked)} />
-            LV_FONT_FMT_TXT_LARGE（大字体支持）
-          </label>
+            {t("LV_FONT_FMT_TXT_LARGE（大字体支持）")}</label>
 
           <label className="npd-label">
-            默认字体
-            <select className="npd-select" value={defaultFont} onChange={e => setDefaultFont(e.target.value)}>
-              <optgroup label="内置字体">
+            {t("默认字体")}<select className="npd-select" value={defaultFont} onChange={e => setDefaultFont(e.target.value)}>
+              <optgroup label={t('Built-in fonts')}>
                 {FONT_OPTIONS.map(f => (
                   <option key={f} value={f}>{f}</option>
                 ))}
               </optgroup>
               {fonts.length > 0 && (
-                <optgroup label="已上传字体">
+                <optgroup label={t('Uploaded fonts')}>
                   {fonts.map(f => (
                     <option key={f.id} value={f.cFontName}>{f.name} ({f.family})</option>
                   ))}
@@ -156,8 +174,7 @@ const ProjectSettings: React.FC = () => {
 
           {!/^montserrat_\d+$/.test(defaultFont) && (
             <label className="npd-label">
-              默认字体大小
-              <select className="npd-select" value={defaultFontSize} onChange={e => setDefaultFontSizeLocal(Number(e.target.value))}>
+              {t("默认字体大小")}<select className="npd-select" value={defaultFontSize} onChange={e => setDefaultFontSizeLocal(Number(e.target.value))}>
                 {FONT_SIZE_OPTIONS.map(s => (
                   <option key={s} value={s}>{s}px</option>
                 ))}
@@ -167,13 +184,11 @@ const ProjectSettings: React.FC = () => {
 
           <label className="npd-label npd-checkbox-label">
             <input type="checkbox" checked={useBuiltinSymbols} onChange={e => setUseBuiltinSymbols(e.target.checked)} />
-            注入 LVGL 内置图标（FontAwesome Symbols）
-          </label>
+            {t("注入 LVGL 内置图标（FontAwesome Symbols）")}</label>
 
           {useBuiltinSymbols && (
             <label className="npd-label">
-              图标字体
-              <select className="npd-select" value={symbolFont} onChange={e => setSymbolFont(e.target.value)}>
+              {t("图标字体")}<select className="npd-select" value={symbolFont} onChange={e => setSymbolFont(e.target.value)}>
                 {FONT_OPTIONS.map(f => (
                   <option key={f} value={f}>{f}</option>
                 ))}
@@ -182,14 +197,13 @@ const ProjectSettings: React.FC = () => {
           )}
 
           <label className="npd-label">
-            内存大小 (KB)
-            <input className="npd-input" type="number" min={16} max={1024} step={8} value={memSize} onChange={e => setMemSize(Number(e.target.value))} />
+            {t("内存大小 (KB)")}<input className="npd-input" type="number" min={16} max={1024} step={8} value={memSize} onChange={e => setMemSize(Number(e.target.value))} />
           </label>
         </div>
 
         <div className="modal-dialog-footer">
-          <button className="modal-dialog-btn modal-btn-cancel" onClick={handleClose}>取消</button>
-          <button className="modal-dialog-btn modal-btn-confirm" onClick={handleSave}>保存</button>
+          <button className="modal-dialog-btn modal-btn-cancel" onClick={handleClose}>{t("取消")}</button>
+          <button className="modal-dialog-btn modal-btn-confirm" onClick={handleSave}>{t("保存")}</button>
         </div>
       </div>
     </div>

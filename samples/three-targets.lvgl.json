@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "outputTarget": "c-lvgl",
+  "cIntegrationProfile": "generic",
+  "name": "Three target layout and events",
+  "createdAt": 1791655200000,
+  "updatedAt": 1791655200000,
+  "canvasSize": { "width": 480, "height": 320 },
+  "pages": [{
+    "id": "screen-main", "name": "main", "components": [
+      { "id": "title-label", "type": "label", "name": "title", "x": 24, "y": 24, "width": 360, "height": 40, "children": [], "props": { "text": "Three target sample" }, "styles": { "default": { "textColor": "#111111" } }, "events": [], "animations": [], "parentId": null, "locked": false, "visible": true },
+      { "id": "action-button", "type": "btn", "name": "action", "x": 24, "y": 96, "width": 180, "height": 56, "children": [], "props": { "text": "Update text" }, "styles": { "default": { "bgColor": "#2277cc", "textColor": "#ffffff" } }, "events": [
+        { "id": "event-set-text", "eventType": "LV_EVENT_CLICKED", "handlerType": "builtin", "action": { "type": "setText", "targetComponent": "title-label", "value": "Updated" } },
+        { "id": "event-user", "eventType": "LV_EVENT_RELEASED", "handlerType": "custom", "customCodeByTarget": { "c-lvgl": "/* C_USER_KEEP */", "lispbm-vesc": "(print \"LISP_USER_KEEP\")", "basic-iotembedded": "PRINT \"BASIC_USER_KEEP\"" } }
+      ], "animations": [], "parentId": null, "locked": false, "visible": true }
+    ]
+  }],
+  "resources": { "images": [], "fonts": [] },
+  "variables": [], "logicGraphs": [],
+  "codeGenOptions": { "outputFormat": "single-file", "includeComments": true, "useStaticAllocation": true, "prefix": "ui", "indentSize": 4, "indentStyle": "spaces" },
+  "display": { "width": 480, "height": 320, "colorDepth": 32, "rotation": 0 },
+  "lvglConfig": { "version": "9", "colorFormat": "ARGB8888", "fontLarge": true, "defaultFont": "montserrat_14", "defaultFontSize": 14, "useBuiltinSymbols": true, "symbolFont": "montserrat_14", "memSize": 64 }
+}

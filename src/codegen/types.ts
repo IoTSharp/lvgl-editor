@@ -10,6 +10,7 @@ export interface CodeGenOptions {
 }
 
 export interface GeneratedCode {
+  [fileName: string]: string;
   'ui.h': string;
   'ui.c': string;
   'ui_events.h': string;

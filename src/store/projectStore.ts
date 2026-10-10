@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import type { ProjectFile, CodeGenOptions, ImageResource, FontResource } from '../resources/types';
 import type { Page } from '../types';
 import type { LogicGraph } from '../components/LogicEditor/types';
+import { resolveTargetId, resolveHostTarget, resolveCIntegrationProfile, getInitializationOptions, type TargetId, type CIntegrationProfileId } from '../output';
+import { normalizeProject } from '../resources/projectManager';
 
 // ---------------------------------------------------------------------------
 // Project config type
@@ -32,6 +34,10 @@ export interface LvglConfig {
 export interface ProjectConfig {
   id: string;
   name: string;
+  outputTarget?: TargetId;
+  cIntegrationProfile?: CIntegrationProfileId;
+  /** Small JSON shell fields retained without duplicating resource payloads. */
+  roundTripMetadata?: { canvasSize?: Record<string, unknown>; resources?: Record<string, unknown> };
   createdAt: number;
   updatedAt: number;
   display: DisplayConfig;
@@ -134,7 +140,8 @@ async function dbCreateProject(config: ProjectConfig): Promise<void> {
 
 async function dbGetProjectConfig(id: string): Promise<ProjectConfig | undefined> {
   const db = await getDB();
-  return db.get('projects', id);
+  const config: ProjectConfig | undefined = await db.get('projects', id);
+  return config ? { ...config, outputTarget: resolveHostTarget(config.outputTarget), cIntegrationProfile: resolveCIntegrationProfile(config.cIntegrationProfile) } : undefined;
 }
 
 async function dbGetProjectData(id: string): Promise<ProjectData | undefined> {
@@ -149,12 +156,32 @@ async function dbGetProjectResources(projectId: string): Promise<ProjectResource
 
 async function dbUpdateProjectConfig(config: ProjectConfig): Promise<void> {
   const db = await getDB();
-  await db.put('projects', config);
+  const outputTarget = resolveHostTarget(config.outputTarget);
+  const cIntegrationProfile = resolveCIntegrationProfile(config.cIntegrationProfile);
+  const tx = db.transaction('projects', 'readwrite');
+  const previous: ProjectConfig | undefined = await tx.store.get(config.id);
+  if (previous && !getInitializationOptions().allowTargetSwitch && resolveTargetId(previous.outputTarget) !== outputTarget) {
+    throw new Error('The host does not allow changing the output target.');
+  }
+  await tx.store.put({ ...config, outputTarget, cIntegrationProfile });
+  await tx.done;
 }
 
 async function dbUpdateProjectData(data: ProjectData): Promise<void> {
   const db = await getDB();
   await db.put('projectData', data);
+}
+
+async function dbTouchProject(id: string): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('projects', 'readwrite');
+  const config: ProjectConfig | undefined = await tx.store.get(id);
+  if (config) {
+    resolveHostTarget(config.outputTarget);
+    resolveCIntegrationProfile(config.cIntegrationProfile);
+    await tx.store.put({ ...config, updatedAt: Date.now() });
+  }
+  await tx.done;
 }
 
 async function dbPutResource(resource: ProjectResource): Promise<void> {
@@ -197,7 +224,7 @@ interface ProjectStoreState {
   // Actions
   init: () => Promise<void>;
   refreshList: () => Promise<void>;
-  createProject: (name: string, display: DisplayConfig, lvglConfig: LvglConfig) => Promise<string>;
+  createProject: (name: string, display: DisplayConfig, lvglConfig: LvglConfig, outputTarget?: TargetId, cIntegrationProfile?: CIntegrationProfileId) => Promise<string>;
   deleteProject: (id: string) => Promise<void>;
   getProjectConfig: (id: string) => Promise<ProjectConfig | undefined>;
   updateProjectConfig: (config: ProjectConfig) => Promise<void>;
@@ -244,12 +271,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     set({ projects: items });
   },
 
-  createProject: async (name, display, lvglConfig) => {
+  createProject: async (name, display, lvglConfig, outputTarget = 'c-lvgl', cIntegrationProfile = 'generic') => {
     const id = uuidv4();
     const now = Date.now();
     const config: ProjectConfig = {
       id,
       name,
+      outputTarget: resolveHostTarget(outputTarget),
+      cIntegrationProfile: resolveCIntegrationProfile(cIntegrationProfile),
       createdAt: now,
       updatedAt: now,
       display,
@@ -291,11 +320,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   },
 
   saveProjectData: async (id, pages, logicGraphs, images, fonts) => {
-    const config = await dbGetProjectConfig(id);
-    if (config) {
-      await dbUpdateProjectConfig({ ...config, updatedAt: Date.now() });
-    }
-    await dbUpdateProjectData({ projectId: id, pages, logicGraphs, variables: [] });
+    await dbTouchProject(id);
+    const previous = await dbGetProjectData(id);
+    await dbUpdateProjectData({ ...previous, projectId: id, pages, logicGraphs, variables: previous?.variables ?? [] });
     await get().syncResources(id, images, fonts);
   },
 
@@ -332,17 +359,17 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
 
     const projectFile: ProjectFile = {
       version: '1.0.0',
+      outputTarget: resolveTargetId(config.outputTarget),
+      cIntegrationProfile: resolveCIntegrationProfile(config.cIntegrationProfile),
       name: config.name,
       createdAt: config.createdAt,
       updatedAt: config.updatedAt,
-      canvasSize: { width: config.display.width, height: config.display.height },
-      pages: data.pages.map(p => ({ id: p.id, name: p.name, components: p.components })),
-      resources: { images, fonts },
+      canvasSize: { ...config.roundTripMetadata?.canvasSize, width: config.display.width, height: config.display.height },
+      pages: data.pages.map(p => ({ ...p })),
+      resources: { ...config.roundTripMetadata?.resources, images, fonts },
       variables: data.variables.map(v => ({
-        id: v.id,
-        name: v.name,
+        ...v,
         type: v.type as 'int' | 'string' | 'bool' | 'float',
-        defaultValue: v.defaultValue,
       })),
       logicGraphs: data.logicGraphs,
       codeGenOptions: config.codeGenOptions,
@@ -354,6 +381,10 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
   },
 
   importProject: async (file, name) => {
+    // Validate before the first IndexedDB write. An unknown target must never
+    // create a partially imported project or be silently converted to C.
+    file = normalizeProject(file);
+    const outputTarget = resolveHostTarget(file.outputTarget);
     const id = uuidv4();
     const now = Date.now();
     // Extract display config from file if available
@@ -368,6 +399,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     const config: ProjectConfig = {
       id,
       name: name || file.name || 'Imported Project',
+      outputTarget,
+      cIntegrationProfile: resolveCIntegrationProfile(file.cIntegrationProfile),
+      roundTripMetadata: { canvasSize: { ...file.canvasSize }, resources: Object.fromEntries(Object.entries(file.resources).filter(([key]) => key !== 'images' && key !== 'fonts')) },
       createdAt: now,
       updatedAt: now,
       display,
@@ -377,10 +411,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
     await dbUpdateProjectConfig(config);
 
     const pages: Page[] = (file.pages || []).map(p => ({
-      id: p.id,
-      name: p.name,
-      components: p.components,
-      backgroundColor: '#F5F5F5',
+      ...p,
+      backgroundColor: (p as Page).backgroundColor ?? '#F5F5F5',
     }));
     await dbUpdateProjectData({
       projectId: id,

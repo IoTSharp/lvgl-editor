@@ -1,6 +1,7 @@
 // Application-level state store
 
 import { create } from 'zustand';
+import { resolveHostTarget, resolveCIntegrationProfile, type TargetId, type CIntegrationProfileId } from '../output';
 
 export type AppView = 'projectList' | 'editor';
 
@@ -25,6 +26,10 @@ interface AppState {
   lastSaveTime: number | null;
   /** Default font size derived from project lvglConfig.defaultFont */
   defaultFontSize: number;
+  outputTarget: TargetId;
+  cIntegrationProfile: CIntegrationProfileId;
+  setCIntegrationProfile: (profile: CIntegrationProfileId) => void;
+  setOutputTarget: (target: TargetId) => void;
 
   setView: (view: AppView) => void;
   setCurrentProjectId: (id: string | null) => void;
@@ -32,7 +37,7 @@ interface AppState {
   setLastSaveTime: (time: number) => void;
   setDefaultFontSize: (size: number) => void;
   goToProjectList: () => void;
-  openProject: (id: string) => void;
+  openProject: (id: string, target?: TargetId, cIntegrationProfile?: CIntegrationProfileId) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -41,6 +46,10 @@ export const useAppStore = create<AppState>((set) => ({
   showProjectSettings: false,
   lastSaveTime: null,
   defaultFontSize: 14,
+  outputTarget: 'c-lvgl',
+  cIntegrationProfile: 'generic',
+  setCIntegrationProfile: (profile) => set({ cIntegrationProfile: resolveCIntegrationProfile(profile) }),
+  setOutputTarget: (target) => set({ outputTarget: resolveHostTarget(target) }),
 
   setView: (view) => set({ currentView: view }),
   setCurrentProjectId: (id) => set({ currentProjectId: id }),
@@ -53,8 +62,10 @@ export const useAppStore = create<AppState>((set) => ({
     localStorage.removeItem('lastOpenProjectId');
   },
 
-  openProject: (id) => {
-    set({ currentView: 'editor', currentProjectId: id });
+  openProject: (id, target, profile) => {
+    const outputTarget = resolveHostTarget(target);
+    const cIntegrationProfile = resolveCIntegrationProfile(profile);
+    set({ currentView: 'editor', currentProjectId: id, outputTarget, cIntegrationProfile });
     localStorage.setItem('lastOpenProjectId', id);
   },
 }));

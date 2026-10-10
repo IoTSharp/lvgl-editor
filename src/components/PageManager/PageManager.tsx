@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import React, { useState, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import './PageManager.css';
@@ -100,7 +101,7 @@ const PageManager: React.FC = () => {
             )}
           </div>
         ))}
-        <button className="add-page-btn" onClick={handleAddPage} title="添加页面">
+        <button className="add-page-btn" onClick={handleAddPage} title={t("添加页面")}>
           +
         </button>
       </div>
@@ -109,7 +110,7 @@ const PageManager: React.FC = () => {
       {currentPage && (
         <div className="page-properties">
           <div className="page-prop-row">
-            <label>背景色</label>
+            <label>{t("背景色")}</label>
             <input
               type="color"
               value={currentPage.backgroundColor || '#ffffff'}
@@ -134,15 +135,13 @@ const PageManager: React.FC = () => {
               setShowContextMenu(null);
             }}
           >
-            重命名
-          </button>
+            {t("重命名")}</button>
           <button 
             onClick={() => handleDeletePage(showContextMenu.pageId)}
             disabled={pages.length <= 1}
             className={pages.length <= 1 ? 'disabled' : ''}
           >
-            删除
-          </button>
+            {t("删除")}</button>
         </div>
       )}
     </div>

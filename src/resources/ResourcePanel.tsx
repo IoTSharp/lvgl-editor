@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 // Resource Panel - Main resource management component
 
 import React from 'react';
@@ -29,19 +30,19 @@ const ResourcePanel: React.FC = () => {
     <div className="resource-panel">
       {/* Header */}
       <div className="resource-header">
-        <h3>📦 资源管理</h3>
+        <h3>{t("📦 资源管理")}</h3>
         <div className="view-toggle">
           <button
             className={viewMode === 'grid' ? 'active' : ''}
             onClick={() => setViewMode('grid')}
-            title="网格视图"
+            title={t("网格视图")}
           >
             ▦
           </button>
           <button
             className={viewMode === 'list' ? 'active' : ''}
             onClick={() => setViewMode('list')}
-            title="列表视图"
+            title={t("列表视图")}
           >
             ☰
           </button>
@@ -69,7 +70,7 @@ const ResourcePanel: React.FC = () => {
       <div className="resource-search">
         <input
           type="text"
-          placeholder="搜索资源..."
+          placeholder={t("搜索资源...")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
